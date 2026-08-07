@@ -28,3 +28,4 @@ The major problems identified are:
 | Name | CTC ID |
 |------|---------|
 | Natnael Ashenafi | CTC-897-26 |
+| Natnael Sebhat | CTC-1708-26 |
