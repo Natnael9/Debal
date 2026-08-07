@@ -32,4 +32,4 @@ The major problems identified are:
 | Nardos Haile | CTC-7685-26 |
 | Robel Alemayehu | CTC-1067-26 |
 | Natnael Abrha | CTC-2834-26 |
-| Midaso Edessa | CTC-4752-26 |
+| Midaso Edasa | CTC-4752-26 |
