@@ -31,3 +31,4 @@ The major problems identified are:
 | Natnael Sebhat | CTC-1708-26 |
 | Nardos Haile | CTC-7685-26 |
 | Robel Alemayehu | CTC-1067-26 |
+| Natnael Abrha | CTC-2834-26 |
