@@ -29,3 +29,4 @@ The major problems identified are:
 |------|---------|
 | Natnael Ashenafi | CTC-897-26 |
 | Natnael Sebhat | CTC-1708-26 |
+| Nardos Haile | CTC-7685-26 |
