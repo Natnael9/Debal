@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const faydaSimulatedDataSchema = new mongoose.Schema({
+const faydaSimulatedSchema = new mongoose.Schema({
     idNumber:{
         type: String, 
         required: true,
@@ -11,7 +11,12 @@ const faydaSimulatedDataSchema = new mongoose.Schema({
         required: true
     },
     dateOfBirth:{
-        type: date,
+        type: Date,
         required: true
     }
 })
+
+export const FaydaSimulatedRecord = mongoose.model(
+  'FaydaSimulatedRecord',
+  faydaSimulatedSchema
+);
