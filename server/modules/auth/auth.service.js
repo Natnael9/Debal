@@ -1,18 +1,16 @@
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
-const User = require('../users/users.model');
-const redisClient = require('../../shared/utils/redis.client');
-const {
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import User from '../users/users.model.js';
+import { getRedisClient } from '../../config/redis.js';
+import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
   REFRESH_TOKEN_TTL_SECONDS,
-} = require('../../shared/utils/jwt.util');
+} from '../../shared/utils/jwt.util.js';
 
-const BCRYPT_COST_FACTOR = 12; // per architecture doc §10.3
+const BCRYPT_COST_FACTOR = 12;
 
-// Key under which we store the single "currently valid" refresh-token jti
-// for a user in Redis. Used for rotation + logout invalidation.
 const refreshKey = (userId) => `refresh:${userId}`;
 
 class AuthError extends Error {
@@ -22,10 +20,6 @@ class AuthError extends Error {
   }
 }
 
-/**
- * POST /auth/register
- * Returns success only — no auto-login, per architecture doc §11.1.
- */
 async function registerUser({ email, password, name, acceptedPolicyVersion }) {
   const existing = await User.findOne({ email });
   if (existing) {
@@ -47,16 +41,9 @@ async function registerUser({ email, password, name, acceptedPolicyVersion }) {
   return { message: 'Registration successful. Please log in.' };
 }
 
-/**
- * POST /auth/login
- * Returns access token + refresh token + a user object the frontend
- * uses to decide where to route (questionnaire vs. dashboard vs. verify).
- */
 async function loginUser({ email, password }) {
   const user = await User.findOne({ email }).select('+passwordHash');
 
-  // Same generic error whether the email doesn't exist or the password is
-  // wrong — don't leak which one it was.
   if (!user || !user.passwordHash) {
     throw new AuthError('Invalid email or password.', 401);
   }
@@ -85,11 +72,6 @@ async function loginUser({ email, password }) {
   };
 }
 
-/**
- * POST /auth/refresh
- * Rotates the refresh token: the old jti is invalidated and a new
- * access/refresh pair is issued. Rejects reused/old refresh tokens.
- */
 async function refreshTokens(refreshToken) {
   let payload;
   try {
@@ -98,9 +80,9 @@ async function refreshTokens(refreshToken) {
     throw new AuthError('Invalid or expired refresh token.', 401);
   }
 
+  const redisClient = getRedisClient();
   const storedJti = await redisClient.get(refreshKey(payload.sub));
   if (!storedJti || storedJti !== payload.jti) {
-    // Token reuse or an already-rotated/logged-out token.
     throw new AuthError('Refresh token is no longer valid.', 401);
   }
 
@@ -113,16 +95,14 @@ async function refreshTokens(refreshToken) {
   return tokens;
 }
 
-/**
- * POST /auth/logout
- * Invalidates the stored refresh-token jti so it can no longer be rotated.
- */
 async function logoutUser(userId) {
+  const redisClient = getRedisClient();
   await redisClient.del(refreshKey(userId));
   return { message: 'Logged out.' };
 }
 
 async function issueTokenPair(user) {
+  const redisClient = getRedisClient();
   const jti = crypto.randomUUID();
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user, jti);
@@ -137,4 +117,4 @@ async function issueTokenPair(user) {
   return { accessToken, refreshToken };
 }
 
-module.exports = { registerUser, loginUser, refreshTokens, logoutUser, AuthError };
+export { registerUser, loginUser, refreshTokens, logoutUser, AuthError };
