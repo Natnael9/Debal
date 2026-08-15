@@ -1,37 +1,170 @@
-import { registerSchema, loginSchema } from './auth.validator.js';
+import User from '../users/users.model.js';
+import { hashPassword, comparePassword } from './auth.service.js';
 import {
-  registerUser,
-  loginUser,
-  refreshTokens,
-  logoutUser,
-  AuthError,
-} from './auth.service.js';
-import { verifyRefreshToken } from '../../shared/utils/jwt.util.js';
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  setRefreshTokenCookie,
+  clearRefreshTokenCookie,
+} from './jwt.utils.js';
 
-const REFRESH_COOKIE_NAME = 'refreshToken';
-const refreshCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  path: '/api/v1/auth',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-};
+// POST /api/v1/auth/register
+export async function register(request, reply) {
+  const { email, password, name } = request.body;
 
-async function register(request, reply) {
-  const parsed = registerSchema.safeParse(request.body);
-  if (!parsed.success) {
-    return reply.code(422).send({ error: parsed.error.flatten() });
+  if (!email || !password || !name) {
+    return reply.status(400).send({
+      success: false,
+      error: 'MISSING_FIELDS',
+      message: 'email, password, and name are required',
+    });
   }
-  try {
-    const result = await registerUser(parsed.data);
-    return reply.code(201).send(result);
-  } catch (err) {
-    if (err instanceof AuthError) {
-      return reply.code(err.statusCode).send({ error: err.message });
-    }
-    request.log.error(err);
-    return reply.code(500).send({ error: 'Something went wrong.' });
+
+  const existing = await User.findOne({ email: email.toLowerCase().trim() });
+  if (existing) {
+    return reply.status(409).send({
+      success: false,
+      error: 'EMAIL_TAKEN',
+      message: 'An account with that email already exists',
+    });
   }
+
+  const passwordHash = await hashPassword(password);
+  const user = await User.create({ email, name, passwordHash });
+
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+  setRefreshTokenCookie(reply, refreshToken);
+
+  return reply.status(201).send({
+    success: true,
+    data: {
+      accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        verificationStatus: user.verificationStatus,
+        questionnaireCompleted: user.questionnaireCompleted,
+      },
+    },
+  });
 }
 
-module.exports = { register };
+// POST /api/v1/auth/login
+export async function login(request, reply) {
+  const { email, password } = request.body;
+
+  if (!email || !password) {
+    return reply.status(400).send({
+      success: false,
+      error: 'MISSING_FIELDS',
+      message: 'email and password are required',
+    });
+  }
+
+  // passwordHash is select:false — explicitly select it
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
+    '+passwordHash'
+  );
+
+  if (!user || !user.passwordHash) {
+    return reply.status(401).send({
+      success: false,
+      error: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password',
+    });
+  }
+
+  const valid = await comparePassword(password, user.passwordHash);
+  if (!valid) {
+    return reply.status(401).send({
+      success: false,
+      error: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password',
+    });
+  }
+
+  if (user.suspended) {
+    return reply.status(403).send({
+      success: false,
+      error: 'ACCOUNT_SUSPENDED',
+      message: 'This account has been suspended',
+    });
+  }
+
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+  setRefreshTokenCookie(reply, refreshToken);
+
+  return reply.send({
+    success: true,
+    data: {
+      accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        verificationStatus: user.verificationStatus,
+        questionnaireCompleted: user.questionnaireCompleted,
+      },
+    },
+  });
+}
+
+// POST /api/v1/auth/refresh
+export async function refresh(request, reply) {
+  const token = request.cookies?.refreshToken;
+
+  if (!token) {
+    return reply.status(401).send({
+      success: false,
+      error: 'NO_REFRESH_TOKEN',
+      message: 'Refresh token cookie missing',
+    });
+  }
+
+  let payload;
+  try {
+    payload = verifyRefreshToken(token);
+  } catch {
+    return reply.status(401).send({
+      success: false,
+      error: 'INVALID_REFRESH_TOKEN',
+      message: 'Refresh token is invalid or expired',
+    });
+  }
+
+  if (payload.type !== 'refresh') {
+    return reply.status(401).send({
+      success: false,
+      error: 'INVALID_TOKEN_TYPE',
+      message: 'Expected a refresh token',
+    });
+  }
+
+  const user = await User.findById(payload.sub);
+  if (!user) {
+    return reply.status(401).send({ success: false, error: 'USER_NOT_FOUND' });
+  }
+
+  if (user.suspended) {
+    return reply.status(403).send({
+      success: false,
+      error: 'ACCOUNT_SUSPENDED',
+      message: 'This account has been suspended',
+    });
+  }
+
+  const newAccessToken = signAccessToken(user);
+  const newRefreshToken = signRefreshToken(user);
+  setRefreshTokenCookie(reply, newRefreshToken);
+
+  return reply.send({ success: true, data: { accessToken: newAccessToken } });
+}
+
+// POST /api/v1/auth/logout
+export async function logout(request, reply) {
+  clearRefreshTokenCookie(reply);
+  return reply.send({ success: true, message: 'Logged out successfully' });
+}

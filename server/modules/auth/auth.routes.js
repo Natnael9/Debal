@@ -1,13 +1,15 @@
-import * as controller from './auth.controller.js';
-import { authRateLimiter } from '../../shared/middleware/rate-limiter.middleware.js';
+import { register, login, refresh, logout } from './auth.controller.js';
 
-const rateLimit = authRateLimiter();
+export default async function authRoutes(fastify) {
+  // Register a new user
+  fastify.post('/api/v1/auth/register', register);
 
-async function authRoutes(fastify) {
-  fastify.post('/register', { preHandler: rateLimit }, controller.register);
-  fastify.post('/login', { preHandler: rateLimit }, controller.login);
-  fastify.post('/refresh', { preHandler: rateLimit }, controller.refresh);
-  fastify.post('/logout', controller.logout);
+  // Login with email + password
+  fastify.post('/api/v1/auth/login', login);
+
+  // Exchange a refresh-token cookie for a new access token
+  fastify.post('/api/v1/auth/refresh', refresh);
+
+  // Clear the refresh-token cookie
+  fastify.post('/api/v1/auth/logout', logout);
 }
-
-export default authRoutes;

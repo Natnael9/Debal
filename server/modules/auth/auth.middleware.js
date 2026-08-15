@@ -47,5 +47,5 @@ export async function authMiddleware(request, reply) {
     });
   }
 
-  request.User = user;
+  request.user = user;
 }

@@ -43,7 +43,7 @@ const userSchema = new Schema(
 
     // ---- Location ----
     location: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: { type: String, enum: ['Point'] },
       coordinates: { type: [Number], default: undefined }, // [lng, lat]
       displayName: String,
     },
@@ -103,7 +103,8 @@ const userSchema = new Schema(
   { timestamps: true } // gives createdAt / updatedAt automatically
 );
 
-userSchema.index({ location: '2dsphere' });
+// ---- Compound & Special Indexes ----
+userSchema.index({ location: '2dsphere' }, { sparse: true });
 userSchema.index({ questionnaireCompleted: 1, verificationStatus: 1 });
 
 export const User = mongoose.model('User', userSchema);
