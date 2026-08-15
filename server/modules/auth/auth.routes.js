@@ -1,17 +1,13 @@
-const controller = require('./auth.controller');
+import * as controller from './auth.controller.js';
+import { authRateLimiter } from '../../shared/middleware/rate-limiter.middleware.js';
+
+const rateLimit = authRateLimiter();
 
 async function authRoutes(fastify) {
-  fastify.post('/register', controller.register);
+  fastify.post('/register', { preHandler: rateLimit }, controller.register);
+  fastify.post('/login', { preHandler: rateLimit }, controller.login);
+  fastify.post('/refresh', { preHandler: rateLimit }, controller.refresh);
+  fastify.post('/logout', controller.logout);
 }
 
-module.exports = authRoutes;
-
-/**
- * Register in app.js / server bootstrap, e.g.:
- *
- *   const authRoutes = require('./modules/auth/auth.routes');
- *   fastify.register(authRoutes, { prefix: '/api/v1/auth' });
- *
- * (Robel's job today, in his server-bootstrap task — check with him that
- * this got registered.)
- */
+export default authRoutes;

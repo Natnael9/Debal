@@ -1,8 +1,8 @@
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
-const User = require('../users/users.model');
-const redisClient = require('../../shared/utils/redis.client');
-const {
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import User from '../users/users.model.js';
+import { getRedisClient } from '../../config/redis.js';
+import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
@@ -47,16 +47,9 @@ async function registerUser({ email, password, name, acceptedPolicyVersion }) {
   return { message: 'Registration successful. Please log in.' };
 }
 
-/**
- * POST /auth/login
- * Returns access token + refresh token + a user object the frontend
- * uses to decide where to route (questionnaire vs. dashboard vs. verify).
- */
 async function loginUser({ email, password }) {
   const user = await User.findOne({ email }).select('+passwordHash');
 
-  // Same generic error whether the email doesn't exist or the password is
-  // wrong — don't leak which one it was.
   if (!user || !user.passwordHash) {
     throw new AuthError('Invalid email or password.', 401);
   }
@@ -85,11 +78,6 @@ async function loginUser({ email, password }) {
   };
 }
 
-/**
- * POST /auth/refresh
- * Rotates the refresh token: the old jti is invalidated and a new
- * access/refresh pair is issued. Rejects reused/old refresh tokens.
- */
 async function refreshTokens(refreshToken) {
   let payload;
   try {
@@ -98,9 +86,9 @@ async function refreshTokens(refreshToken) {
     throw new AuthError('Invalid or expired refresh token.', 401);
   }
 
+  const redisClient = getRedisClient();
   const storedJti = await redisClient.get(refreshKey(payload.sub));
   if (!storedJti || storedJti !== payload.jti) {
-    // Token reuse or an already-rotated/logged-out token.
     throw new AuthError('Refresh token is no longer valid.', 401);
   }
 
@@ -113,16 +101,14 @@ async function refreshTokens(refreshToken) {
   return tokens;
 }
 
-/**
- * POST /auth/logout
- * Invalidates the stored refresh-token jti so it can no longer be rotated.
- */
 async function logoutUser(userId) {
+  const redisClient = getRedisClient();
   await redisClient.del(refreshKey(userId));
   return { message: 'Logged out.' };
 }
 
 async function issueTokenPair(user) {
+  const redisClient = getRedisClient();
   const jti = crypto.randomUUID();
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user, jti);
