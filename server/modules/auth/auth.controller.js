@@ -1,12 +1,12 @@
-const { registerSchema, loginSchema } = require('./auth.validator');
-const {
+import { registerSchema, loginSchema } from './auth.validator.js';
+import {
   registerUser,
   loginUser,
   refreshTokens,
   logoutUser,
   AuthError,
-} = require('./auth.service');
-const { verifyRefreshToken } = require('../../shared/utils/jwt.util');
+} from './auth.service.js';
+import { verifyRefreshToken } from '../../shared/utils/jwt.util.js';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const refreshCookieOptions = {
@@ -87,4 +87,4 @@ async function logout(request, reply) {
   return reply.code(200).send({ message: 'Logged out.' });
 }
 
-module.exports = { register, login, refresh, logout };
+export { register, login, refresh, logout };
