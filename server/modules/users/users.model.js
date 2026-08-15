@@ -38,7 +38,7 @@ const userSchema = new Schema(
     teamUpEnabled: { type: Boolean, default: false },
 
     location: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: { type: String, enum: ['Point']},
       coordinates: { type: [Number], default: undefined },
       displayName: String,
     },
