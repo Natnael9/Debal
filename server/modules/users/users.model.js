@@ -10,7 +10,7 @@
  * updated to match, per the "resolve mismatches" item in Robel's Day 1 task list.
  */
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const userSchema = new Schema(

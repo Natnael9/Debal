@@ -19,10 +19,7 @@ export async function connectDatabase() {
   return mongoose.connection;
 }
 
-/**
- * Simple boolean health check used by the /health route.
- * readyState 1 === connected.
- */
+
 export function isDatabaseHealthy() {
   return mongoose.connection.readyState === 1;
 }
