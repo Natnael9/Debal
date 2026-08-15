@@ -116,9 +116,11 @@ const userSchema = new Schema(
   { timestamps: true } // gives createdAt / updatedAt automatically
 );
 
-// ---- Compound & Special Indexes ----
+// ---- Indexes (exactly the set called out in the Day 1 task) ----
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ googleId: 1 }, { unique: true, sparse: true });
 userSchema.index({ location: '2dsphere' });
 userSchema.index({ questionnaireCompleted: 1, verificationStatus: 1 });
+userSchema.index({ idNumberHash: 1 }, { unique: true, sparse: true });
 
-export const User = mongoose.model('User', userSchema);
-export default User;
+module.exports = mongoose.model('User', userSchema);
