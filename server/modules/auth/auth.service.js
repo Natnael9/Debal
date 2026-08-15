@@ -7,9 +7,18 @@ import {
   signRefreshToken,
   verifyRefreshToken,
   REFRESH_TOKEN_TTL_SECONDS,
-} from '../../shared/utils/jwt.util';
+} from '../../shared/utils/jwt.util.js';
 
 const BCRYPT_COST_FACTOR = 12; // per architecture doc §10.3
+
+async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_COST_FACTOR);
+}
+
+async function comparePassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
 
 // Key under which we store the single "currently valid" refresh-token jti
 // for a user in Redis. Used for rotation + logout invalidation.
@@ -123,4 +132,13 @@ async function issueTokenPair(user) {
   return { accessToken, refreshToken };
 }
 
-module.exports = { registerUser, loginUser, refreshTokens, logoutUser, AuthError };
+export {
+  hashPassword,
+  comparePassword,
+  registerUser,
+  loginUser,
+  refreshTokens,
+  logoutUser,
+  AuthError,
+};
+
