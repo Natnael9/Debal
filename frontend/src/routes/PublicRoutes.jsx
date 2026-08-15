@@ -1,4 +1,6 @@
 import { Routes, Route, Link } from "react-router-dom";
+import LoginPage from "../pages/LoginPage";
+import RegisterPage from "../pages/RegisterPage";
 
 const LandingPage = () => (
   <div className="p-8 text-center">
@@ -11,19 +13,19 @@ const LandingPage = () => (
   </div>
 );
 
-const LoginPage = () => (
-  <div className="p-8 text-center">
-    <h1 className="text-2xl font-bold mb-4">Login</h1>
-    <Link to="/" className="text-blue-600 underline">Back Home</Link>
-  </div>
-);
+// const LoginPage = () => (
+//   <div className="p-8 text-center">
+//     <h1 className="text-2xl font-bold mb-4">Login</h1>
+//     <Link to="/" className="text-blue-600 underline">Back Home</Link>
+//   </div>
+// );
 
-const RegisterPage = () => (
-  <div className="p-8 text-center">
-    <h1 className="text-2xl font-bold mb-4">Register</h1>
-    <Link to="/" className="text-blue-600 underline">Back Home</Link>
-  </div>
-);
+// const RegisterPage = () => (
+//   <div className="p-8 text-center">
+//     <h1 className="text-2xl font-bold mb-4">Register</h1>
+//     <Link to="/" className="text-blue-600 underline">Back Home</Link>
+//   </div>
+// );
 
 function PublicRoutes() {
   return (
