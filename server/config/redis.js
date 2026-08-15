@@ -5,13 +5,17 @@ let redisClient = null;
 export async function connectRedis() {
   const url = process.env.REDIS_URL;
 
-
   const isTls = url?.startsWith('rediss://');
 
   redisClient = new Redis(url, {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
-    ...(isTls && { tls: { rejectUnauthorized: false } }), 
+    connectTimeout: 20000,
+    retryStrategy: (times) => {
+      if (times > 5) return null; 
+      return Math.min(times * 500, 3000); 
+    },
+    ...(isTls && { tls: { rejectUnauthorized: false } }),
   });
 
   redisClient.on('error', (err) => {
@@ -19,7 +23,7 @@ export async function connectRedis() {
   });
 
   await redisClient.connect();
-  await redisClient.ping(); 
+  await redisClient.ping();
 
   console.log('[redis] connected');
 

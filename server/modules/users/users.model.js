@@ -1,15 +1,3 @@
-/**
- * users.model.js
- *
- * NOTE FOR ROBEL / TEAM (flag this in standup):
- * Architecture Doc Rev.2 §6.2 does NOT actually contain googleId, housingStatus,
- * verificationStatus, idNumberHash, teamUpEnabled, or notificationPreferences —
- * those only exist in the SRS (FR-1.7, FR-1.8, FR-2.x, FR-3.7, FR-10.3).
- * This schema is built to satisfy the SRS (which is what Day 2/3 tasks depend on),
- * not the literal §6.2 block in the arch doc. Flagging so the arch doc can be
- * updated to match, per the "resolve mismatches" item in Robel's Day 1 task list.
- */
-
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
@@ -101,7 +89,6 @@ const userSchema = new Schema(
     suspendedAt: Date,
     suspendedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
 
-    // ---- Notification preferences (FR-10.3) ----
     notificationPreferences: {
       newChatRequest: { type: Boolean, default: true },
       requestAccepted: { type: Boolean, default: true },
