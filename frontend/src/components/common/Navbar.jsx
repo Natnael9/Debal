@@ -49,13 +49,13 @@ function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <NavLink
             to="/login"
-            className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50"
+            className="rounded-lg border border-blue-900 px-4 py-2 text-sm font-medium text-blue-900 transition hover:bg-blue-50"
           >
             Login
           </NavLink>
           <NavLink
             to="/register"
-            className="rounded-lg bg-blue-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 shadow-sm"
+            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 shadow-sm"
           >
             Register
           </NavLink>
@@ -102,7 +102,7 @@ function Navbar() {
               </NavLink>
               <NavLink
                 to="/register"
-                className="text-center rounded-lg bg-blue-800 px-4 py-2.5 text-base font-medium text-white transition hover:bg-blue-700 shadow-sm"
+                className="text-center rounded-lg bg-blue-900 px-4 py-2.5 text-base font-medium text-white transition hover:bg-blue-700 shadow-sm"
                 onClick={closeMenu}
               >
                 Register
