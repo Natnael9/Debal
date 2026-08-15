@@ -7,7 +7,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
   REFRESH_TOKEN_TTL_SECONDS,
-} = require('../../shared/utils/jwt.util');
+} from '../../shared/utils/jwt.util';
 
 const BCRYPT_COST_FACTOR = 12; // per architecture doc §10.3
 
