@@ -1,4 +1,4 @@
-const Redis = require('ioredis');
+import Redis from 'ioredis';
 
 // Single shared Redis connection (managed Redis, per architecture doc §11.1).
 // REDIS_URL comes from .env — ask Robel if it's not in your .env yet
@@ -9,4 +9,4 @@ redisClient.on('error', (err) => {
   console.error('[redis] connection error:', err.message);
 });
 
-module.exports = redisClient;
+export default redisClient;

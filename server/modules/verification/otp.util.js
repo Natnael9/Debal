@@ -1,9 +1,7 @@
-import { authenticator } from 'otplib';
 import crypto from 'crypto';
 
 const OTP_EXPIRY_MINUTES = 10;
 
-authenticator.options = { digits: 6, step: OTP_EXPIRY_MINUTES * 60 };
 
 export function generateOtp() {
   const otp = crypto.randomInt(100000, 999999).toString();
