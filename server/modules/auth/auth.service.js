@@ -7,10 +7,12 @@ import {
   signRefreshToken,
   verifyRefreshToken,
   REFRESH_TOKEN_TTL_SECONDS,
-} from '../../shared/utils/jwt.util.js';
+} = require('../../shared/utils/jwt.util');
 
-const BCRYPT_COST_FACTOR = 12;
+const BCRYPT_COST_FACTOR = 12; // per architecture doc §10.3
 
+// Key under which we store the single "currently valid" refresh-token jti
+// for a user in Redis. Used for rotation + logout invalidation.
 const refreshKey = (userId) => `refresh:${userId}`;
 
 class AuthError extends Error {
@@ -20,6 +22,10 @@ class AuthError extends Error {
   }
 }
 
+/**
+ * POST /auth/register
+ * Returns success only — no auto-login, per architecture doc §11.1.
+ */
 async function registerUser({ email, password, name, acceptedPolicyVersion }) {
   const existing = await User.findOne({ email });
   if (existing) {
@@ -117,4 +123,4 @@ async function issueTokenPair(user) {
   return { accessToken, refreshToken };
 }
 
-export { registerUser, loginUser, refreshTokens, logoutUser, AuthError };
+module.exports = { registerUser, loginUser, refreshTokens, logoutUser, AuthError };
