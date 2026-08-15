@@ -5,6 +5,7 @@ import MatchCard from "../components/matchmaking/MatchCard";
 import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
 
+
 function ProtectedRoutes() {
   // 1. Change user from null to this object:
   const user = { questionnaireCompleted: true }; 
