@@ -1,17 +1,18 @@
 import { Routes, Route, Link } from "react-router-dom";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import LandingPage from "../pages/LandingPage";
 
-const LandingPage = () => (
-  <div className="p-8 text-center">
-    <h1 className="text-2xl font-bold mb-4">Landing Page Placeholder</h1>
-    <div className="space-x-4">
-      <Link to="/login" className="text-blue-600 underline">Login</Link>
-      <Link to="/register" className="text-blue-600 underline">Register</Link>
-      <Link to="/questionnaire" className="text-blue-600 underline">Go to Questionnaire</Link>
-    </div>
-  </div>
-);
+// const LandingPage = () => (
+//   <div className="p-8 text-center">
+//     <h1 className="text-2xl font-bold mb-4">Landing Page Placeholder</h1>
+//     <div className="space-x-4">
+//       <Link to="/login" className="text-blue-600 underline">Login</Link>
+//       <Link to="/register" className="text-blue-600 underline">Register</Link>
+//       <Link to="/questionnaire" className="text-blue-600 underline">Go to Questionnaire</Link>
+//     </div>
+//   </div>
+// );
 
 // const LoginPage = () => (
 //   <div className="p-8 text-center">
