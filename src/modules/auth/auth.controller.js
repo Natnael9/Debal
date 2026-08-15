@@ -3,8 +3,10 @@ const {
   registerUser,
   loginUser,
   refreshTokens,
+  logoutUser,
   AuthError,
 } = require('./auth.service');
+const { verifyRefreshToken } = require('../../shared/utils/jwt.util');
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
 const refreshCookieOptions = {
@@ -20,7 +22,6 @@ async function register(request, reply) {
   if (!parsed.success) {
     return reply.code(422).send({ error: parsed.error.flatten() });
   }
-
   try {
     const result = await registerUser(parsed.data);
     return reply.code(201).send(result);
@@ -38,7 +39,6 @@ async function login(request, reply) {
   if (!parsed.success) {
     return reply.code(422).send({ error: parsed.error.flatten() });
   }
-
   try {
     const { accessToken, refreshToken, user } = await loginUser(parsed.data);
     reply.setCookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions);
@@ -57,7 +57,6 @@ async function refresh(request, reply) {
   if (!token) {
     return reply.code(401).send({ error: 'No refresh token provided.' });
   }
-
   try {
     const { accessToken, refreshToken } = await refreshTokens(token);
     reply.setCookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions);
@@ -72,4 +71,20 @@ async function refresh(request, reply) {
   }
 }
 
-module.exports = { register, login, refresh };
+async function logout(request, reply) {
+  const token = request.cookies?.[REFRESH_COOKIE_NAME];
+
+  if (token) {
+    try {
+      const payload = verifyRefreshToken(token);
+      await logoutUser(payload.sub);
+    } catch {
+      // Token already invalid/expired — nothing to invalidate, fall through.
+    }
+  }
+
+  reply.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' });
+  return reply.code(200).send({ message: 'Logged out.' });
+}
+
+module.exports = { register, login, refresh, logout };

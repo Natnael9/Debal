@@ -4,6 +4,7 @@ async function authRoutes(fastify) {
   fastify.post('/register', controller.register);
   fastify.post('/login', controller.login);
   fastify.post('/refresh', controller.refresh);
+  fastify.post('/logout', controller.logout);
 }
 
 module.exports = authRoutes;
