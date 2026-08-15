@@ -2,6 +2,8 @@ import { User } from '../users/users.model.js';
 import { FaydaSimulatedRecord } from './fayda-simulated.model.js';
 import { VerificationRequest } from './verification.model.js';
 import { hashIdNumber, encryptIdentity } from './encryption.util.js';
+import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
+import { sendVerificationOtpEmail } from '../notifications/email.util.js';
 
 function sameDay(dateA, dateB) {
   return new Date(dateA).toDateString() === new Date(dateB).toDateString();
@@ -18,7 +20,6 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
   }
 
   const record = await FaydaSimulatedRecord.findOne({ idNumber });
-
   const identityEncrypted = encryptIdentity(JSON.stringify({ name, dateOfBirth }));
 
   let result;
@@ -43,13 +44,56 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
   });
 
   if (result === 'matched') {
-    await User.findByIdAndUpdate(userId, {
-      idNumberHash,
-      verificationStatus: 'pending', // still needs OTP — flips to 'verified' in the OTP task
-    });
+    await User.findByIdAndUpdate(userId, { idNumberHash, verificationStatus: 'pending' });
+
+    // Generate, hash, store, and email the OTP
+    const { otp, expiresAt } = generateOtp();
+    verificationRequest.otpHash = hashOtp(otp);
+    verificationRequest.otpExpiresAt = expiresAt;
+    await verificationRequest.save();
+
+    const user = await User.findById(userId);
+    await sendVerificationOtpEmail(user.email, otp);
   } else {
     await User.findByIdAndUpdate(userId, { verificationStatus: 'rejected' });
   }
 
   return { result, rejectionReason, verificationRequestId: verificationRequest._id };
+}
+
+export async function confirmOtp(userId, otp) {
+  const verificationRequest = await VerificationRequest.findOne({
+    userId,
+    result: 'matched',
+    otpVerifiedAt: { $exists: false },
+  }).sort({ submittedAt: -1 });
+
+  if (!verificationRequest) {
+    const err = new Error('No pending OTP confirmation found for this user');
+    err.code = 'NO_PENDING_VERIFICATION';
+    throw err;
+  }
+
+  if (isOtpExpired(verificationRequest.otpExpiresAt)) {
+    const err = new Error('OTP has expired. Please resubmit verification.');
+    err.code = 'OTP_EXPIRED';
+    throw err;
+  }
+
+  if (hashOtp(otp) !== verificationRequest.otpHash) {
+    const err = new Error('Incorrect OTP');
+    err.code = 'OTP_INCORRECT';
+    throw err;
+  }
+
+  verificationRequest.otpVerifiedAt = new Date();
+  verificationRequest.resolvedAt = new Date();
+  await verificationRequest.save();
+
+  await User.findByIdAndUpdate(userId, {
+    verificationStatus: 'verified',
+    verifiedAt: new Date(),
+  });
+
+  return { verified: true };
 }
