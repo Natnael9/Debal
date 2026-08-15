@@ -2,6 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "seed:fayda": "node modules/verification/seed-fayda-records.js"
+  },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
