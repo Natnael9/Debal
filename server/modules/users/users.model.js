@@ -10,7 +10,7 @@
  * updated to match, per the "resolve mismatches" item in Robel's Day 1 task list.
  */
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const userSchema = new Schema(
@@ -116,11 +116,9 @@ const userSchema = new Schema(
   { timestamps: true } // gives createdAt / updatedAt automatically
 );
 
-// ---- Indexes (exactly the set called out in the Day 1 task) ----
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ googleId: 1 }, { unique: true, sparse: true });
+// ---- Compound & Special Indexes ----
 userSchema.index({ location: '2dsphere' });
 userSchema.index({ questionnaireCompleted: 1, verificationStatus: 1 });
-userSchema.index({ idNumberHash: 1 }, { unique: true, sparse: true });
 
-module.exports = mongoose.model('User', userSchema);
+export const User = mongoose.model('User', userSchema);
+export default User;
