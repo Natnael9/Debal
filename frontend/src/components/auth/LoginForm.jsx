@@ -1,9 +1,26 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // const [showPrivacy, setShowPrivacy] = useState(false);
+
+  const handleCredentialResponse = (response) => {
+    console.log("Google credential:", response);
+  };
+
+  useEffect(() => {
+    google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: handleCredentialResponse,
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("googleSignInDiv"),
+      { theme: "outline", size: "large" }
+    );
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,53 +33,23 @@ function LoginForm() {
 
   return (
     <>
-    <div className="mt-8">
-  <button
-    type="button"
-    className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-  >
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        fill="#4285F4"
-        d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v3h3.87c2.27-2.09 3.57-5.17 3.57-8.64Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.87-3a7.18 7.18 0 0 1-10.69-3.79H1.39v3.09A12 12 0 0 0 12 24Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.39 14.31A7.22 7.22 0 0 1 5.39 9.7V6.61H1.39a12 12 0 0 0 0 10.78l4-3.08Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.77c1.76 0 3.34.61 4.59 1.81l3.44-3.44C17.95 1.1 15.24 0 12 0A12 12 0 0 0 1.39 6.61l4 3.09A7.18 7.18 0 0 1 12 4.77Z"
-      />
-    </svg>
+      <div className="mt-8">
+        <div id="googleSignInDiv"></div>
 
-    Continue with Google
-  </button>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
 
-<div className="relative my-6">
-  <div className="absolute inset-0 flex items-center">
-    <div className="w-full border-t border-gray-200" />
-  </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-3 text-gray-500">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+      </div>
 
-  <div className="relative flex justify-center text-sm">
-    <span className="bg-white px-3 text-gray-500">
-      Or continue with email
-    </span>
-  </div>
-</div>
-
-
-</div>
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-
         <div className="space-y-4">
 
           {/* Email */}
@@ -132,6 +119,26 @@ function LoginForm() {
 
         </div>
 
+        {/* Checkbox for Terms & Privacy
+        <div className="flex items-center text-sm">
+          <input
+            id="accept-terms"
+            type="checkbox"
+            required
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="accept-terms" className="ml-2 text-gray-600">
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={() => setShowPrivacy(true)}
+              className="font-medium text-blue-600 underline hover:text-blue-500"
+            >
+              Terms and Privacy Policy
+            </button>
+          </label>
+        </div> */}
+
         {/* Submit */}
         <button
           type="submit"
@@ -152,6 +159,49 @@ function LoginForm() {
         >
           Register
         </Link>
+
+        {/* Privacy Policy Modal
+      {showPrivacy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900">
+              Terms & Privacy Policy
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Last updated: August 2026
+            </p>
+
+            <div className="mt-4 space-y-4 text-sm text-gray-600">
+              <section>
+                <h3 className="font-semibold text-gray-800">
+                  1. Terms of Service
+                </h3>
+                <div className="mt-1 rounded bg-yellow-50 p-2 text-xs font-mono text-yellow-800 border-l-2 border-yellow-400">
+                  TODO: Insert real Terms of Service legal copy here.
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-800">
+                  2. Privacy Policy
+                </h3>
+                <div className="mt-1 rounded bg-yellow-50 p-2 text-xs font-mono text-yellow-800 border-l-2 border-yellow-400">
+                  TODO: Insert real Privacy Policy legal copy here.
+                </div>
+              </section>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPrivacy(false)}
+              className="mt-6 w-full rounded-lg bg-gray-900 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )} */}
+      
       </p>
     </>
   );
