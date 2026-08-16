@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 function LoginForm() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -22,15 +24,17 @@ function LoginForm() {
     );
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+    const handleSubmit = (e) => {
+      e.preventDefault();
 
-    console.log({
-      email,
-      password,
-    });
-  };
+      const mockUser = {
+        email,
+      };
 
+      login(mockUser);
+
+      console.log("Logged in:", mockUser);
+    };
   return (
     <>
       <div className="mt-8">

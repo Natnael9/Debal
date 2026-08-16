@@ -2,11 +2,13 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 import { registerSchema } from "../../schemas/authSchema";
 
 function RegisterForm() {
 
+  const { login } = useAuth();
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   const {
@@ -35,9 +37,14 @@ function RegisterForm() {
     }
   }, []);
 
-  const onSubmit = (data) => {
-    console.log("Registration data:", data);
-  };
+        const onSubmit = (data) => {
+        console.log("Registration data:", data);
+
+        login({
+          name: data.name,
+          email: data.email,
+        });
+      };
 
   return (
     <>
