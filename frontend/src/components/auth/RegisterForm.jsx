@@ -3,11 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { registerSchema } from "../../schemas/authSchema";
-import { useAuth } from "../../context/AuthContext";
 
 function RegisterForm() {
-  const { register: registerUser, loading } = useAuth();
-
   const {
     register,
     handleSubmit,
@@ -16,12 +13,8 @@ function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data) => {
-    try {
-      await registerUser(data);
-    } catch (error) {
-      console.error("Registration failed:", error);
-    }
+  const onSubmit = (data) => {
+    console.log("Registration data:", data);
   };
 
   return (
@@ -106,17 +99,14 @@ function RegisterForm() {
 
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
-          {loading ? "Creating account..." : "Get Started"}
+          Get Started
         </button>
       </form>
 
-      {/* Login link */}
       <p className="text-center text-sm text-gray-500">
         Already have an account?{" "}
 
