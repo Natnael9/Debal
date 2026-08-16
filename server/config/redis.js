@@ -11,6 +11,7 @@ export async function connectRedis() {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
     connectTimeout: 20000,
+    family: 4,
     retryStrategy: (times) => {
       if (times > 5) return null; 
       return Math.min(times * 500, 3000); 
