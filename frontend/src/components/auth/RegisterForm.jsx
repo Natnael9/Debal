@@ -7,7 +7,7 @@ import { registerSchema } from "../../schemas/authSchema";
 
 function RegisterForm() {
 
-  // const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const {
     register,
@@ -136,7 +136,7 @@ function RegisterForm() {
           </div>
 
         </div>
-        {/* Checkbox for Terms & Privacy
+        {/* Checkbox for Terms & Privacy */}
         <div className="flex items-center text-sm">
           <input
             id="accept-terms"
@@ -154,7 +154,7 @@ function RegisterForm() {
               Terms and Privacy Policy
             </button>
           </label>
-        </div> */}
+        </div>
 
         <button
           type="submit"
@@ -173,7 +173,7 @@ function RegisterForm() {
         >
           Sign in
         </Link>
-        {/* Privacy Policy Modal
+        {/* Privacy Policy Modal */}
       {showPrivacy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
@@ -213,7 +213,7 @@ function RegisterForm() {
             </button>
           </div>
         </div>
-      )} */}
+      )}
       </p>
     </>
   );
