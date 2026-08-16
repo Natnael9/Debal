@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
-
 const messageSchema = new Schema({
     matchId:{
         type:Schema.Types.ObjectId,
@@ -17,17 +16,20 @@ const messageSchema = new Schema({
         type:String,
         required: true,
         trim:true
+    },
+    readAt:{
+        type: Date,
+        default: null
     }
 },
 {
     timestamps: true
-})
+});
 
 messageSchema.index({ 
     matchId: 1, 
     createdAt: -1 
-}
-); 
+}); 
 
 export const Message = mongoose.model('Message', messageSchema);
 export default Message;
