@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const handleCredentialResponse = (response) => {
     console.log("Google credential:", response);
@@ -119,7 +119,7 @@ function LoginForm() {
 
         </div>
 
-        {/* Checkbox for Terms & Privacy
+        {/* Checkbox for Terms & Privacy */}
         <div className="flex items-center text-sm">
           <input
             id="accept-terms"
@@ -137,7 +137,7 @@ function LoginForm() {
               Terms and Privacy Policy
             </button>
           </label>
-        </div> */}
+        </div>
 
         {/* Submit */}
         <button
@@ -160,7 +160,7 @@ function LoginForm() {
           Register
         </Link>
 
-        {/* Privacy Policy Modal
+        {/* Privacy Policy Modal */}
       {showPrivacy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
@@ -200,7 +200,7 @@ function LoginForm() {
             </button>
           </div>
         </div>
-      )} */}
+      )}
       
       </p>
     </>
