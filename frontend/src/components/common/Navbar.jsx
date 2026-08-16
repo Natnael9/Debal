@@ -40,7 +40,7 @@ function Navbar() {
         {/* Desktop Navigation links (Hidden on mobile) */}
         <div className="hidden md:flex items-center gap-8">
           <NavLink to="/" className={navLinkStyle}>Home</NavLink>
-          <NavLink to="/app/find-matches" className={navLinkStyle}>Find Matches</NavLink>
+          <NavLink to="/app/dashboard" className={navLinkStyle}>Find Matches</NavLink>
           <NavLink to="/app/messages" className={navLinkStyle}>Messages</NavLink>
           <NavLink to="/app/profile" className={navLinkStyle}>Profile</NavLink>
         </div>
@@ -87,7 +87,7 @@ function Navbar() {
         <div className="md:hidden border-t border-gray-100 bg-white">
           <div className="space-y-1 px-4 pb-6 pt-3">
             <NavLink to="/" className={mobileNavLinkStyle} onClick={closeMenu}>Home</NavLink>
-            <NavLink to="/app/find-matches" className={mobileNavLinkStyle} onClick={closeMenu}>Find Matches</NavLink>
+            <NavLink to="/app/dashboard" className={mobileNavLinkStyle} onClick={closeMenu}>Find Matches</NavLink>
             <NavLink to="/app/messages" className={mobileNavLinkStyle} onClick={closeMenu}>Messages</NavLink>
             <NavLink to="/app/profile" className={mobileNavLinkStyle} onClick={closeMenu}>Profile</NavLink>
             
