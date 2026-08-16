@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
-// Import your new clean component
-import SearchPage from './SearchPage'; 
+
+// 1. UPDATE THIS IMPORT TO POINT TO YOUR SEARCH PAGE FILE
+import { TopFilterBar, SideFilterBar } from './SearchPage'; 
 
 const MatchFeed = () => {
-  // All the state lives here in the parent
+  // Toggle for the push-sidebar
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -45,10 +46,10 @@ const MatchFeed = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50 pt-2">
       
-      {/* Pass the state and functions down as props */}
-      <SearchPage
+      {/* The Top Horizontal Bar */}
+      <TopFilterBar 
         filters={filters}
         handleFilterChange={handleFilterChange}
         handleSearch={handleSearch}
@@ -56,25 +57,37 @@ const MatchFeed = () => {
         setIsDrawerOpen={setIsDrawerOpen}
       />
 
-      {/* MATCH FEED RESULTS */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2274A5]"></div>
-          </div>
-        ) : results.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {results.map(match => (
-              <MatchCard key={match._id} matchData={match} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm mt-4">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
-            <p className="text-gray-500">Try adjusting your filters to see more people.</p>
-          </div>
-        )}
-      </main>
+      {/* MAIN CONTENT AREA - Flexbox to handle the push layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-start gap-6">
+        
+        {/* THE PUSH SIDEBAR */}
+        <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${isDrawerOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+           <SideFilterBar filters={filters} handleFilterChange={handleFilterChange} />
+        </div>
+
+        {/* THE MATCH FEED GRID */}
+        <main className="flex-1 min-w-0 transition-all duration-300">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2274A5]"></div>
+            </div>
+          ) : results.length > 0 ? (
+            
+            // This grid class automatically wraps cards to the next line when pushed!
+            <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+              {results.map(match => (
+                <MatchCard key={match._id} matchData={match} />
+              ))}
+            </div>
+
+          ) : (
+            <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
+              <p className="text-gray-500">Try adjusting your filters to see more people.</p>
+            </div>
+          )}
+        </main>
+      </div>
       
     </div>
   );
