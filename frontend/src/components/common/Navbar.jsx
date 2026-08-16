@@ -42,8 +42,8 @@ function Navbar() {
           <NavLink to="/" className={navLinkStyle}>Home</NavLink>
           <NavLink to="/app/dashboard" className={navLinkStyle}>Find Matches</NavLink>
           <NavLink to="/app/messages" className={navLinkStyle}>Messages</NavLink>
-          <NavLink to="/app/profile" className={navLinkStyle}>Profile</NavLink>
-          
+          <NavLink to="/app/profile" className={navLinkStyle}>Profile</NavLink> bookmarks
+          <NavLink to="/app/bookmarks" className={navLinkStyle}>Book Mark</NavLink>
 
           
         </div>
