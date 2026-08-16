@@ -4,6 +4,7 @@ import PublicRoutes from "./PublicRoutes";
 import QuestionnaireRoutes from "./QuestionnaireRoutes";
 import ProtectedRoutes from "./ProtectedRoutes";
 import AdminRoutes from "./AdminRoutes";
+import OAuthCallback from "../components/auth/OAuthCallback";
 
 function AppRoutes() {
   return (
