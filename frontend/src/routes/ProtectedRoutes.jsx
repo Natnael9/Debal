@@ -28,7 +28,7 @@ function ProtectedRoutes() {
       <Route path="/dashboard" element={<MatchFeed />} />
       <Route path="/messages" element={<ChatList />} />
       <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/verify" element={<VerificationWizard />} />
+      
       
       
     </Routes>
