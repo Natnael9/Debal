@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": {
-    "test:chat": "node scripts/test-chat.js"
-  },
+  "scripts": {},
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
