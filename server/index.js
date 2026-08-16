@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
@@ -9,6 +11,7 @@ import healthRoute from './routes/health.route.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import verificationRoutes from './modules/verification/verification.routes.js';
+import { initChatGateway } from './modules/chat/chat.gateway.js';
 
 const PORT = process.env.PORT || 4000;
 
@@ -32,6 +35,7 @@ async function start() {
 
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
+  initChatGateway(fastify.server);
 
   const shutdown = async (signal) => {
     console.log(`[server] received ${signal}, shutting down`);

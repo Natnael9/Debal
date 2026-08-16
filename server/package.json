@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:chat": "node scripts/test-chat.js"
+  },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
@@ -16,6 +18,10 @@
     "mongoose": "^9.9.2",
     "otplib": "^13.4.1",
     "resend": "^6.20.0",
+    "socket.io": "^4.8.3",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }
