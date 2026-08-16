@@ -9,6 +9,8 @@ import VerificationWizard from '../pages/VerificationWizard';
 
 
 
+
+
 function ProtectedRoutes() {
   // 1. Change user from null to this object:
   const user = { questionnaireCompleted: true }; 
@@ -28,6 +30,8 @@ function ProtectedRoutes() {
       <Route path="/dashboard" element={<MatchFeed />} />
       <Route path="/messages" element={<ChatList />} />
       <Route path="/profile" element={<ProfilePage />} />
+      
+      
       
       
       
