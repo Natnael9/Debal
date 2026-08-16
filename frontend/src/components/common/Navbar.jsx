@@ -43,7 +43,6 @@ function Navbar() {
           <NavLink to="/app/dashboard" className={navLinkStyle}>Find Matches</NavLink>
           <NavLink to="/app/messages" className={navLinkStyle}>Messages</NavLink>
           <NavLink to="/app/profile" className={navLinkStyle}>Profile</NavLink>
-          
         </div>
 
         {/* Desktop Action buttons (Hidden on mobile) */}
