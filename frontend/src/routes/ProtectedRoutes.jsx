@@ -6,7 +6,7 @@ import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
 import MatchFeed from "../pages/Dashboard";
 import VerificationWizard from '../pages/VerificationWizard';
-import SearchPage from '../pages/SearchPage.jsx';
+
 
 
 

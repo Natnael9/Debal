@@ -122,6 +122,36 @@ export const SideFilterBar = ({ filters, handleFilterChange }) => {
         </select>
       </div>
 
+{/* Pet Accordion select */}
+      <div className="p-4 border-b border-gray-100">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Pet</label>
+        <select 
+          name="pet" 
+          value={filters.pet} 
+          onChange={handleFilterChange} 
+          className="w-full appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2274A5]"
+        >
+          <option value="any">Any</option>
+          <option value="male">Yes</option>
+          <option value="female">No</option>
+        </select>
+      </div>
+
+      <div className="p-4 border-b border-gray-100">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Can cook</label>
+        <select 
+          name="cook" 
+          value={filters.cook} 
+          onChange={handleFilterChange} 
+          className="w-full appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2274A5]"
+        >
+          <option value="any">Any</option>
+          <option value="male">Yes</option>
+          <option value="female">No</option>
+        </select>
+      </div>
+
+
       {/* Status Accordion/Select */}
       <div className="p-4 border-b border-gray-100">
         <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
