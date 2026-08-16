@@ -1,55 +1,73 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const MatchCard = ({ matchData }) => {
-  // Destructure the data based on the schema in your architecture doc
-  const { name, age, gender, bio, avatarUrl, preferences } = matchData;
-  const { budgetMax, cleanliness, sleepSchedule } = preferences;
+  // State to track if this specific card is bookmarked
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const handleToggleBookmark = (e) => {
+    e.preventDefault(); // Prevents the card's main click event if it's wrapped in a link
+    
+    if (isBookmarked) {
+      console.log(`Removing ${matchData._id} from bookmarks...`);
+      // TODO: Wire to DELETE /bookmarks/:userId
+      setIsBookmarked(false);
+    } else {
+      console.log(`Adding ${matchData._id} to bookmarks...`);
+      // TODO: Wire to POST /bookmarks with { bookmarkedUserId: matchData._id }
+      setIsBookmarked(true);
+    }
+  };
 
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow duration-300">
-      {/* Avatar Placeholder / Image */}
-      <div className="h-48 bg-gray-200 relative">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex items-center justify-center w-full h-full bg-[#2274A5] text-white text-4xl font-bold">
-            {name.charAt(0)}
-          </div>
-        )}
-        {/* Mock Match Score Badge */}
-        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-          95% Match
-        </div>
-      </div>
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative transition-transform hover:-translate-y-1 hover:shadow-md">
+      
+      {/* BOOKMARK BUTTON - Positioned absolute in the top right corner */}
+      <button 
+        onClick={handleToggleBookmark}
+        className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors z-10 text-[#2274A5]"
+        title={isBookmarked ? "Remove bookmark" : "Save for later"}
+      >
+        <svg 
+          className="w-5 h-5" 
+          fill={isBookmarked ? "currentColor" : "none"} 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth="2" 
+            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
+          />
+        </svg>
+      </button>
 
-      {/* Card Content */}
+      {/* The rest of your existing MatchCard UI goes here */}
       <div className="p-5">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xl font-bold text-gray-900">{name}, {age}</h3>
-          <span className="text-sm font-semibold text-[#2274A5]">Up to ${budgetMax}</span>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex-shrink-0">
+             {/* Avatar Image would go here */}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">{matchData.name} · {matchData.age}</h3>
+            <p className="text-sm text-gray-500 capitalize">{matchData.gender}</p>
+          </div>
         </div>
         
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{bio}</p>
-
-        {/* Badges for Lifestyle Preferences */}
+        <p className="text-gray-700 text-sm mb-4 line-clamp-2">{matchData.bio}</p>
+        
         <div className="flex flex-wrap gap-2 mb-4">
-          <span className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-md border border-blue-100">
-            {sleepSchedule === 'early_bird' ? '🌅 Early Bird' : '🌙 Night Owl'}
+          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
+            Budget: {matchData.preferences?.budgetMax} ETB
           </span>
-          <span className="bg-gray-50 text-gray-700 text-xs px-2 py-1 rounded-md border border-gray-200">
-            Cleanliness: {cleanliness}/5
+          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
+            Cleanliness: {matchData.preferences?.cleanliness}/5
           </span>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-4">
-          <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg transition-colors text-sm">
-            Skip
-          </button>
-          <button className="flex-1 bg-[#2274A5] hover:bg-[#1A5C83] text-white font-semibold py-2 rounded-lg shadow-sm transition-colors text-sm">
-            Connect
-          </button>
-        </div>
+        <button className="w-full py-2 bg-[#0B3954] text-white rounded-lg text-sm font-bold hover:bg-[#082a3e] transition-colors">
+          View Profile
+        </button>
       </div>
     </div>
   );
