@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import MatchCard from "../components/matchmaking/MatchCard";
 import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
+import MatchFeed from "../pages/Dashboard";
+
 
 
 function ProtectedRoutes() {
@@ -22,7 +24,7 @@ function ProtectedRoutes() {
       
       
       {/* 2. Add the new routes here: */}
-      <Route path="/find-matches" element={<MatchCard />} />
+      <Route path="/dashboard" element={<MatchFeed />} />
       <Route path="/messages" element={<ChatList />} />
       <Route path="/profile" element={<ProfilePage />} />
       
