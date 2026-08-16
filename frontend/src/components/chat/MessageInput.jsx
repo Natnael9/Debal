@@ -14,7 +14,7 @@ function MessageInput({ onSend }) {
   };
 
   return (
-    <div className="bg-transparent p-4">
+    <div className="bg-transparent p-0 sm:mb-0">
       <form
         onSubmit={handleSubmit}
         className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 shadow-sm transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100"
