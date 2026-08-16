@@ -6,6 +6,7 @@ import MessageInput from "../../components/chat/MessageInput";
 function ChatWindow() {
   const [messages, setMessages] = useState([]);
 
+  // Temporary ID until authentication/backend is connected
   const currentUserId = "current-user";
 
   const handleSendMessage = (content) => {
@@ -25,7 +26,7 @@ function ChatWindow() {
   return (
     <div className="flex h-[calc(100vh-73px)] flex-col bg-gray-50">
 
-      {/* Header */}
+      {/* Chat Header */}
       <div className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center gap-3">
 
@@ -53,7 +54,9 @@ function ChatWindow() {
       />
 
       {/* Input */}
-      <MessageInput onSend={handleSendMessage} />
+      <MessageInput
+        onSend={handleSendMessage}
+      />
 
     </div>
   );
