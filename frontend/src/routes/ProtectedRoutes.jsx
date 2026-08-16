@@ -6,7 +6,7 @@ import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
 import MatchFeed from "../pages/Dashboard";
 import VerificationWizard from '../pages/VerificationWizard';
-
+import QuestionnaireRoutes from './QuestionnaireRoutes';
 
 
 function ProtectedRoutes() {
@@ -28,6 +28,7 @@ function ProtectedRoutes() {
       <Route path="/dashboard" element={<MatchFeed />} />
       <Route path="/messages" element={<ChatList />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/questionnaire/*" element={<QuestionnaireRoutes />} />
       
       
       
