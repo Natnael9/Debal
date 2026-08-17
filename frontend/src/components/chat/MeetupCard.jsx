@@ -4,11 +4,39 @@ function MeetupCard({
   time = "3:00 PM",
   location = "Bole, Addis Ababa",
   note = "Let's meet for coffee!",
+  status = "pending",
   onAccept,
   onDecline,
-}) {
+}) 
+
+{
+      const handleAddToCalendar = () => {
+      const startDate = new Date(`${date} ${time}`);
+
+      const endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 1);
+
+      const formatGoogleDate = (date) => {
+        return date
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}Z$/, "Z");
+      };
+
+      const start = formatGoogleDate(startDate);
+      const end = formatGoogleDate(endDate);
+
+      const calendarUrl =
+        `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+        `&text=${encodeURIComponent("Meetup with " + proposedBy)}` +
+        `&dates=${start}/${end}` +
+        `&location=${encodeURIComponent(location)}` +
+        `&details=${encodeURIComponent(note || "")}`;
+
+      window.open(calendarUrl, "_blank", "noopener,noreferrer");
+    };
   return (
-    <div className="w-[30vw] h-[50vh] max-w-sm rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md">
+    <div className="w-[30vw] h-[55vh] max-w-sm rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md">
       
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-gray-100">
@@ -104,7 +132,31 @@ function MeetupCard({
         >
           Accept
         </button>
+        
       </div>
+      {status === "confirmed" && (
+          <button
+            type="button"
+            onClick={handleAddToCalendar}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 py-2 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 active:scale-98"
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+
+            Add to Calendar
+          </button>
+)}
     </div>
   );
 }

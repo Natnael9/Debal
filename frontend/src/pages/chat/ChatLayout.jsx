@@ -10,7 +10,7 @@ const INITIAL_CHATS = [
     subtitle: "Roommate match",
     avatarText: "A",
     isOnline: true,
-    lastMessage: "Yes! Still looking for a spot near campus.",
+    lastMessage: "Yes! Still looking for a spot ne...",
     time: "09:24 AM",
     unreadCount: 0,
     messages: [
@@ -40,7 +40,7 @@ const INITIAL_CHATS = [
     subtitle: "Apartment Sublet",
     avatarText: "S",
     isOnline: true,
-    lastMessage: "Is the master bedroom still available?",
+    lastMessage: "Is the master bedroom still a...",
     time: "Yesterday",
     unreadCount: 2,
     messages: [
@@ -82,7 +82,7 @@ const INITIAL_CHATS = [
     subtitle: "Potential Flatmate",
     avatarText: "H",
     isOnline: false,
-    lastMessage: "Sounds great, let's meet this Saturday!",
+    lastMessage: "Sounds great, let's meet this Sa...",
     time: "Nov 10",
     unreadCount: 0,
     messages: [
@@ -100,8 +100,10 @@ function ChatLayout() {
   const [chats, setChats] = useState(INITIAL_CHATS);
   const [activeChatId, setActiveChatId] = useState("1");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMeetupOpen, setIsMeetupOpen] = useState(false);
 
-  const activeChat = chats.find((chat) => chat.id === activeChatId) || chats[0];
+  const activeChat =
+    chats.find((chat) => chat.id === activeChatId) || chats[0];
 
   const handleSendMessage = (content) => {
     const newMessage = {
@@ -132,6 +134,7 @@ function ChatLayout() {
   const handleSelectChat = (chatId) => {
     setActiveChatId(chatId);
     setIsSidebarOpen(false);
+
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
@@ -140,23 +143,22 @@ function ChatLayout() {
   };
 
   return (
-    // CHANGE HERE: Added 'top-14' (or adjust as needed, e.g. top-16/top-12) to give the entire mobile view a top margin/offset without triggering page bounce
-    <div className="fixed inset-x-0 bottom-0 top-0 flex gap-6 h-screen w-full  justify-center overflow-hidden bg-slate-100 p-0 md:static md:top-auto md:min-h-screen md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
-      
-      {/* Mobile Drawer Overlay */}
+    <div className="fixed inset-x-0 bottom-0 top-14 flex h-[calc(100dvh-3.5rem)] w-full justify-center overflow-hidden bg-slate-100 p-0 sm:top-20 md:static md:top-auto md:min-h-[calc(100vh-80px)] md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
+
+      {/* MOBILE SIDEBAR OVERLAY */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
         />
       )}
 
-      {/* Frame Container */}
-      <div className="relative flex h-full w-full gap-0 overflow-hidden md:h-[72vh] md:min-h-[480px] md:max-h-[640px] md:max-w-5xl md:gap-3.5 md:overflow-visible">
-        
-        {/* Slide-out Sidebar Drawer on Mobile / Panel on Desktop */}
+      {/* MAIN FRAME: Decreased gap to md:gap-3 */}
+      <div className="relative flex h-full w-full max-w-[1520px] gap-0 overflow-hidden md:h-[580px] md:gap-3 md:overflow-visible">
+
+        {/* 1. CHAT LIST (Width increased to 350px) */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[350px] md:shrink-0 md:translate-x-0 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -168,24 +170,76 @@ function ChatLayout() {
           />
         </div>
 
-        {/* Chat Window */}
-        <ChatWindow
-          chat={activeChat}
-          onSendMessage={handleSendMessage}
-          onOpenSidebar={() => setIsSidebarOpen(true)}
-        />
+        {/* 2. CHAT WINDOW */}
+        <div className="flex flex-1 min-w-0 h-full">
+          <ChatWindow
+            chat={activeChat}
+            onSendMessage={handleSendMessage}
+            onOpenSidebar={() => setIsSidebarOpen(true)}
+            onOpenMeetups={() => setIsMeetupOpen(true)}
+          />
+        </div>
+
+        {/* 3. DESKTOP MEETUP PANEL (Centered items) */}
+        <aside className="hidden w-[400px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-5 shadow-sm md:flex">
+
+          {/* Panel Header (Centered) */}
+          <div className="mb-4 flex w-full flex-col items-center border-b border-gray-100 pb-3 text-center">
+            <h2 className="text-sm font-bold leading-tight text-gray-900">
+              Meetups
+            </h2>
+            <p className="mt-1 text-xs text-gray-400 leading-none">
+              Meetup proposals with {activeChat.name}
+            </p>
+          </div>
+
+          {/* Meetup Card Component */}
+          <MeetupCard
+            proposedBy={activeChat.name}
+            date="August 22, 2026"
+            time="3:00 PM"
+            location="Bole, Addis Ababa"
+            note="Let's meet for coffee!"
+            status="confirmed"
+            onAccept={() => console.log("Meetup accepted")}
+            onDecline={() => console.log("Meetup declined")}
+          />
+        </aside>
       </div>
-      <MeetupCard
-        proposedBy="Sarah"
-        date="Saturday, August 22"
-        time="3:00 PM"
-        location="Bole, Addis Ababa"
-        note="Let's meet for coffee!"
-        onAccept={() => console.log("Meetup accepted")}
-        onDecline={() => console.log("Meetup declined")}
-/>
+
+      {/* MOBILE MEETUP MODAL */}
+      {isMeetupOpen && (
+        <>
+          <div
+            onClick={() => setIsMeetupOpen(false)}
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
+          />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:hidden">
+            <div className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl">
+              <div className="mb-2 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsMeetupOpen(false)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500 hover:bg-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <MeetupCard
+                proposedBy={activeChat.name}
+                date="August 22, 2026"
+                time="3:00 PM"
+                location="Bole, Addis Ababa"
+                note="Let's meet for coffee!"
+                status="confirmed"
+                onAccept={() => console.log("Meetup accepted")}
+                onDecline={() => console.log("Meetup declined")}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
-    
   );
 }
 
