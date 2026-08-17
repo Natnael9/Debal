@@ -8,12 +8,6 @@ class UsersError extends Error {
   }
 }
 
-/**
- * POST /onboarding/questionnaire
- * Accepts the full questionnaire in one submission, maps it onto the
- * users.model.js shape, marks questionnaireCompleted, and recomputes
- * profileCompletionPercent (FR-3.1, FR-3.5).
- */
 async function submitQuestionnaire(userId, data) {
   const { housingStatus, age, gender, bio, budget, location, maxDistance, lifestyle, teamUpEnabled } = data;
 
@@ -55,4 +49,53 @@ async function submitQuestionnaire(userId, data) {
   return user;
 }
 
-export { submitQuestionnaire, UsersError };
+/**
+ * PATCH /users/me — edit any profile field after initial submission (FR-3.4),
+ * recomputing profileCompletionPercent on every save.
+ */
+async function updateProfile(userId, data) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new UsersError('User not found.', 404);
+  }
+
+  const { name, age, gender, bio, avatarUrl, housingStatus, teamUpEnabled, budget, location, maxDistance, lifestyle } = data;
+
+  if (name !== undefined) user.name = name;
+  if (age !== undefined) user.age = age;
+  if (gender !== undefined) user.gender = gender;
+  if (bio !== undefined) user.bio = bio;
+  if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+  if (housingStatus !== undefined) user.housingStatus = housingStatus;
+  if (teamUpEnabled !== undefined) user.teamUpEnabled = teamUpEnabled;
+
+  if (budget) {
+    user.preferences = user.preferences || {};
+    if (budget.budgetMin !== undefined) user.preferences.budgetMin = budget.budgetMin;
+    if (budget.budgetMax !== undefined) user.preferences.budgetMax = budget.budgetMax;
+  }
+
+  if (lifestyle) {
+    user.preferences = user.preferences || {};
+    if (lifestyle.cleanliness !== undefined) user.preferences.cleanliness = lifestyle.cleanliness;
+    if (lifestyle.sleepSchedule !== undefined) user.preferences.sleepSchedule = lifestyle.sleepSchedule;
+    if (lifestyle.smokingOk !== undefined) user.preferences.smokingOk = lifestyle.smokingOk;
+    if (lifestyle.petsOk !== undefined) user.preferences.petsOk = lifestyle.petsOk;
+  }
+
+  if (location) {
+    user.location = {
+      type: 'Point',
+      coordinates: location.coordinates,
+      displayName: location.displayName !== undefined ? location.displayName : user.location?.displayName,
+    };
+  }
+
+  if (maxDistance !== undefined) user.maxDistance = maxDistance;
+
+  user.profileCompletionPercent = calculateProfileCompletion(user);
+  await user.save();
+  return user;
+}
+
+export { submitQuestionnaire, updateProfile, UsersError };
