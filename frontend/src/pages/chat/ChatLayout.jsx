@@ -140,7 +140,7 @@ function ChatLayout() {
 
   return (
     // CHANGE HERE: Added 'top-14' (or adjust as needed, e.g. top-16/top-12) to give the entire mobile view a top margin/offset without triggering page bounce
-    <div className="fixed inset-x-0 bottom-0 top-20 flex h-[calc(100dvh-3.5rem)] w-full items-center justify-center overflow-hidden bg-slate-100 p-0 md:static md:top-auto md:min-h-screen md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
+    <div className="fixed inset-x-0 bottom-0 top-0 flex h-screen w-full  justify-center overflow-hidden bg-slate-100 p-0 md:static md:top-auto md:min-h-screen md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
       
       {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
