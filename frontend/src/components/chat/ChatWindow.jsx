@@ -3,9 +3,10 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 
 
+
 function ChatWindow({ chat, onSendMessage, onOpenSidebar }) {
   const currentUserId = "current-user";
-  const [isTyping, setIsTyping] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
 
   return (
 <div className="flex flex-1 h-[80dvh] md:h-[80dvh] sm:h-[full]  min-w-0 flex-col justify-between overflow-hidden rounded-none border-0 bg-white shadow-none md:rounded-2xl md:border md:border-gray-100 md:shadow-xl">      
@@ -62,7 +63,7 @@ function ChatWindow({ chat, onSendMessage, onOpenSidebar }) {
       {/* Input */}
       <MessageInput onSend={onSendMessage} onTyping={() => setIsTyping(true)} 
       onStopTyping={() => setIsTyping(false)} />
-      
+
     </div>
   );
 }

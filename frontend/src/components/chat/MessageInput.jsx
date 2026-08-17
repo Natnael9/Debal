@@ -1,30 +1,46 @@
-import { useState } from "react";
+import { useState , useRef} from "react";
 
 function MessageInput({ onSend, onTyping, onStopTyping }) {
   const [message, setMessage] = useState("");
+  const typingTimeout = useRef(null);
 
 
   const handleChange = (e) => {
   const value = e.target.value;
 
-        setMessage(value);
+    setMessage(value);
 
-        if (value.trim()) {
-          onTyping?.();
-        } else {
-          onStopTyping?.();
-        }
-      };
-  const handleSubmit = (e) => {
-    e.preventDefault();
+    if (!value.trim()) {
+      onStopTyping?.();
+      return;
+    }
 
-    const trimmedMessage = message.trim();
-    if (!trimmedMessage) return;
+    onTyping?.();
 
-    onSend(trimmedMessage);
-    setMessage("");
-    onStopTyping?.();
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+
+    typingTimeout.current = setTimeout(() => {
+      onStopTyping?.();
+    }, 1000);
   };
+
+ const handleSubmit = (e) => {
+  e.preventDefault();
+
+      const trimmedMessage = message.trim();
+      if (!trimmedMessage) return;
+
+      onSend(trimmedMessage);
+
+      setMessage("");
+      onStopTyping?.();
+
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+};
 
   return (
     <div className="bg-transparent p-0 sm:mb-0">
