@@ -5,6 +5,8 @@ import MatchCard from "../components/matchmaking/MatchCard";
 import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
 import MatchFeed from "../pages/Dashboard";
+// import ChatWindow from "../pages/chat/ChatWindow";
+import ChatLayout from "../pages/chat/ChatLayout";
 import VerificationWizard from '../pages/VerificationWizard';
 
 
@@ -28,8 +30,9 @@ function ProtectedRoutes() {
       
       {/* 2. Add the new routes here: */}
       <Route path="/dashboard" element={<MatchFeed />} />
-      <Route path="/messages" element={<ChatList />} />
+      {/* <Route path="/messages" element={<ChatList />} /> */}
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/messages" element={<ChatLayout />} />
       
       
       
