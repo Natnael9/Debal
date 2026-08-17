@@ -74,15 +74,15 @@ export const teamUpSchema = z.object({
 
 // Full ordered list of step keys. "teamUp" is filtered out at runtime
 // (see QuestionnaireContext) unless housingStatus === 'needs_room'.
-export const STEP_ORDER = ["basicInfo", "budget", "location", "lifestyle", "photo", "teamUp"];
+export const STEP_ORDER = ["basicInfo", "budget", "location", "lifestyle", "teamUp", "photo"];
 
 export const STEP_LABELS = {
   basicInfo: "Basic Info",
   budget: "Budget",
   location: "Location",
   lifestyle: "Lifestyle",
-  photo: "Photo",
   teamUp: "Team Up",
+  photo: "Photo",
 };
 
 // Full payload schema (for the final submit)

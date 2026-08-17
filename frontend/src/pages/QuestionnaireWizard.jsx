@@ -6,8 +6,8 @@ import Step1BasicInfo from "../components/questionnaire/Step1BasicInfo";
 import Step2Budget from "../components/questionnaire/Step2Budget";
 import Step3Location from "../components/questionnaire/Step3Location";
 import Step4Lifestyle from "../components/questionnaire/Step4Lifestyle";
-import Step5Photos from "../components/questionnaire/Step5Photos";
 import Step6TeamUp from "../components/questionnaire/Step6TeamUp";
+import Step5Photos from "../components/questionnaire/Step5Photos";
 
 function QuestionnaireWizardInner() {
   const navigate = useNavigate();
@@ -18,7 +18,6 @@ function QuestionnaireWizardInner() {
     steps,
     stepIndex,
     currentStepKey,
-    isFinalStep,
     formData,
     saveStepData,
     goNext,
@@ -61,33 +60,49 @@ function QuestionnaireWizardInner() {
         />
 
         {submitError && (
-          <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{submitError}</p>
+          <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {submitError}
+          </p>
         )}
 
         {currentStepKey === "basicInfo" && (
           <Step1BasicInfo defaultValues={formData} onNext={handleStepNext} />
         )}
+
         {currentStepKey === "budget" && (
-          <Step2Budget defaultValues={formData} onNext={handleStepNext} onBack={goBack} />
-        )}
-        {currentStepKey === "location" && (
-          <Step3Location defaultValues={formData} onNext={handleStepNext} onBack={goBack} />
-        )}
-        {currentStepKey === "lifestyle" && (
-          <Step4Lifestyle defaultValues={formData} onNext={handleStepNext} onBack={goBack} />
-        )}
-        {currentStepKey === "photo" && (
-          <Step5Photos
+          <Step2Budget
             defaultValues={formData}
             onNext={handleStepNext}
-            onFinish={handleFinalSubmit}
             onBack={goBack}
-            isFinalStep={isFinalStep}
-            isSubmitting={isSubmitting}
           />
         )}
+
+        {currentStepKey === "location" && (
+          <Step3Location
+            defaultValues={formData}
+            onNext={handleStepNext}
+            onBack={goBack}
+          />
+        )}
+
+        {currentStepKey === "lifestyle" && (
+          <Step4Lifestyle
+            defaultValues={formData}
+            onNext={handleStepNext}
+            onBack={goBack}
+          />
+        )}
+
         {currentStepKey === "teamUp" && (
           <Step6TeamUp
+            defaultValues={formData}
+            onNext={handleStepNext}
+            onBack={goBack}
+          />
+        )}
+
+        {currentStepKey === "photo" && (
+          <Step5Photos
             defaultValues={formData}
             onFinish={handleFinalSubmit}
             onBack={goBack}

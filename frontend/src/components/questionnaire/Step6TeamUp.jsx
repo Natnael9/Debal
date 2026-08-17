@@ -3,22 +3,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { teamUpSchema } from "../../schemas/questionnaireSchema";
 
 // FR-3.7: opt-in toggle, only rendered when housingStatus === 'needs_room'.
-// Always the final step when shown, so it always submits the questionnaire.
-function Step6TeamUp({ defaultValues, onFinish, onBack, isSubmitting }) {
-  const {
-    register,
-    handleSubmit,
-    watch,
-  } = useForm({
+// Photos is now the final step, so this hands off with onNext.
+function Step6TeamUp({ defaultValues, onNext, onBack }) {
+  const { register, handleSubmit, watch } = useForm({
     resolver: zodResolver(teamUpSchema),
-    defaultValues: {
-      teamUp: defaultValues?.teamUp ?? false,
-    },
+    defaultValues: { teamUp: defaultValues?.teamUp ?? false },
   });
 
   const teamUp = watch("teamUp");
-
-  const onSubmit = (data) => onFinish(data);
+  const onSubmit = (data) => onNext(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -63,10 +56,9 @@ function Step6TeamUp({ defaultValues, onFinish, onBack, isSubmitting }) {
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="rounded-lg bg-blue-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-60"
+          className="rounded-lg bg-blue-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
-          {isSubmitting ? "Submitting…" : "Finish"}
+          Continue
         </button>
       </div>
     </form>
