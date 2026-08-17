@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
+import MeetupCard from "../../components/chat/MeetupCard";
 
 const INITIAL_CHATS = [
   {
@@ -140,7 +141,7 @@ function ChatLayout() {
 
   return (
     // CHANGE HERE: Added 'top-14' (or adjust as needed, e.g. top-16/top-12) to give the entire mobile view a top margin/offset without triggering page bounce
-    <div className="fixed inset-x-0 bottom-0 top-0 flex h-screen w-full  justify-center overflow-hidden bg-slate-100 p-0 md:static md:top-auto md:min-h-screen md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
+    <div className="fixed inset-x-0 bottom-0 top-0 flex gap-6 h-screen w-full  justify-center overflow-hidden bg-slate-100 p-0 md:static md:top-auto md:min-h-screen md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
       
       {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
@@ -174,7 +175,17 @@ function ChatLayout() {
           onOpenSidebar={() => setIsSidebarOpen(true)}
         />
       </div>
+      <MeetupCard
+        proposedBy="Sarah"
+        date="Saturday, August 22"
+        time="3:00 PM"
+        location="Bole, Addis Ababa"
+        note="Let's meet for coffee!"
+        onAccept={() => console.log("Meetup accepted")}
+        onDecline={() => console.log("Meetup declined")}
+/>
     </div>
+    
   );
 }
 
