@@ -36,10 +36,13 @@ export async function connectRedis() {
     console.error('[redis] connection error:', err.message);
   });
 
-  await redisClient.connect();
-  await redisClient.ping();
-
-  console.log('[redis] connected');
+  try {
+    await redisClient.connect();
+    await redisClient.ping();
+    console.log('[redis] connected');
+  } catch (err) {
+    console.warn(`[redis] Warning: Failed to connect to Redis (${err.message}). Continuing without Redis.`);
+  }
 
   return redisClient;
 }
