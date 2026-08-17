@@ -1,6 +1,8 @@
 import MessageBubble from "./MessageBubble";
+import TypingIndicator from "./TypingIndicator";
 
-function MessageList({ messages, currentUserId }) {
+function MessageList({ messages, currentUserId, isTyping = false,}) {
+  
   return (
     <div className="flex-1 space-y-3.5 overflow-y-auto bg-slate-50/40 p-3.5 sm:p-4">
       {messages.length === 0 ? (
@@ -8,14 +10,20 @@ function MessageList({ messages, currentUserId }) {
           <p className="text-[11px] text-gray-400">No messages yet. Say hello!</p>
         </div>
       ) : (
-        messages.map((message) => (
+
+        <>
+        {messages.map((message) => (
           <MessageBubble
             key={message.id}
             message={message}
             isOwn={message.senderId === currentUserId}
           />
-        ))
+        ))}
+
+        {isTyping && <TypingIndicator />}
+        </>
       )}
+       
     </div>
   );
 }
