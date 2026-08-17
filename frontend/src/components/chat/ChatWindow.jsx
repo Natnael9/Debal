@@ -60,7 +60,9 @@ function ChatWindow({ chat, onSendMessage, onOpenSidebar }) {
       <MessageList messages={chat.messages} currentUserId={currentUserId} isTyping={isTyping}/>
 
       {/* Input */}
-      <MessageInput onSend={onSendMessage} />
+      <MessageInput onSend={onSendMessage} onTyping={() => setIsTyping(true)} 
+      onStopTyping={() => setIsTyping(false)} />
+      
     </div>
   );
 }
