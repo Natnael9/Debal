@@ -1,17 +1,46 @@
-import { useState } from "react";
+import { useState , useRef} from "react";
 
-function MessageInput({ onSend }) {
+function MessageInput({ onSend, onTyping, onStopTyping }) {
   const [message, setMessage] = useState("");
+  const typingTimeout = useRef(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
 
-    const trimmedMessage = message.trim();
-    if (!trimmedMessage) return;
+  const handleChange = (e) => {
+  const value = e.target.value;
 
-    onSend(trimmedMessage);
-    setMessage("");
+    setMessage(value);
+
+    if (!value.trim()) {
+      onStopTyping?.();
+      return;
+    }
+
+    onTyping?.();
+
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+
+    typingTimeout.current = setTimeout(() => {
+      onStopTyping?.();
+    }, 1000);
   };
+
+ const handleSubmit = (e) => {
+  e.preventDefault();
+
+      const trimmedMessage = message.trim();
+      if (!trimmedMessage) return;
+
+      onSend(trimmedMessage);
+
+      setMessage("");
+      onStopTyping?.();
+
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+};
 
   return (
     <div className="bg-transparent p-0 sm:mb-0">
@@ -30,7 +59,7 @@ function MessageInput({ onSend }) {
         <input
           type="text"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleChange}
           placeholder="Type a message..."
           className="flex-1 bg-transparent px-2 py-1.5 text-sm text-gray-800 placeholder-gray-400 outline-none"
         />
