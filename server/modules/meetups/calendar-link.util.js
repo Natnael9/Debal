@@ -1,18 +1,22 @@
- function buildCalendarLink({ date, time, locationNote }) {
+export function buildCalendarLink({ date, time, locationNote }) {
   const [hourStr = '12', minuteStr = '00'] = (time || '').split(':');
-  const hour = hourStr.padStart(2, '0');
+  const hour = parseInt(hourStr, 10);
   const minute = minuteStr.padStart(2, '0');
   const dateCompact = date.replace(/-/g, '');
 
-  const start = `${dateCompact}T${hour}${minute}00`;
+  const startHourStr = String(hour).padStart(2, '0');
+  const start = `${dateCompact}T${startHourStr}${minute}00`;
 
-
-  let endHour = parseInt(hour, 10) + 1;
+  let endHour = hour + 1;
   let endDateCompact = dateCompact;
   if (endHour >= 24) {
-
+    endHour = endHour - 24;
+    const d = new Date(date);
+    d.setDate(d.getDate() + 1);
+    endDateCompact = d.toISOString().slice(0, 10).replace(/-/g, '');
   }
-  const end = `${endDateCompact}T${String(endHour).padStart(2, '0')}${minute}00`;
+  const endHourStr = String(endHour).padStart(2, '0');
+  const end = `${endDateCompact}T${endHourStr}${minute}00`;
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',

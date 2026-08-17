@@ -18,9 +18,9 @@ export async function proposeMeetupHandler(request, reply) {
   }
 
   try {
-    const meetup = await proposeMeetup(matchId, request.user._id, { date, time, locationNote });
+    const { meetup, otherUserId } = await proposeMeetup(matchId, request.user._id, { date, time, locationNote });
 
-    await pushMeetupUpdate(matchId, request.user._id, meetup);
+    await pushMeetupUpdate(matchId, request.user._id, meetup, otherUserId);
 
     return reply.status(201).send({ success: true, data: { meetup } });
   } catch (err) {
@@ -47,7 +47,7 @@ export async function respondToMeetupHandler(request, reply) {
   try {
     const { meetup, otherUserId } = await respondToMeetup(id, request.user._id, action);
 
-    await pushMeetupUpdate(meetup.matchId, request.user._id, meetup);
+    await pushMeetupUpdate(meetup.matchId, request.user._id, meetup, otherUserId);
 
     return reply.send({ success: true, data: { meetup } });
   } catch (err) {
@@ -84,10 +84,19 @@ export async function getCalendarLinkHandler(request, reply) {
   }
 }
 
-async function pushMeetupUpdate(matchId, actingUserId, meetup) {
-  const io = getIO();
-  io.to(`match:${matchId}`).emit('chat:meetup_update', { matchId, meetup });
+async function pushMeetupUpdate(matchId, actingUserId, meetup, otherUserId) {
+  try {
+    const io = getIO();
+    io.to(`match:${matchId}`).emit('chat:meetup_update', { matchId, meetup });
 
-  const redis = getRedisClient();
-
+    if (otherUserId) {
+      const redis = getRedisClient();
+      await redis.publish(
+        `user:${otherUserId.toString()}`,
+        JSON.stringify({ event: 'chat:meetup_update', data: { matchId, meetup } })
+      );
+    }
+  } catch (err) {
+    console.error('[meetups] Error pushing meetup update:', err);
+  }
 }

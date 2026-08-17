@@ -27,7 +27,7 @@ const meetupSchema = new Schema({
     },
     status:{
         type:String,
-        emum:[
+        enum:[
             'proposed','accepted','declined', 'rescheduled'
         ],
         default:'proposed'

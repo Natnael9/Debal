@@ -2,7 +2,8 @@ import { Meetup } from './meetups.model.js';
 import { assertUserInMatch, getOtherParticipant } from '../chat/chat.service.js';
 
 export async function proposeMeetup(matchId, proposedBy, { date, time, locationNote }) {
-  await assertUserInMatch(proposedBy, matchId); // reuses the same guard from chat
+  const match = await assertUserInMatch(proposedBy, matchId); // reuses the same guard from chat
+  const otherUserId = getOtherParticipant(match, proposedBy);
 
   const meetup = await Meetup.create({
     matchId,
@@ -13,7 +14,7 @@ export async function proposeMeetup(matchId, proposedBy, { date, time, locationN
     status: 'proposed',
   });
 
-  return meetup;
+  return { meetup, otherUserId };
 }
 
 export async function respondToMeetup(meetupId, userId, action) {
