@@ -24,5 +24,8 @@
   },
   "devDependencies": {
     "socket.io-client": "^4.8.3"
+  },
+  "allowScripts": {
+    "@tensorflow/tfjs-node@4.22.0": true
   }
 }
