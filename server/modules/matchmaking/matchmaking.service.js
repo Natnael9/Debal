@@ -54,6 +54,15 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
  * Send a chat request to a candidate (FR-7.1, FR-7.2, FR-7.6).
  */
 async function sendMatchRequest(fromUser, toUserId, message) {
+
+  if (!fromUser.questionnaireCompleted) {
+    throw new MatchmakingError('Complete the onboarding questionnaire first.', 403);
+  }
+  
+  if (fromUser.verificationStatus !== 'verified') {
+    throw new MatchmakingError('Identity verification is required to send match requests.', 403);
+  }
+
   if (fromUser._id.toString() === toUserId.toString()) {
     throw new MatchmakingError('You cannot send a request to yourself.', 400);
   }
@@ -69,7 +78,7 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     ],
 
   });
-  
+
   if (alreadyMatched) {
     throw new MatchmakingError('You are already matched with this user.', 409);
   }
