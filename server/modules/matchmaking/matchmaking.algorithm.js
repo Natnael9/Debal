@@ -23,7 +23,7 @@ async function getCandidatePoolA(user) {
     questionnaireCompleted: true,
     verificationStatus: 'verified',
     suspended: false,
-    'location.coordinates': {
+    location: {
       $nearSphere: {
         $geometry: user.location,
         $maxDistance: user.maxDistance * 1000, // km -> meters
