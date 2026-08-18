@@ -35,6 +35,7 @@ const INITIAL_CHATS = [
       },
     ],
   },
+
   {
     id: "2",
     name: "Sara Kebede",
@@ -67,6 +68,7 @@ const INITIAL_CHATS = [
       },
     ],
   },
+
   {
     id: "3",
     name: "Dawit Mengistu",
@@ -93,6 +95,7 @@ const INITIAL_CHATS = [
       },
     ],
   },
+
   {
     id: "4",
     name: "Helen Tadesse",
@@ -116,13 +119,28 @@ const INITIAL_CHATS = [
 
 function ChatLayout() {
   const [chats, setChats] = useState(INITIAL_CHATS);
+
   const [activeChatId, setActiveChatId] = useState("1");
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [isMeetupOpen, setIsMeetupOpen] = useState(false);
+
+  /*
+   * Meetup confirmation action.
+   *
+   * null      = no confirmation prompt
+   * "accept"  = asking user to confirm acceptance
+   * "decline" = asking user to confirm decline
+   */
+  const [meetupAction, setMeetupAction] = useState(null);
 
   const activeChat =
     chats.find((chat) => chat.id === activeChatId) || chats[0];
 
+  /* =====================================================
+     SEND MESSAGE
+  ====================================================== */
   const handleSendMessage = (content) => {
     const newMessage = {
       id: Date.now().toString(),
@@ -144,26 +162,94 @@ function ChatLayout() {
             messages: [...chat.messages, newMessage],
           };
         }
+
         return chat;
       })
     );
   };
 
+  /* =====================================================
+     SELECT CHAT
+  ====================================================== */
   const handleSelectChat = (chatId) => {
     setActiveChatId(chatId);
     setIsSidebarOpen(false);
 
     setChats((prevChats) =>
       prevChats.map((chat) =>
-        chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+        chat.id === chatId
+          ? {
+              ...chat,
+              unreadCount: 0,
+            }
+          : chat
       )
     );
+  };
+
+  /* =====================================================
+     ACCEPT MEETUP
+  ====================================================== */
+  const handleAcceptMeetup = () => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === activeChatId
+          ? {
+              ...chat,
+              meetup: {
+                ...chat.meetup,
+                status: "confirmed",
+              },
+            }
+          : chat
+      )
+    );
+
+    // Close confirmation prompt
+    setMeetupAction(null);
+
+    // Close mobile meetup modal
+    setIsMeetupOpen(false);
+  };
+
+  /* =====================================================
+     DECLINE MEETUP
+  ====================================================== */
+  const handleDeclineMeetup = () => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === activeChatId
+          ? {
+              ...chat,
+              meetup: {
+                ...chat.meetup,
+                status: "declined",
+              },
+            }
+          : chat
+      )
+    );
+
+    // Close confirmation prompt
+    setMeetupAction(null);
+
+    // Close mobile meetup modal
+    setIsMeetupOpen(false);
+  };
+
+  /* =====================================================
+     CANCEL MEETUP ACTION
+  ====================================================== */
+  const handleCancelMeetupAction = () => {
+    setMeetupAction(null);
   };
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 flex h-[calc(100dvh-3.5rem)] w-full justify-center overflow-hidden bg-slate-100 p-0 sm:top-20 md:static md:top-auto md:min-h-[calc(100vh-80px)] md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
 
-      {/* MOBILE SIDEBAR OVERLAY */}
+      {/* =====================================================
+          MOBILE SIDEBAR OVERLAY
+      ====================================================== */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
@@ -171,13 +257,19 @@ function ChatLayout() {
         />
       )}
 
-      {/* MAIN FRAME */}
+      {/* =====================================================
+          MAIN FRAME
+      ====================================================== */}
       <div className="relative flex h-full w-full max-w-[1400px] gap-0 overflow-hidden md:h-[80vh] md:gap-3 md:overflow-visible">
 
-        {/* 1. CHAT LIST (Balanced width: 280px) */}
+        {/* =====================================================
+            1. CHAT LIST
+        ====================================================== */}
         <div
           className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[280px] md:shrink-0 md:translate-x-0 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            isSidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
           }`}
         >
           <ChatList
@@ -188,10 +280,10 @@ function ChatLayout() {
           />
         </div>
 
-        {/* 2. CHAT WINDOW */}
-        <div className="flex flex-1 min-w-0 h-[87vh] sm:h-[80vh] mt-6 sm:mt-0">
-
-
+        {/* =====================================================
+            2. CHAT WINDOW
+        ====================================================== */}
+        <div className="mt-6 flex h-[87vh] min-w-0 flex-1 sm:mt-0 sm:h-[80vh]">
           <ChatWindow
             chat={activeChat}
             onSendMessage={handleSendMessage}
@@ -200,58 +292,56 @@ function ChatLayout() {
           />
         </div>
 
-        {/* 3. DESKTOP MEETUP PANEL (Compact 290px container with centered items) */}
-        <aside className=" sm:h-[80vh] hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:flex">
+        {/* =====================================================
+            3. DESKTOP MEETUP PANEL
+        ====================================================== */}
+        <aside className="hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:h-[80vh] md:flex">
+
+          {/* Panel Header */}
           <div className="mb-3 flex w-full flex-col items-center border-b border-gray-100 pb-2.5 text-center">
             <h2 className="text-xs font-bold leading-tight text-gray-900">
               Meetups
             </h2>
-            <p className="mt-0.5 text-[9px] text-gray-400 leading-none">
+
+            <p className="mt-0.5 text-[9px] leading-none text-gray-400">
               Meetup proposals with {activeChat.name}
             </p>
           </div>
 
+          {/* Meetup Card */}
           <MeetupCard
             {...activeChat.meetup}
             onAccept={() => {
-              setChats((prevChats) =>
-                prevChats.map((chat) =>
-                  chat.id === activeChatId
-                    ? {
-                        ...chat,
-                        meetup: { ...chat.meetup, status: "confirmed" },
-                      }
-                    : chat
-                )
-              );
+              setMeetupAction("accept");
             }}
             onDecline={() => {
-              setChats((prevChats) =>
-                prevChats.map((chat) =>
-                  chat.id === activeChatId
-                    ? {
-                        ...chat,
-                        meetup: { ...chat.meetup, status: "declined" },
-                      }
-                    : chat
-                )
-              );
+              setMeetupAction("decline");
             }}
           />
         </aside>
       </div>
 
-      {/* MOBILE MEETUP MODAL */}
+      {/* =====================================================
+          MOBILE MEETUP MODAL
+      ====================================================== */}
       {isMeetupOpen && (
         <>
+          {/* Overlay */}
           <div
             onClick={() => setIsMeetupOpen(false)}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
           />
+
+          {/* Modal */}
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:hidden">
-            <div className="relative flex flex-col items-center max-h-[90vh] w-full max-w-[280px] overflow-y-auto rounded-3xl bg-white p-3.5 shadow-2xl">
+            <div className="relative flex max-h-[90vh] w-full max-w-[280px] flex-col items-center overflow-y-auto rounded-3xl bg-white p-3.5 shadow-2xl">
+
+              {/* Header */}
               <div className="mb-2 flex w-full items-center justify-between">
-                <h3 className="text-xs font-bold text-gray-900">Meetup Details</h3>
+                <h3 className="text-xs font-bold text-gray-900">
+                  Meetup Details
+                </h3>
+
                 <button
                   type="button"
                   onClick={() => setIsMeetupOpen(false)}
@@ -261,35 +351,138 @@ function ChatLayout() {
                 </button>
               </div>
 
+              {/* Meetup Card */}
               <MeetupCard
                 {...activeChat.meetup}
                 onAccept={() => {
-                  setChats((prevChats) =>
-                    prevChats.map((chat) =>
-                      chat.id === activeChatId
-                        ? {
-                            ...chat,
-                            meetup: { ...chat.meetup, status: "confirmed" },
-                          }
-                        : chat
-                    )
-                  );
-                  setIsMeetupOpen(false);
+                  setMeetupAction("accept");
                 }}
                 onDecline={() => {
-                  setChats((prevChats) =>
-                    prevChats.map((chat) =>
-                      chat.id === activeChatId
-                        ? {
-                            ...chat,
-                            meetup: { ...chat.meetup, status: "declined" },
-                          }
-                        : chat
-                    )
-                  );
-                  setIsMeetupOpen(false);
+                  setMeetupAction("decline");
                 }}
               />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* =====================================================
+          MEETUP CONFIRMATION PROMPT
+      ====================================================== */}
+      {meetupAction && (
+        <>
+          {/* Confirmation overlay */}
+          <div
+            onClick={handleCancelMeetupAction}
+            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
+          />
+
+          {/* Confirmation dialog */}
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+
+            <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl">
+
+              {/* Icon */}
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                  meetupAction === "accept"
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "bg-rose-50 text-rose-600"
+                }`}
+              >
+                {meetupAction === "accept" ? (
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="m5 12 4 4L19 6"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18 18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
+              </div>
+
+              {/* Title */}
+              <h2 className="mt-4 text-base font-bold text-gray-900">
+                {meetupAction === "accept"
+                  ? "Accept this meetup?"
+                  : "Decline this meetup?"}
+              </h2>
+
+              {/* Description */}
+              <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                {meetupAction === "accept"
+                  ? `Are you sure you want to accept the meetup with ${activeChat.meetup?.proposedBy || activeChat.name}?`
+                  : `Are you sure you want to decline the meetup with ${activeChat.meetup?.proposedBy || activeChat.name}?`}
+              </p>
+
+              {/* Meetup summary */}
+              {activeChat.meetup?.status === "pending" && (
+                <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                  <p className="text-xs font-semibold text-gray-800">
+                    {activeChat.meetup.date}
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {activeChat.meetup.time}
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {activeChat.meetup.location}
+                  </p>
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="mt-5 flex gap-2">
+
+                {/* Cancel */}
+                <button
+                  type="button"
+                  onClick={handleCancelMeetupAction}
+                  className="flex-1 rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                {/* Confirm */}
+                <button
+                  type="button"
+                  onClick={
+                    meetupAction === "accept"
+                      ? handleAcceptMeetup
+                      : handleDeclineMeetup
+                  }
+                  className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition ${
+                    meetupAction === "accept"
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-rose-600 hover:bg-rose-700"
+                  }`}
+                >
+                  {meetupAction === "accept"
+                    ? "Accept"
+                    : "Decline"}
+                </button>
+              </div>
             </div>
           </div>
         </>
