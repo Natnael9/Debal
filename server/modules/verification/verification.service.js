@@ -1,9 +1,10 @@
 import { User } from '../users/users.model.js';
 import { FaydaSimulatedRecord } from './fayda-simulated.model.js';
 import { VerificationRequest } from './verification.model.js';
-import { hashIdNumber, encryptIdentity } from './encryption.util.js';
+import { hashIdNumber, encryptIdentity, decryptIdentity } from './encryption.util.js';
 import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
 import { sendVerificationOtpEmail } from '../notifications/email.util.js';
+import { logAdminAction } from '../admin/admin-action.service.js';
 
 function sameDay(dateA, dateB) {
   return new Date(dateA).toDateString() === new Date(dateB).toDateString();
@@ -96,4 +97,62 @@ export async function confirmOtp(userId, otp) {
   });
 
   return { verified: true };
+}
+
+
+export async function listPendingReview() {
+  return VerificationRequest.find({ result: 'pending_review' }).sort({ submittedAt: 1 });
+}
+
+export async function getVerificationDetail(verificationRequestId) {
+  const verificationRequest = await VerificationRequest.findById(verificationRequestId);
+  if (!verificationRequest) {
+    const err = new Error('Verification request not found');
+    err.code = 'VERIFICATION_NOT_FOUND';
+    throw err;
+  }
+
+  const decrypted = decryptIdentity(verificationRequest.identityEncrypted);
+  const { name, dateOfBirth } = JSON.parse(decrypted);
+
+  const obj = verificationRequest.toObject();
+  delete obj.identityEncrypted; // never send ciphertext to the client
+
+  return { ...obj, identity: { name, dateOfBirth } }; // decrypted — this endpoint is requireAdmin-gated
+}
+
+export async function decideVerification(verificationRequestId, adminId, { decision, notes }) {
+  const verificationRequest = await VerificationRequest.findById(verificationRequestId);
+  if (!verificationRequest) {
+    const err = new Error('Verification request not found');
+    err.code = 'VERIFICATION_NOT_FOUND';
+    throw err;
+  }
+
+  verificationRequest.reviewedBy = adminId;
+  verificationRequest.reviewNotes = notes;
+  verificationRequest.resolvedAt = new Date();
+
+  if (decision === 'approve') {
+    verificationRequest.result = 'matched';
+    await User.findByIdAndUpdate(verificationRequest.userId, {
+      verificationStatus: 'verified',
+      verifiedAt: new Date(),
+    });
+  } else {
+    verificationRequest.result = 'no_match';
+    verificationRequest.rejectionReason = notes || 'Rejected by admin review';
+    await User.findByIdAndUpdate(verificationRequest.userId, { verificationStatus: 'rejected' });
+  }
+
+  await verificationRequest.save();
+
+  await logAdminAction({
+    adminId,
+    action: decision === 'approve' ? 'approve_verification' : 'reject_verification',
+    targetUserId: verificationRequest.userId,
+    notes,
+  });
+
+  return verificationRequest;
 }
