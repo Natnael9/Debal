@@ -9,6 +9,7 @@ import MatchFeed from "../pages/Dashboard";
 import ChatLayout from "../pages/chat/ChatLayout";
 import VerificationWizard from '../pages/VerificationWizard';
 import SettingsPage from '../pages/SettingsPage';
+import BookmarksPage from "../pages/BookmarksPage";
 
 
 
@@ -35,6 +36,7 @@ function ProtectedRoutes() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/messages" element={<ChatLayout />} />
       <Route path="/settings" element={<SettingsPage />} />
+      
       
       
       
