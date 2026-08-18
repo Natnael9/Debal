@@ -1,0 +1,234 @@
+import { useEffect, useRef, useState } from "react";
+import MessageList from "./MessageList";
+import MessageInput from "./MessageInput";
+
+function ChatWindow({
+  chat,
+  onSendMessage,
+  onOpenSidebar,
+  onOpenMeetups,
+}) {
+  const currentUserId = "current-user";
+  const [isTyping, setIsTyping] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  const actionsRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        actionsRef.current &&
+        !actionsRef.current.contains(event.target)
+      ) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-1 h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-none border-0 bg-white shadow-none md:rounded-3xl md:border md:border-gray-100 md:shadow-sm">
+
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-3">
+
+        <div className="flex items-center gap-2.5">
+          {/* Mobile Drawer Opener */}
+          <button
+            onClick={onOpenSidebar}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition hover:bg-gray-200 md:hidden"
+            aria-label="Open chat list"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+
+          {/* Avatar */}
+          <div className="relative">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
+              {chat.avatarText}
+            </div>
+
+            {chat.isOnline && (
+              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
+            )}
+          </div>
+
+          {/* User Info */}
+          <div>
+            <h1 className="text-xs font-bold leading-tight text-gray-800">
+              {chat.name}
+            </h1>
+
+            <p className="text-[10px] text-gray-400 leading-none">
+              {chat.subtitle} • {chat.isOnline ? "Online" : "Offline"}
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 text-gray-400">
+          <button className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-gray-100 hover:text-gray-600">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a2 2 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+              />
+            </svg>
+          </button>
+
+          {/* Three Dots Menu */}
+          <div ref={actionsRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowActions((prev) => !prev)}
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
+                showActions
+                  ? "bg-gray-100 text-gray-800"
+                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              }`}
+              aria-label="Chat actions"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </button>
+
+            {showActions && (
+              <div className="absolute right-0 top-8 z-50 w-44 origin-top-right rounded-2xl border border-gray-100 bg-white p-1.5 shadow-xl shadow-slate-200/60 ring-1 ring-black/5 focus:outline-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActions(false);
+                    onOpenMeetups();
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-900"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-900 group-hover:bg-white">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5v12a2 2 0 002 2h14a2 2 0 002-2V7"
+                      />
+                    </svg>
+                  </div>
+                  <span>Show Meetups</span>
+                </button>
+
+                <div className="my-1 border-t border-gray-100" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("Report user");
+                    setShowActions(false);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-600 transition hover:bg-amber-50 hover:text-amber-700"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 text-gray-400 group-hover:bg-amber-100 group-hover:text-amber-700">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <span>Report</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("Block user");
+                    setShowActions(false);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50/70 text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-700">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                      />
+                    </svg>
+                  </div>
+                  <span>Block User</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <MessageList
+        messages={chat.messages}
+        currentUserId={currentUserId}
+        isTyping={isTyping}
+      />
+
+      {/* Input */}
+      <MessageInput
+        onSend={onSendMessage}
+        onTyping={() => setIsTyping(true)}
+        onStopTyping={() => setIsTyping(false)}
+      />
+    </div>
+  );
+}
+
+export default ChatWindow;
