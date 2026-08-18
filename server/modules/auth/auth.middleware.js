@@ -1,4 +1,4 @@
-import { verifyAccessToken } from './jwt.utils.js';
+import { verifyAccessToken } from '../../shared/utils/jwt.util.js';
 import User from '../users/users.model.js';
 
 export async function authMiddleware(request, reply) {
@@ -36,7 +36,11 @@ export async function authMiddleware(request, reply) {
   const user = await User.findById(payload.sub);
 
   if (!user) {
-    return reply.status(401).send({ success: false, error: 'USER_NOT_FOUND' });
+    return reply.status(401).send({
+      success: false,
+      error: 'USER_NOT_FOUND',
+      message: 'The user for this token no longer exists',
+    });
   }
 
   if (user.suspended) {
