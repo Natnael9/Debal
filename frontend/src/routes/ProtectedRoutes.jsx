@@ -12,9 +12,6 @@ import SettingsPage from '../pages/SettingsPage';
 import BookmarksPage from "../pages/BookmarksPage";
 
 
-
-
-
 function ProtectedRoutes() {
   // 1. Change user from null to this object:
   const user = { questionnaireCompleted: true }; 
@@ -36,9 +33,6 @@ function ProtectedRoutes() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/messages" element={<ChatLayout />} />
       <Route path="/settings" element={<SettingsPage />} />
-      
-      
-      
       
       
       
