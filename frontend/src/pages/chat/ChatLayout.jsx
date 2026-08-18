@@ -13,6 +13,7 @@ const INITIAL_CHATS = [
     lastMessage: "Yes! Still looking for a spot ne...",
     time: "09:24 AM",
     unreadCount: 0,
+    meetup: { status: "none" },
     messages: [
       {
         id: "m1",
@@ -43,6 +44,14 @@ const INITIAL_CHATS = [
     lastMessage: "Is the master bedroom still a...",
     time: "Yesterday",
     unreadCount: 2,
+    meetup: {
+      status: "pending",
+      proposedBy: "Sara Kebede",
+      date: "August 22, 2026",
+      time: "3:00 PM",
+      location: "Bole, Addis Ababa",
+      note: "Let's meet for coffee!",
+    },
     messages: [
       {
         id: "m4",
@@ -67,6 +76,14 @@ const INITIAL_CHATS = [
     lastMessage: "Sent you the lease terms draft.",
     time: "Nov 12",
     unreadCount: 0,
+    meetup: {
+      status: "pending",
+      proposedBy: "Dawit Mengistu",
+      date: "August 24, 2026",
+      time: "5:00 PM",
+      location: "Bole, Addis Ababa",
+      note: "Let's discuss the apartment.",
+    },
     messages: [
       {
         id: "m6",
@@ -85,6 +102,7 @@ const INITIAL_CHATS = [
     lastMessage: "Sounds great, let's meet this Sa...",
     time: "Nov 10",
     unreadCount: 0,
+    meetup: { status: "none" },
     messages: [
       {
         id: "m7",
@@ -153,12 +171,12 @@ function ChatLayout() {
         />
       )}
 
-      {/* MAIN FRAME: Decreased gap to md:gap-3 */}
-      <div className="relative flex h-full w-full max-w-[1520px] gap-0 overflow-hidden md:h-[580px] md:gap-3 md:overflow-visible">
+      {/* MAIN FRAME */}
+      <div className="relative flex h-full w-full max-w-[1400px] gap-0 overflow-hidden md:h-[80vh] md:gap-3 md:overflow-visible">
 
-        {/* 1. CHAT LIST (Width increased to 350px) */}
+        {/* 1. CHAT LIST (Balanced width: 280px) */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[350px] md:shrink-0 md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[280px] md:shrink-0 md:translate-x-0 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -171,7 +189,9 @@ function ChatLayout() {
         </div>
 
         {/* 2. CHAT WINDOW */}
-        <div className="flex flex-1 min-w-0 h-full">
+        <div className="flex flex-1 min-w-0 h-[87vh] sm:h-[80vh] mt-6 sm:mt-0">
+
+
           <ChatWindow
             chat={activeChat}
             onSendMessage={handleSendMessage}
@@ -180,29 +200,43 @@ function ChatLayout() {
           />
         </div>
 
-        {/* 3. DESKTOP MEETUP PANEL (Centered items) */}
-        <aside className="hidden w-[400px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-5 shadow-sm md:flex">
-
-          {/* Panel Header (Centered) */}
-          <div className="mb-4 flex w-full flex-col items-center border-b border-gray-100 pb-3 text-center">
-            <h2 className="text-sm font-bold leading-tight text-gray-900">
+        {/* 3. DESKTOP MEETUP PANEL (Compact 290px container with centered items) */}
+        <aside className=" sm:h-[80vh] hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:flex">
+          <div className="mb-3 flex w-full flex-col items-center border-b border-gray-100 pb-2.5 text-center">
+            <h2 className="text-xs font-bold leading-tight text-gray-900">
               Meetups
             </h2>
-            <p className="mt-1 text-xs text-gray-400 leading-none">
+            <p className="mt-0.5 text-[9px] text-gray-400 leading-none">
               Meetup proposals with {activeChat.name}
             </p>
           </div>
 
-          {/* Meetup Card Component */}
           <MeetupCard
-            proposedBy={activeChat.name}
-            date="August 22, 2026"
-            time="3:00 PM"
-            location="Bole, Addis Ababa"
-            note="Let's meet for coffee!"
-            status="confirmed"
-            onAccept={() => console.log("Meetup accepted")}
-            onDecline={() => console.log("Meetup declined")}
+            {...activeChat.meetup}
+            onAccept={() => {
+              setChats((prevChats) =>
+                prevChats.map((chat) =>
+                  chat.id === activeChatId
+                    ? {
+                        ...chat,
+                        meetup: { ...chat.meetup, status: "confirmed" },
+                      }
+                    : chat
+                )
+              );
+            }}
+            onDecline={() => {
+              setChats((prevChats) =>
+                prevChats.map((chat) =>
+                  chat.id === activeChatId
+                    ? {
+                        ...chat,
+                        meetup: { ...chat.meetup, status: "declined" },
+                      }
+                    : chat
+                )
+              );
+            }}
           />
         </aside>
       </div>
@@ -215,25 +249,46 @@ function ChatLayout() {
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
           />
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:hidden">
-            <div className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl">
-              <div className="mb-2 flex items-center justify-end">
+            <div className="relative flex flex-col items-center max-h-[90vh] w-full max-w-[280px] overflow-y-auto rounded-3xl bg-white p-3.5 shadow-2xl">
+              <div className="mb-2 flex w-full items-center justify-between">
+                <h3 className="text-xs font-bold text-gray-900">Meetup Details</h3>
                 <button
                   type="button"
                   onClick={() => setIsMeetupOpen(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-500 hover:bg-gray-200"
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-500 hover:bg-gray-200"
                 >
                   ✕
                 </button>
               </div>
+
               <MeetupCard
-                proposedBy={activeChat.name}
-                date="August 22, 2026"
-                time="3:00 PM"
-                location="Bole, Addis Ababa"
-                note="Let's meet for coffee!"
-                status="confirmed"
-                onAccept={() => console.log("Meetup accepted")}
-                onDecline={() => console.log("Meetup declined")}
+                {...activeChat.meetup}
+                onAccept={() => {
+                  setChats((prevChats) =>
+                    prevChats.map((chat) =>
+                      chat.id === activeChatId
+                        ? {
+                            ...chat,
+                            meetup: { ...chat.meetup, status: "confirmed" },
+                          }
+                        : chat
+                    )
+                  );
+                  setIsMeetupOpen(false);
+                }}
+                onDecline={() => {
+                  setChats((prevChats) =>
+                    prevChats.map((chat) =>
+                      chat.id === activeChatId
+                        ? {
+                            ...chat,
+                            meetup: { ...chat.meetup, status: "declined" },
+                          }
+                        : chat
+                    )
+                  );
+                  setIsMeetupOpen(false);
+                }}
               />
             </div>
           </div>
