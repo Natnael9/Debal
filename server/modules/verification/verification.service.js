@@ -4,7 +4,7 @@ import { VerificationRequest } from './verification.model.js';
 import { hashIdNumber, encryptIdentity, decryptIdentity } from './encryption.util.js';
 import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
 import { sendVerificationOtpEmail } from '../notifications/email.util.js';
-import { logAdminAction } from '../admin/admin-action.service.js';
+import { logAdminAction, logAdminRead } from '../admin/admin-action.service.js';
 
 function sameDay(dateA, dateB) {
   return new Date(dateA).toDateString() === new Date(dateB).toDateString();
@@ -100,10 +100,62 @@ export async function confirmOtp(userId, otp) {
 }
 
 
-export async function listPendingReview() {
-  return VerificationRequest.find({ result: 'pending_review' }).sort({ submittedAt: 1 });
+// ---------------------------------------------------------------------------
+// Admin queue (FR-2.7, FR-12.2, §13.3)
+// ---------------------------------------------------------------------------
+
+const VALID_STATUSES = ['matched', 'no_match', 'pending_review'];
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * List verification requests filtered by status.
+ *
+ * @param {object} opts
+ * @param {string}  [opts.status='pending_review'] - result field filter
+ * @param {number}  [opts.page=1]                  - 1-based page index
+ * @param {number}  [opts.limit=20]                - records per page (max 100)
+ * @param {string}  opts.adminId                   - JWT sub of the requesting admin (§13.3 audit)
+ */
+export async function listVerifications({ status = 'pending_review', page = 1, limit = DEFAULT_PAGE_SIZE, adminId } = {}) {
+  const resolvedStatus = VALID_STATUSES.includes(status) ? status : 'pending_review';
+  const resolvedLimit  = Math.min(Math.max(1, Number(limit)), MAX_PAGE_SIZE);
+  const resolvedPage   = Math.max(1, Number(page));
+  const skip           = (resolvedPage - 1) * resolvedLimit;
+
+  const [requests, total] = await Promise.all([
+    VerificationRequest
+      .find({ result: resolvedStatus })
+      .sort({ submittedAt: 1 })
+      .skip(skip)
+      .limit(resolvedLimit)
+      .lean(),
+    VerificationRequest.countDocuments({ result: resolvedStatus }),
+  ]);
+
+  // §13.3 — audit every admin access to the verification queue
+  await logAdminRead({
+    adminId,
+    action: 'list_verifications',
+    metadata: { status: resolvedStatus, page: resolvedPage, limit: resolvedLimit, resultCount: requests.length },
+  });
+
+  return {
+    requests,
+    pagination: {
+      total,
+      page: resolvedPage,
+      limit: resolvedLimit,
+      totalPages: Math.ceil(total / resolvedLimit),
+    },
+  };
 }
 
+/**
+ * Fetch a single verification request and return the decrypted identity.
+ * §13.3 — this is audit-logged at the *controller* layer so the adminId from
+ * the JWT is always available without threading it through every service call.
+ */
 export async function getVerificationDetail(verificationRequestId) {
   const verificationRequest = await VerificationRequest.findById(verificationRequestId);
   if (!verificationRequest) {
@@ -118,7 +170,7 @@ export async function getVerificationDetail(verificationRequestId) {
   const obj = verificationRequest.toObject();
   delete obj.identityEncrypted; // never send ciphertext to the client
 
-  return { ...obj, identity: { name, dateOfBirth } }; // decrypted — this endpoint is requireAdmin-gated
+  return { ...obj, identity: { name, dateOfBirth } }; // decrypted — requireAdmin-gated
 }
 
 export async function decideVerification(verificationRequestId, adminId, { decision, notes }) {
