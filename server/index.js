@@ -19,7 +19,7 @@ import verificationRoutes from './modules/verification/verification.routes.js';
 import { initChatGateway } from './modules/chat/chat.gateway.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import meetupsRoutes from './modules/meetups/meetups.routes.js';
-
+ import bookmarksRoutes from './modules/bookmarks/bookmarks.routes.js';
 const PORT = process.env.PORT || 4000;
 
 async function start() {
@@ -41,7 +41,8 @@ async function start() {
   await fastify.register(verificationRoutes);
   await fastify.register(chatRoutes);
   await fastify.register(meetupsRoutes);
-
+  await fastify.register(bookmarksRoutes);    
+  
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);
