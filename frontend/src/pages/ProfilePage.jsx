@@ -1,9 +1,17 @@
+import ProfileCompletionMeter from "../components/common/ProfileCompletionMeter";
+
 function ProfilePage() {
   return (
-    <div className="p-8 text-center">
-      <h1 className="text-2xl font-bold mb-4">User Profile</h1>
-      <p className="text-gray-600">Your personal details and settings will go here.</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow">
+        <h1 className="mb-6 text-2xl font-bold">
+          User Profile
+        </h1>
+
+        <ProfileCompletionMeter percentage={75} />
+      </div>
     </div>
   );
 }
+
 export default ProfilePage;
