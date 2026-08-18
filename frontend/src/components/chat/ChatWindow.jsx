@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
+import ReportModal from "./ReportModal";
+import BlockModal from "./BlockModal";
 
 function ChatWindow({
   chat,
@@ -11,6 +13,8 @@ function ChatWindow({
   const currentUserId = "current-user";
   const [isTyping, setIsTyping] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);      
 
   const actionsRef = useRef(null);
 
@@ -162,6 +166,7 @@ function ChatWindow({
                   onClick={() => {
                     console.log("Report user");
                     setShowActions(false);
+                    setShowReportModal(true);
                   }}
                   className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-600 transition hover:bg-amber-50 hover:text-amber-700"
                 >
@@ -188,6 +193,8 @@ function ChatWindow({
                   onClick={() => {
                     console.log("Block user");
                     setShowActions(false);
+                    setShowBlockModal(true);
+                    
                   }}
                   className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
                 >
@@ -227,6 +234,28 @@ function ChatWindow({
         onTyping={() => setIsTyping(true)}
         onStopTyping={() => setIsTyping(false)}
       />
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <ReportModal
+          user={{
+            id: chat.userId || chat.id,
+            name: chat.name,
+          }}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
+
+      {/* Block Modal */}
+      {showBlockModal && (
+        <BlockModal
+          user={{
+            id: chat.userId || chat.id,
+            name: chat.name,
+          }}
+          onClose={() => setShowBlockModal(false)}
+        />
+      )}
     </div>
   );
 }
