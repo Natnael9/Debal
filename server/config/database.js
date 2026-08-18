@@ -1,11 +1,4 @@
 import mongoose from 'mongoose';
-import dns from 'dns';
-
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) {
-  // Ignore DNS setServers error if environment restricts it
-}
 
 
 export async function connectDatabase() {
@@ -15,7 +8,7 @@ export async function connectDatabase() {
   mongoose.set('strictQuery', true);
 
   try {
-    await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 5000 });
+    await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 10000 });
     console.log('[db] Connected to primary MongoDB Atlas');
   } catch (err) {
     console.warn(`[db] Primary MongoDB connection failed (${err.message}). Attempting fallback: ${fallbackUri}`);
