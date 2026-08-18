@@ -1,11 +1,4 @@
 import Redis from 'ioredis';
-import dns from 'dns';
-
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) {
-  // Ignore DNS setServers error
-}
 
 let redisClient = null;
 
@@ -24,10 +17,9 @@ export async function connectRedis() {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
     connectTimeout: 20000,
-    family: 4,
+    keepAlive: 10000,
     retryStrategy: (times) => {
-      if (times > 5) return null; 
-      return Math.min(times * 500, 3000); 
+      return Math.min(times * 500, 3000);
     },
     ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
   });
@@ -55,7 +47,11 @@ export function getRedisClient() {
 }
 
 export async function isRedisHealthy() {
+  if (!redisClient) return false;
   try {
+    if (['end', 'close'].includes(redisClient.status)) {
+      await redisClient.connect();
+    }
     const pong = await redisClient.ping();
     return pong === 'PONG';
   } catch {
