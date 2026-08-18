@@ -5,7 +5,7 @@ import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import ActivityLog from '../components/admin/ActivityLog';
 import VerificationQueuePage from '../pages/admin/VerificationQueuePage';
 import PhotoReviewQueuePage from '../pages/admin/PhotoReviewQueuePage';
-import AdminDashboardPage from '../pages/admin/AdminDashboardPage'; // <-- Add this import
+import AdminDashboardPage from '../pages/admin/AdminDashboard'; 
 import AdminProtectedRoute from './AdminProtectedRoute';
 
 function AdminRoutes() {
@@ -14,7 +14,7 @@ function AdminRoutes() {
       <Route path="/login" element={<AdminLoginPage />} />
 
       <Route element={<AdminProtectedRoute />}>
-        {/* Replace the placeholder with your new page */}
+        
         <Route path="/dashboard" element={<AdminDashboardPage />} />
         
         <Route path="/activity" element={<ActivityLog />} />

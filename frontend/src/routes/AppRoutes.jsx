@@ -1,33 +1,25 @@
 import { Routes, Route } from "react-router-dom";
-
 import PublicRoutes from "./PublicRoutes";
 import QuestionnaireRoutes from "./QuestionnaireRoutes";
 import ProtectedRoutes from "./ProtectedRoutes";
 import AdminRoutes from "./AdminRoutes";
-import OAuthCallback from "../components/auth/OAuthCallback";
+import { AdminAuthProvider } from "../context/AdminAuthProvider";
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public application */}
       <Route path="/*" element={<PublicRoutes />} />
+      <Route path="/questionnaire/*" element={<QuestionnaireRoutes />} />
+      <Route path="/app/*" element={<ProtectedRoutes />} />
 
-      {/* Questionnaire / onboarding */}
-      <Route
-        path="/questionnaire/*"
-        element={<QuestionnaireRoutes />}
-      />
-
-      {/* Authenticated user application */}
-      <Route
-        path="/app/*"
-        element={<ProtectedRoutes />}
-      />
-
-      {/* Separate admin application */}
+      {/* This wrapper provides the useAdminAuth context */}
       <Route
         path="/admin/*"
-        element={<AdminRoutes />}
+        element={
+          <AdminAuthProvider>
+            <AdminRoutes />
+          </AdminAuthProvider>
+        }
       />
     </Routes>
   );
