@@ -1,4 +1,9 @@
-function ProfilePhoto({ photoUrl, name = "User" }) {
+import {
+  PHOTO_MODERATION_STATUS,
+  PHOTO_MODERATION_MESSAGES,
+  isPhotoHidden,
+} from "../../constants/photoModerationStatus";
+function ProfilePhoto({ photoUrl, name = "User", photoModerationStatus = PHOTO_MODERATION_STATUS.NONE }) {
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-bold text-gray-900">
@@ -7,7 +12,7 @@ function ProfilePhoto({ photoUrl, name = "User" }) {
 
             <div className="flex items-center gap-5">
                 <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-2xl font-bold text-[#2274A5]">
-                    {photoUrl ? (
+                    {photoUrl && !isPhotoHidden(photoModerationStatus) ? (
                         <img
                             src={photoUrl}
                             alt={`${name}'s profile`}
@@ -30,6 +35,12 @@ function ProfilePhoto({ photoUrl, name = "User" }) {
                     <p className="mt-2 text-xs text-gray-400">
                         Optional. Your photo may be reviewed before being displayed.
                     </p>
+                    {isPhotoHidden(photoModerationStatus) && (           
+                        <p className="mt-2 text-xs font-medium text-amber-600">
+                            {PHOTO_MODERATION_MESSAGES[photoModerationStatus]}
+                        </p>
+                    )}
+                    
                 </div>
             </div>
         </div>
