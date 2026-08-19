@@ -99,11 +99,26 @@ export function initChatGateway(httpServer) {
         }
 
         const match = await assertUserInMatch(userId, matchId);
+        const otherUserId = getOtherParticipant(match, userId).toString();
+
+        // --- NEW BLOCK CHECK LOGIC ---
+        // 1. Did the current user block the other person?
+        const hasBlocked = socket.user.blockedUsers?.some(id => id.toString() === otherUserId);
+        
+        // 2. Did the other person block the current user?
+        const otherUser = await User.findById(otherUserId);
+        const gotBlocked = otherUser?.blockedUsers?.some(id => id.toString() === userId);
+
+        // If either is true, prevent the message from being sent[cite: 4]
+        if (hasBlocked || gotBlocked) {
+          return callback?.({ success: false, error: 'USER_BLOCKED', message: 'You cannot message this user.' });
+        }
+        // -----------------------------
+
         const message = await saveMessage(matchId, userId, content.trim());
 
         io.to(`match:${matchId}`).emit('chat:new_message', { matchId, message });
 
-        const otherUserId = getOtherParticipant(match, userId).toString();
         await redis.publish(
           `user:${otherUserId}`,
           JSON.stringify({ event: 'chat:new_message', data: { matchId, message } })
@@ -114,7 +129,6 @@ export function initChatGateway(httpServer) {
         callback?.({ success: false, error: err.code || 'SEND_FAILED', message: err.message });
       }
     });
-
     // ---- chat:typing_start / chat:typing_stop ----
     socket.on('chat:typing_start', ({ matchId }) => {
       socket.to(`match:${matchId}`).emit('chat:user_typing', { matchId, userId, typing: true });
