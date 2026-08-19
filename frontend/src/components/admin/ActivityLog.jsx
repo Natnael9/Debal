@@ -7,7 +7,7 @@ const ActivityLog = () => {
     {
       _id: 'act_1',
       adminId: 'admin_1',
-      adminName: 'Robel Alemayehu', // Simulated joined data for UI readability
+      adminName: 'Abebe Kebede', // 
       action: 'suspend_user',
       targetType: 'user',
       targetId: 'user_456',
@@ -17,7 +17,7 @@ const ActivityLog = () => {
     {
       _id: 'act_2',
       adminId: 'admin_2',
-      adminName: 'Nardos Haile',
+      adminName: 'Sara Feysa',
       action: 'resolve_report',
       targetType: 'report',
       targetId: 'rep_89',
@@ -27,7 +27,7 @@ const ActivityLog = () => {
     {
       _id: 'act_3',
       adminId: 'admin_1',
-      adminName: 'Robel Alemayehu',
+      adminName: 'John Doe',
       action: 'dismiss_report',
       targetType: 'report',
       targetId: 'rep_90',
@@ -47,7 +47,7 @@ const ActivityLog = () => {
     {
       _id: 'act_5',
       adminId: 'admin_2',
-      adminName: 'Nardos Haile',
+      adminName: 'Super_admin',
       action: 'reinstate_user',
       targetType: 'user',
       targetId: 'user_456',

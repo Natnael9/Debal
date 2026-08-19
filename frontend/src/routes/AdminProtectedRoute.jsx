@@ -1,24 +1,22 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAdminAuth } from '../context/AdminAuthProvider';
+import { useAdminAuth } from '../context/AdminAuthProvider'; // Verify this path matches your folder structure
 
 const AdminProtectedRoute = () => {
-  const { admin, isLoading } = useAdminAuth();
+  const auth = useAdminAuth();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
-  // Check if admin exists AND has the specific 'admin' type claim
-  if (!admin || admin.type !== 'admin') {
+  // Safeguard if context is missing
+  if (!auth) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  return <Outlet />;
+  const { admin, isLoading } = auth;
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+
+  return admin ? <Outlet /> : <Navigate to="/admin/login" replace />;
 };
 
 export default AdminProtectedRoute;
