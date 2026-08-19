@@ -1,9 +1,6 @@
 import 'dotenv/config';
 import dns from 'dns';
 
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) { }
 dns.setDefaultResultOrder('ipv4first');
 
 import Fastify from 'fastify';
@@ -56,7 +53,6 @@ async function start() {
   await fastify.register(moderationRoutes);
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
-  initChatGateway(fastify.server);
   initChatGateway(fastify.server);
   startModerationWorker();
 
