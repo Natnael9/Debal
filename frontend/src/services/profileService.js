@@ -59,4 +59,4 @@ export async function updateMyProfile(profileData) {
   }
 
   return response.json();
-}profile
+}

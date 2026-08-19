@@ -11,6 +11,7 @@ import ProfilePhoto from "../components/profile/ProfilePhoto";
 import IdentityVerification from "../components/profile/IdentityVerification";
 import GuidedBioPrompts from "../components/profile/GuidedBioPrompts";
 import EditProfileForm from "../components/profile/EditProfileForm";
+import { updateMyProfile } from "../services/profileService";
 
 function ProfilePage() {
     const [profile, setProfile] = useState({
@@ -60,18 +61,21 @@ function ProfilePage() {
         setIsEditing(false);
     };
 
-    const handleSave = async () => {
-        setIsSaving(true);
+ const handleSave = async () => {
+    setIsSaving(true);
 
-        try {
-            // Temporary local save.
-            // We will replace this with PATCH /users/me.
-            setProfile(editProfile);
-            setIsEditing(false);
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    try {
+        const updatedProfile = await updateMyProfile(editProfile);
+
+        setProfile(updatedProfile);
+        setEditProfile(updatedProfile);
+        setIsEditing(false);
+    } catch (error) {
+        console.error("Failed to update profile:", error);
+    } finally {
+        setIsSaving(false);
+    }
+};
 
     const handlePromptSelect = (prompt) => {
         setEditProfile((currentProfile) => ({
