@@ -24,6 +24,8 @@ import bookmarksRoutes from './modules/bookmarks/bookmarks.routes.js';
 import searchRoutes from './modules/search/search.routes.js';
 import { startModerationWorker } from './modules/moderation/moderation.worker.js';
 import matchmakingRoutes from './modules/matchmaking/matchmaking.routes.js';
+import moderationRoutes from './modules/moderation/moderation.routes.js';
+
 const PORT = process.env.PORT || 4000;
 
 async function start() {
@@ -51,6 +53,7 @@ async function start() {
 
   await fastify.register(searchRoutes);
   await fastify.register(matchmakingRoutes);
+  await fastify.register(moderationRoutes);
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);
