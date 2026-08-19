@@ -9,8 +9,8 @@ export const step1Schema = z.object({
     .number({ invalid_type_error: "Age is required" })
     .int("Age must be a whole number")
     .min(18, "You must be at least 18")
-    .max(100, "Please enter a valid age"),
-  gender: z.enum(["woman", "man", "non_binary", "prefer_not_to_say"], {
+    .max(200, "Please enter a valid age"),
+  gender: z.enum(["woman", "man", "prefer_not_to_say"], {
     errorMap: () => ({ message: "Please select an option" }),
   }),
   bio: z

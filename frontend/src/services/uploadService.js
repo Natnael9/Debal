@@ -24,7 +24,6 @@
  */
 
 const UPLOAD_ENDPOINT = "/api/v1/uploads/photo"; // TODO(Robel): replace with real endpoint
-
 export async function uploadPhoto(file, { signal } = {}) {
   const formData = new FormData();
   formData.append("photo", file);

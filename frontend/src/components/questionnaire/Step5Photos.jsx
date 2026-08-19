@@ -1,14 +1,20 @@
 import { useRef, useState } from "react";
 import { photoSchema } from "../../schemas/questionnaireSchema";
 import { uploadPhoto } from "../../services/uploadService";
+import {
+  PHOTO_MODERATION_STATUS,
+  PHOTO_MODERATION_MESSAGES,
+  isPhotoHidden,
+} from "../../constants/photoModerationStatus";
 
-// FR-3.1: photo is optional and skippable. This is the final step in
-// the wizard for every user, has_room or needs_room.
 function Step5Photos({ defaultValues, onFinish, onBack, isSubmitting }) {
   const [preview, setPreview] = useState(defaultValues?.photoPreview ?? null);
   const [uploadedPhoto, setUploadedPhoto] = useState(defaultValues?.photo ?? null);
-  const [status, setStatus] = useState("idle"); // idle | uploading | success | error
+  const [status, setStatus] = useState("idle"); 
   const [error, setError] = useState(null);
+  const [photoModerationStatus, setPhotoModerationStatus] = useState(
+    defaultValues?.photoModerationStatus ?? PHOTO_MODERATION_STATUS.NONE
+  );
 
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -32,10 +38,12 @@ function Step5Photos({ defaultValues, onFinish, onBack, isSubmitting }) {
       const { url, key } = await uploadPhoto(file);
       setUploadedPhoto({ url, key });
       setStatus("success");
+      setPhotoModerationStatus(PHOTO_MODERATION_STATUS.PENDING);
     } catch (err) {
       setUploadedPhoto(null);
       setError("Couldn't upload your photo right now. You can skip this and add one later.");
       setStatus("error");
+      setPhotoModerationStatus(PHOTO_MODERATION_STATUS.NONE);
     }
   };
 
@@ -50,12 +58,14 @@ function Step5Photos({ defaultValues, onFinish, onBack, isSubmitting }) {
     setUploadedPhoto(null);
     setStatus("idle");
     setError(null);
+    setPhotoModerationStatus(PHOTO_MODERATION_STATUS.NONE);
   };
 
   const handleFinish = () => {
     onFinish({
       photo: status === "success" ? uploadedPhoto : null,
       photoPreview: preview,
+      photoModerationStatus,
     });
   };
 
@@ -74,29 +84,42 @@ function Step5Photos({ defaultValues, onFinish, onBack, isSubmitting }) {
 
       <div className="flex flex-col items-center gap-4">
         {preview ? (
-          <div className="relative">
+        <div className="relative">
+          {isPhotoHidden(photoModerationStatus) ? (
+            // pending/flagged/rejected — never render the live pipeline image
+            <div className="h-32 w-32 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 text-xs text-center px-2">
+              Under review
+            </div>
+          ) : (
             <img
               src={preview}
               alt="Profile preview"
               className="h-32 w-32 rounded-full object-cover border border-gray-200"
             />
-            {status === "uploading" && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white text-xs font-medium">
-                Uploading…
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-white border border-gray-300 text-gray-600 text-xs shadow-sm hover:bg-gray-50"
-              aria-label="Remove photo"
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <div className="h-32 w-32 rounded-full bg-gray-100 border border-gray-200" />
-        )}
+          )}
+          {status === "uploading" && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white text-xs font-medium">
+              Uploading…
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-white border border-gray-300 text-gray-600 text-xs shadow-sm hover:bg-gray-50"
+            aria-label="Remove photo"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <div className="h-32 w-32 rounded-full bg-gray-100 border border-gray-200" />
+      )}
+
+      {isPhotoHidden(photoModerationStatus) && (
+        <p className="text-sm text-gray-500 text-center max-w-xs">
+          {PHOTO_MODERATION_MESSAGES[photoModerationStatus]}
+        </p>
+      )}
 
         <div className="flex gap-3">
           <input

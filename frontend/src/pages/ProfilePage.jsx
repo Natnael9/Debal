@@ -38,6 +38,7 @@ function ProfilePage() {
     },
 
     photoUrl: "",
+    photoModerationStatus: "pending",
 
     verificationStatus: "verified",
 
@@ -79,6 +80,7 @@ function ProfilePage() {
           <ProfilePhoto
             photoUrl={profile.photoUrl}
             name={profile.name}
+            photoModerationStatus={profile.photoModerationStatus}
           />
         </div>
 
