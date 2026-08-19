@@ -3,6 +3,7 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ReportModal from "./ReportModal";
 import BlockModal from "./BlockModal";
+import MeetupRequestModal from "./MeetupRequestModal";
 
 function ChatWindow({
   chat,
@@ -14,7 +15,9 @@ function ChatWindow({
   const [isTyping, setIsTyping] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showBlockModal, setShowBlockModal] = useState(false);      
+  const [showBlockModal, setShowBlockModal] = useState(false);   
+  const [showMeetupRequest, setShowMeetupRequest] = useState(false);
+  const [showMeetupSuccess, setShowMeetupSuccess] = useState(false);   
 
   const actionsRef = useRef(null);
 
@@ -158,6 +161,32 @@ function ChatWindow({
                   </div>
                   <span>Show Meetups</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActions(false);
+                    setShowMeetupRequest(true);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-emerald-50 hover:text-emerald-700"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-white">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 7V3m8 4v4M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5v12a2 2 0 002 2v0"
+                      />
+                    </svg>
+                  </div>
+
+                  <span>Send Meetup</span>
+                </button>
 
                 <div className="my-1 border-t border-gray-100" />
 
@@ -216,6 +245,7 @@ function ChatWindow({
                   <span>Block User</span>
                 </button>
               </div>
+              
             )}
           </div>
         </div>
@@ -255,7 +285,57 @@ function ChatWindow({
           }}
           onClose={() => setShowBlockModal(false)}
         />
+        
       )}
+      {/* Meetup Request Modal */}
+      {showMeetupRequest && (
+        <MeetupRequestModal
+          user={{
+            id: chat.userId || chat.id,
+            name: chat.name,
+          }}
+          onClose={() => setShowMeetupRequest(false)}
+          onSent={() => {
+            setShowMeetupSuccess(true);
+
+            setTimeout(() => {
+              setShowMeetupSuccess(false);
+            }, 3000);
+          }}
+        />
+      )}
+      
+      {/* Meetup Success Notification */}
+      
+    {showMeetupSuccess && (
+      <div className="fixed right-4 top-4 z-[110] flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-white/95 px-3.5 py-2.5 shadow-lg shadow-emerald-950/5 backdrop-blur-xs transition sm:right-6 sm:top-6">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/80">
+          <svg
+            className="h-3.5 w-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+
+        <div className="min-w-0 pr-1">
+          <p className="text-xs font-bold leading-tight text-gray-900">
+            Meetup request sent
+          </p>
+
+          <p className="mt-0.5 text-[10px] text-gray-500 leading-none">
+            Your suggestion was sent successfully.
+          </p>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
