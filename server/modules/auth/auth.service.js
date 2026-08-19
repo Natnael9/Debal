@@ -132,6 +132,26 @@ async function issueTokenPair(user) {
   return { accessToken, refreshToken };
 }
 
+async function findOrCreateGoogleUser({ googleId, email, name }) {
+  let user = await User.findOne({ googleId });
+  if (user) return user;
+
+  user = await User.findOne({ email });
+  if (user) {
+    user.googleId = googleId;
+    await user.save();
+    return user;
+  }
+
+  user = await User.create({
+    email,
+    name,
+    googleId,
+  });
+
+  return user;
+}
+
 export {
   hashPassword,
   comparePassword,
@@ -140,5 +160,7 @@ export {
   refreshTokens,
   logoutUser,
   AuthError,
+  findOrCreateGoogleUser,
 };
+
 

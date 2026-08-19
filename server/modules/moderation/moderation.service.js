@@ -1,5 +1,8 @@
 import * as tf from '@tensorflow/tfjs-node';
 import * as nsfwjs from 'nsfwjs';
+import { User } from '../users/users.model.js';
+import { logAdminAction } from '../admin/admin-action.service.js';
+import { deleteCloudinaryImage } from '../../config/cloudinary.js';
 
 let model = null;
 
@@ -38,4 +41,49 @@ export async function classifyImage(imageBuffer) {
   } finally {
     image.dispose(); // required — tf.Tensor doesn't get garbage collected automatically
   }
+}
+
+// ---- Admin photo review queue (§13.4) ----
+
+export async function listFlaggedPhotos() {
+  return User.find({ photoModerationStatus: 'flagged' }).select(
+    'name email avatarUrl photoModerationStatus createdAt'
+  );
+}
+
+export async function decidePhotoReview(userId, adminId, { decision }) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    const err = new Error('User not found');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  if (user.photoModerationStatus !== 'flagged') {
+    const err = new Error('This user\'s photo is not currently flagged for review');
+    err.code = 'NOT_FLAGGED';
+    throw err;
+  }
+
+  if (decision === 'approve') {
+    user.photoModerationStatus = 'approved';
+    await user.save();
+  } else {
+    if (user.avatarUrl) {
+      await deleteCloudinaryImage(user.avatarUrl);
+    }
+    user.avatarUrl = undefined;
+    user.photoModerationStatus = undefined;
+    await user.save();
+  }
+
+  await logAdminAction({
+    adminId,
+    action: decision === 'approve' ? 'approve_photo' : 'reject_photo',
+    targetUserId: user._id,
+    notes: null,
+  });
+
+  return user;
 }

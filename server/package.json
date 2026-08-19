@@ -3,14 +3,20 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "start": "node index.js",
+    "test": "node scripts/test-all.js",
+    "test:e2e": "node scripts/test-all.js"
+  },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
     "@sendgrid/mail": "^8.1.6",
     "@tensorflow/tfjs-node": "^4.22.0",
+    "arctic": "^3.7.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^6.1.2",
+    "cloudinary": "^2.10.1",
     "dotenv": "^17.4.2",
     "fastify": "^5.12.0",
     "ioredis": "^6.0.0",
@@ -24,5 +30,8 @@
   },
   "devDependencies": {
     "socket.io-client": "^4.8.3"
+  },
+  "allowScripts": {
+    "@tensorflow/tfjs-node@4.22.0": true
   }
 }
