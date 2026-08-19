@@ -3,7 +3,7 @@ import dns from 'dns';
 
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) {}
+} catch (err) { }
 dns.setDefaultResultOrder('ipv4first');
 
 import Fastify from 'fastify';
@@ -19,10 +19,10 @@ import verificationRoutes from './modules/verification/verification.routes.js';
 import { initChatGateway } from './modules/chat/chat.gateway.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import meetupsRoutes from './modules/meetups/meetups.routes.js';
- import adminRoutes from './modules/admin/admin.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 import bookmarksRoutes from './modules/bookmarks/bookmarks.routes.js';
 import searchRoutes from './modules/search/search.routes.js';
-
+import { startModerationWorker } from './modules/moderation/moderation.worker.js';
 import matchmakingRoutes from './modules/matchmaking/matchmaking.routes.js';
 const PORT = process.env.PORT || 4000;
 
@@ -46,14 +46,16 @@ async function start() {
   await fastify.register(chatRoutes);
   await fastify.register(meetupsRoutes);
   await fastify.register(adminRoutes);
-  
-  await fastify.register(bookmarksRoutes);    
-  
+
+  await fastify.register(bookmarksRoutes);
+
   await fastify.register(searchRoutes);
   await fastify.register(matchmakingRoutes);
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);
+  initChatGateway(fastify.server);
+  startModerationWorker();
 
   const shutdown = async (signal) => {
     console.log(`[server] received ${signal}, shutting down`);
