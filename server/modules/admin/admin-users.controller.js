@@ -1,4 +1,5 @@
 import User from '../users/users.model.js';
+import Report from '../reports/reports.model.js';
 
 /**
  * GET /api/v1/admin/users
@@ -70,5 +71,85 @@ export const suspendUser = async (req, reply) => {
   } catch (error) {
     req.log.error(error);
     return reply.code(500).send({ success: false, message: 'Failed to suspend user' });
+  }
+};
+
+/**
+ * GET /api/v1/admin/users/:id
+ * Returns the full profile and the report history[cite: 2, 3].
+ */
+export const getUserDetails = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select('-passwordHash');
+    
+    if (!user) {
+      return reply.code(404).send({ success: false, message: 'User not found' });
+    }
+
+    // Fetch reports where they are either the reporter or the reported user[cite: 2, 3]
+    const reports = await Report.find({
+      $or: [{ reporterId: id }, { reportedUserId: id }]
+    });
+
+    return reply.code(200).send({
+      success: true,
+      data: {
+        user,
+        reportHistory: reports
+      }
+    });
+  } catch (error) {
+    req.log.error(error);
+    return reply.code(500).send({ success: false, message: 'Failed to fetch user details' });
+  }
+};
+
+/**
+ * PATCH /api/v1/admin/users/:id/reinstate
+ * Removes the suspension[cite: 3].
+ */
+export const reinstateUser = async (req, reply) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      {
+        $set: { suspended: false },
+        // $unset removes these fields entirely from the document
+        $unset: { suspendedReason: "", suspendedAt: "", suspendedBy: "" }
+      },
+      { new: true }
+    ).select('-passwordHash');
+
+    if (!user) {
+      return reply.code(404).send({ success: false, message: 'User not found' });
+    }
+
+    return reply.code(200).send({ success: true, message: 'User reinstated successfully', data: user });
+  } catch (error) {
+    req.log.error(error);
+    return reply.code(500).send({ success: false, message: 'Failed to reinstate user' });
+  }
+};
+
+/**
+ * DELETE /api/v1/admin/users/:id
+ * Hard deletes a user[cite: 3]. 
+ */
+export const deleteUser = async (req, reply) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return reply.code(404).send({ success: false, message: 'User not found' });
+    }
+    
+    return reply.code(200).send({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    req.log.error(error);
+    return reply.code(500).send({ success: false, message: 'Failed to delete user' });
   }
 };
