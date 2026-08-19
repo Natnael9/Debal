@@ -6,7 +6,7 @@ import {
   getVerificationDetailHandler,
   decideVerificationHandler,
 } from '../verification/verification.controller.js';
-
+import { getAdminStats, getAuditLogs } from './admin-stats.controller.js';
 /**
  * Self-contained rate limiter, scoped only to admin login.
  * Deliberately NOT reusing shared/middleware/rate-limiter.middleware.js
@@ -118,5 +118,24 @@ export default async function adminRoutes(fastify) {
       },
     },
     decideVerificationHandler
+  );
+
+
+  // -------------------------------------------------------------------------
+  // STATS & AUDIT LOG ENDPOINTS
+  // -------------------------------------------------------------------------
+
+  // GET /api/v1/admin/stats - Dashboard summary metrics[cite: 3]
+  fastify.get(
+    '/api/v1/admin/stats',
+    { preHandler: requireAdmin },
+    getAdminStats
+  );
+
+  // GET /api/v1/admin/audit-logs - Filterable activity history[cite: 3]
+  fastify.get(
+    '/api/v1/admin/audit-logs',
+    { preHandler: requireAdmin },
+    getAuditLogs
   );
 }
