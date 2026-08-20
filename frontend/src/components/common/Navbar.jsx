@@ -82,6 +82,10 @@ function Navbar() {
               <NavLink to="/app/messages" className={navLinkStyle}>
                 Messages
               </NavLink>
+              <NavLink to="/app/bookmarks" className={navLinkStyle}>
+                Book Marks
+              </NavLink>
+              
             </>
           )}
         </div>
