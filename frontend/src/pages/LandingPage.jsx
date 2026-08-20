@@ -161,7 +161,7 @@ const LandingPage = () => {
                 Bridging the housing gap.
               </h3>
               <p className="text-gray-600 leading-relaxed text-lg">
-                With rapid urbanization and rising living costs, finding affordable housing has become a significant challenge for university students and young professionals. 
+                With rapid urbanization and rising living costs, finding affordable housing has become a significant challenge for anyone looking to share a living space. 
               </p>
               <p className="text-gray-600 leading-relaxed">
                 Traditional methods of finding roommates—like informal social media groups or bulletin boards—often lead to personality clashes, financial disputes, and security risks. 
