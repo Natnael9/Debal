@@ -1,41 +1,86 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-// 1. Add your new imports here:
-import MatchCard from "../components/matchmaking/MatchCard";
-import ChatList from "../components/chat/ChatList";
 import ProfilePage from "../pages/ProfilePage";
 import MatchFeed from "../pages/Dashboard";
-// import ChatWindow from "../pages/chat/ChatWindow";
 import ChatLayout from "../pages/chat/ChatLayout";
-import VerificationWizard from '../pages/VerificationWizard';
-import SettingsPage from '../pages/SettingsPage';
+import VerificationWizard from "../pages/VerificationWizard";
+import SettingsPage from "../pages/SettingsPage";
 import BookmarksPage from "../pages/BookmarksPage";
-
+import CandidateProfilePage from "../pages/CandidateProfilePage";
 
 function ProtectedRoutes() {
-  // 1. Change user from null to this object:
-  const user = { questionnaireCompleted: true }; 
+  const user = {
+    questionnaireCompleted: true,
+  };
+
   const isLoading = false;
-  
-  if (isLoading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!user.questionnaireCompleted && window.location.pathname !== '/questionnaire') {
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (
+    !user.questionnaireCompleted &&
+    window.location.pathname !== "/questionnaire"
+  ) {
     return <Navigate to="/questionnaire" replace />;
   }
 
   return (
     <Routes>
-      
-      
-      {/* 2. Add the new routes here: */}
-      <Route path="/dashboard" element={<MatchFeed />} />
-      {/* <Route path="/messages" element={<ChatList />} /> */}
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/messages" element={<ChatLayout />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      
-      
-      
+
+      {/* Main application */}
+
+      <Route
+        path="dashboard"
+        element={<MatchFeed />}
+      />
+
+      <Route
+        path="messages"
+        element={<ChatLayout />}
+      />
+
+      <Route
+        path="profile"
+        element={<ProfilePage />}
+      />
+
+      <Route
+        path="settings"
+        element={<SettingsPage />}
+      />
+
+      <Route
+        path="bookmarks"
+        element={<BookmarksPage />}
+      />
+
+      {/* Candidate profile */}
+
+      <Route
+        path="candidate-profile/:userId"
+        element={<CandidateProfilePage />}
+      />
+
+      {/* Optional verification */}
+
+      <Route
+        path="verification"
+        element={<VerificationWizard />}
+      />
+
+      {/* Fallback */}
+
+      <Route
+        path="*"
+        element={<Navigate to="dashboard" replace />}
+      />
+
     </Routes>
   );
 }
