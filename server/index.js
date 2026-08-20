@@ -22,6 +22,7 @@ import searchRoutes from './modules/search/search.routes.js';
 import { startModerationWorker } from './modules/moderation/moderation.worker.js';
 import matchmakingRoutes from './modules/matchmaking/matchmaking.routes.js';
 import moderationRoutes from './modules/moderation/moderation.routes.js';
+import googleOauthRoutes from './modules/auth/google-oauth.routes.js';
 
 const PORT = process.env.PORT || 4000;
 
@@ -40,6 +41,7 @@ async function start() {
 
   await fastify.register(healthRoute);
   await fastify.register(authRoutes);
+  await fastify.register(googleOauthRoutes);
   await fastify.register(usersRoutes);
   await fastify.register(verificationRoutes);
   await fastify.register(chatRoutes);
