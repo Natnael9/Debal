@@ -8,6 +8,7 @@ import PhotoReviewQueuePage from '../pages/admin/PhotoReviewQueuePage';
 import AdminDashboardPage from '../pages/admin/AdminDashboard'; 
 import AdminProtectedRoute from './AdminProtectedRoute';
 import ReportsTable from '../components/admin/ReportsTable';
+import AdminUsersPage from '../pages/admin/AdminUsersPage';
 
 function AdminRoutes() {
   return (
@@ -25,6 +26,7 @@ function AdminRoutes() {
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/reports" element={<ReportsTable />} />
       </Route>
+      <Route path='/userTable' element={<AdminUsersPage/>} />
     </Routes>
   );
 }
