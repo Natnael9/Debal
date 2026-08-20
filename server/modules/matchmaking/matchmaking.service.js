@@ -1,5 +1,6 @@
 import { MatchRequest } from './matchrequest.model.js';
 import { Match } from '../chat/matches.model.js';
+import { enqueueNewMatchEmail } from '../notifications/notification.queue.js';
 import { getCandidatePoolA, scoreCandidate } from './matchmaking.algorithm.js';
 
 class MatchmakingError extends Error {
@@ -127,6 +128,9 @@ async function respondToMatchRequest(currentUser, requestId, accept) {
     userA: request.fromUser,
     userB: request.toUser,
   });
+
+  // Notify the original requester that their request was accepted (email:new-match).
+  await enqueueNewMatchEmail({ userId: request.fromUser, matchId: match._id });
 
   return { request, match };
 }
