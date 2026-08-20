@@ -8,6 +8,7 @@ import {
   markMessageRead,
   getOtherParticipant,
 } from './chat.service.js';
+import { cancelPendingEmailsForUser } from '../notifications/notification.queue.js';
 
 let io = null;
 
@@ -55,7 +56,7 @@ export function initChatGateway(httpServer) {
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     const userId = socket.user._id.toString();
     console.log(`[chat] user ${userId} connected (${socket.id})`);
 
@@ -135,11 +136,19 @@ export function initChatGateway(httpServer) {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       console.log(`[chat] user ${userId} disconnected`);
       subscriber.unsubscribe(`user:${userId}`).catch(() => {});
       subscriber.quit().catch(() => {});
+      await redis.srem('online_users', userId).catch(() => {});
     });
+
+    // Mark this user online and cancel any debounced meetup-update emails
+    // that were queued while they were away (architecture doc §9.4).
+    // Done last, after all listeners are registered, so no events can be
+    // missed while these awaits are in flight.
+    await redis.sadd('online_users', userId);
+    await cancelPendingEmailsForUser(userId);
   });
 
   console.log('[chat] Socket.IO gateway initialized');
