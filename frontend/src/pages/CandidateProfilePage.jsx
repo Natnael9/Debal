@@ -13,6 +13,9 @@ const candidates = {
       budgetMax: 6000,
       cleanliness: 4,
       sleepSchedule: "night_owl",
+      pets: "no pets",
+      smoking: "no smoking",
+
     },
   },
 
@@ -239,6 +242,26 @@ function CandidateProfilePage() {
                       {candidate.preferences.sleepSchedule.replace("_", " ")}
                     </p>
                   </div>
+                 <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                      Pets
+                    </p>
+
+                    <p className="mt-0.5 text-xs font-bold text-gray-900 sm:text-sm">
+                      {candidate.preferences.pets}
+                    </p>
+                  </div>
+                   <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                      Smoking
+                    </p>
+
+                    <p className="mt-0.5 text-xs font-bold text-gray-900 sm:text-sm">
+                      {candidate.preferences.smoking}
+                    </p>
+                  </div>
+                  
+                  
 
                 </div>
 
