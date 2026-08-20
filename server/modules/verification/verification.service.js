@@ -4,6 +4,7 @@ import { VerificationRequest } from './verification.model.js';
 import { hashIdNumber, encryptIdentity, decryptIdentity } from './encryption.util.js';
 import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
 import { sendVerificationOtpEmail } from '../notifications/email.util.js';
+import { enqueueVerificationResultEmail } from '../notifications/notification.queue.js';
 import { logAdminAction, logAdminRead } from '../admin/admin-action.service.js';
 
 function sameDay(dateA, dateB) {
@@ -57,6 +58,7 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
     await sendVerificationOtpEmail(user.email, otp);
   } else {
     await User.findByIdAndUpdate(userId, { verificationStatus: 'rejected' });
+    await enqueueVerificationResultEmail({ userId, verified: false, reason: rejectionReason });
   }
 
   return { result, rejectionReason, verificationRequestId: verificationRequest._id };
@@ -95,6 +97,8 @@ export async function confirmOtp(userId, otp) {
     verificationStatus: 'verified',
     verifiedAt: new Date(),
   });
+
+  await enqueueVerificationResultEmail({ userId, verified: true });
 
   return { verified: true };
 }
@@ -187,14 +191,26 @@ export async function decideVerification(verificationRequestId, adminId, { decis
 
   if (decision === 'approve') {
     verificationRequest.result = 'matched';
+
     await User.findByIdAndUpdate(verificationRequest.userId, {
       verificationStatus: 'verified',
       verifiedAt: new Date(),
     });
+
+    await enqueueVerificationResultEmail({ userId: verificationRequest.userId, verified: true });
+
   } else {
+
     verificationRequest.result = 'no_match';
     verificationRequest.rejectionReason = notes || 'Rejected by admin review';
+
     await User.findByIdAndUpdate(verificationRequest.userId, { verificationStatus: 'rejected' });
+    
+    await enqueueVerificationResultEmail({
+      userId: verificationRequest.userId,
+      verified: false,
+      reason: verificationRequest.rejectionReason,
+    });
   }
 
   await verificationRequest.save();
