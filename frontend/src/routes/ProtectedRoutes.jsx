@@ -10,6 +10,7 @@ import ChatLayout from "../pages/chat/ChatLayout";
 import VerificationWizard from '../pages/VerificationWizard';
 import SettingsPage from '../pages/SettingsPage';
 import BookmarksPage from "../pages/BookmarksPage";
+import CandidateProfilePage from "../pages/CandidateProfilePage";
 
 
 function ProtectedRoutes() {
@@ -33,8 +34,8 @@ function ProtectedRoutes() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/messages" element={<ChatLayout />} />
       <Route path="/settings" element={<SettingsPage />} />
-      
-      
+     <Route path="/candidate-profile/:userId" element={<CandidateProfilePage />}
+/>
       
     </Routes>
   );
