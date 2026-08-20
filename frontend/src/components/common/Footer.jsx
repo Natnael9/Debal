@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
+import logo from "../../assets/Debal(LOGO).png";
 
 function Footer() {
   return (
@@ -9,30 +10,16 @@ function Footer() {
 
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link
+            <NavLink
               to="/"
-              className="inline-flex items-center gap-2"
+              className="text-2xl font-bold tracking-tight text-blue-600"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2274A5] text-white">
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm10 10v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
-                  />
-                </svg>
-              </div>
-
-              <span className="text-xl font-bold text-gray-900">
-                Room<span className="text-[#2274A5]">Match</span>
-              </span>
-            </Link>
+              <img
+                src={logo}
+                alt="Debal"
+                className="h-9 w-auto"
+              />
+            </NavLink>
 
             <p className="mt-4 max-w-xs text-sm leading-6 text-gray-500">
               Find compatible roommates, discover better living
@@ -41,6 +28,8 @@ function Footer() {
 
             {/* Social Links */}
             <div className="mt-6 flex items-center gap-3">
+
+              {/* Facebook */}
               <a
                 href="#"
                 aria-label="Facebook"
@@ -55,6 +44,7 @@ function Footer() {
                 </svg>
               </a>
 
+              {/* Instagram */}
               <a
                 href="#"
                 aria-label="Instagram"
@@ -92,6 +82,7 @@ function Footer() {
                 </svg>
               </a>
 
+              {/* Twitter */}
               <a
                 href="#"
                 aria-label="Twitter"
@@ -106,6 +97,7 @@ function Footer() {
                 </svg>
               </a>
 
+              {/* LinkedIn */}
               <a
                 href="#"
                 aria-label="LinkedIn"
@@ -261,6 +253,7 @@ function Footer() {
         {/* Newsletter / CTA */}
         <div className="mt-12 rounded-2xl bg-gray-50 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+
             <div>
               <h3 className="font-semibold text-gray-900">
                 Find your perfect roommate
@@ -296,6 +289,7 @@ function Footer() {
 
         {/* Bottom Section */}
         <div className="mt-8 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+
           <p className="text-xs text-gray-400">
             © {new Date().getFullYear()} RoomMatch. All rights reserved.
           </p>
@@ -322,6 +316,7 @@ function Footer() {
               Cookies
             </a>
           </div>
+
         </div>
       </div>
     </footer>
