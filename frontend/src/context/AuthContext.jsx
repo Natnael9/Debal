@@ -6,17 +6,18 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Temporary login
   const login = async (credentials) => {
     setLoading(true);
 
     try {
-      // Temporary mock login
       console.log("Login:", credentials);
 
       const mockUser = {
         id: "1",
         name: "Test User",
         email: credentials.email,
+        questionnaireCompleted: true,
       };
 
       setUser(mockUser);
@@ -24,23 +25,31 @@ export function AuthProvider({ children }) {
       return {
         success: true,
         user: mockUser,
+      };
+    } catch (error) {
+      console.error("Login error:", error);
+
+      return {
+        success: false,
+        error: error.message,
       };
     } finally {
       setLoading(false);
     }
   };
 
+  // Temporary registration
   const register = async (userData) => {
     setLoading(true);
 
     try {
-      // Temporary mock registration
       console.log("Register:", userData);
 
       const mockUser = {
         id: "1",
         name: userData.name,
         email: userData.email,
+        questionnaireCompleted: false,
       };
 
       setUser(mockUser);
@@ -48,6 +57,13 @@ export function AuthProvider({ children }) {
       return {
         success: true,
         user: mockUser,
+      };
+    } catch (error) {
+      console.error("Register error:", error);
+
+      return {
+        success: false,
+        error: error.message,
       };
     } finally {
       setLoading(false);
@@ -75,5 +91,13 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error(
+      "useAuth must be used inside an AuthProvider"
+    );
+  }
+
+  return context;
 }
