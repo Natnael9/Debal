@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
 import MeetupCard from "../../components/chat/MeetupCard";
@@ -6,18 +7,22 @@ import MeetupCard from "../../components/chat/MeetupCard";
 const INITIAL_CHATS = [
   {
     id: "1",
-    name: "Abebe Bikila",
+    userId: "1",
+    name: "Elias",
     subtitle: "Roommate match",
-    avatarText: "A",
+    avatarText: "E",
+    avatarUrl: "",
     isOnline: true,
-    lastMessage: "Yes! Still looking for a spot ne...",
+    lastMessage: "Hey, are you still looking for a roommate?",
     time: "09:24 AM",
     unreadCount: 0,
-    meetup: { status: "none" },
+    meetup: {
+      status: "none",
+    },
     messages: [
       {
         id: "m1",
-        senderId: "abebe",
+        senderId: "1",
         content: "Hey, are you still looking for a roommate?",
         createdAt: "09:20 AM",
       },
@@ -29,7 +34,7 @@ const INITIAL_CHATS = [
       },
       {
         id: "m3",
-        senderId: "abebe",
+        senderId: "1",
         content: "Awesome, what's your budget range for rent?",
         createdAt: "09:26 AM",
       },
@@ -38,32 +43,34 @@ const INITIAL_CHATS = [
 
   {
     id: "2",
-    name: "Sara Kebede",
-    subtitle: "Apartment Sublet",
+    userId: "2",
+    name: "Sara",
+    subtitle: "Roommate match",
     avatarText: "S",
+    avatarUrl: "",
     isOnline: true,
-    lastMessage: "Is the master bedroom still a...",
+    lastMessage: "Hi! I saw your roommate profile.",
     time: "Yesterday",
     unreadCount: 2,
     meetup: {
       status: "pending",
-      proposedBy: "Sara Kebede",
+      proposedBy: "Sara",
       date: "August 22, 2026",
       time: "3:00 PM",
-      location: "Bole, Addis Ababa",
+      location: "Kazanchis, Addis Ababa",
       note: "Let's meet for coffee!",
     },
     messages: [
       {
         id: "m4",
-        senderId: "sara",
-        content: "Hi there! Saw your listing.",
+        senderId: "2",
+        content: "Hi there! I saw your roommate profile.",
         createdAt: "03:15 PM",
       },
       {
         id: "m5",
-        senderId: "sara",
-        content: "Is the master bedroom still available?",
+        senderId: "2",
+        content: "Are you still looking for a roommate?",
         createdAt: "03:16 PM",
       },
     ],
@@ -71,26 +78,34 @@ const INITIAL_CHATS = [
 
   {
     id: "3",
-    name: "Dawit Mengistu",
-    subtitle: "Bole Studio Share",
+    userId: "3",
+    name: "Daniel",
+    subtitle: "Roommate match",
     avatarText: "D",
+    avatarUrl: "",
     isOnline: false,
-    lastMessage: "Sent you the lease terms draft.",
+    lastMessage: "Would you like to talk about our preferences?",
     time: "Nov 12",
     unreadCount: 0,
     meetup: {
       status: "pending",
-      proposedBy: "Dawit Mengistu",
+      proposedBy: "Daniel",
       date: "August 24, 2026",
       time: "5:00 PM",
-      location: "Bole, Addis Ababa",
-      note: "Let's discuss the apartment.",
+      location: "CMC, Addis Ababa",
+      note: "Let's discuss our roommate preferences.",
     },
     messages: [
       {
         id: "m6",
-        senderId: "dawit",
-        content: "Sent you the lease terms draft.",
+        senderId: "3",
+        content: "Hey! We seem to have similar roommate preferences.",
+        createdAt: "11:40 AM",
+      },
+      {
+        id: "m7",
+        senderId: "3",
+        content: "Would you like to talk about our preferences?",
         createdAt: "11:45 AM",
       },
     ],
@@ -98,19 +113,23 @@ const INITIAL_CHATS = [
 
   {
     id: "4",
-    name: "Helen Tadesse",
-    subtitle: "Potential Flatmate",
+    userId: "4",
+    name: "Hana",
+    subtitle: "Roommate match",
     avatarText: "H",
+    avatarUrl: "",
     isOnline: false,
-    lastMessage: "Sounds great, let's meet this Sa...",
+    lastMessage: "I am also looking for a quiet home.",
     time: "Nov 10",
     unreadCount: 0,
-    meetup: { status: "none" },
+    meetup: {
+      status: "none",
+    },
     messages: [
       {
-        id: "m7",
-        senderId: "helen",
-        content: "Sounds great, let's meet this Saturday!",
+        id: "m8",
+        senderId: "4",
+        content: "Hi! I am also looking for a quiet and clean home.",
         createdAt: "02:00 PM",
       },
     ],
@@ -118,9 +137,16 @@ const INITIAL_CHATS = [
 ];
 
 function ChatLayout() {
+  
+  const [searchParams] = useSearchParams();
+
+  const chatFromUrl = searchParams.get("chat");
+
   const [chats, setChats] = useState(INITIAL_CHATS);
 
-  const [activeChatId, setActiveChatId] = useState("1");
+  const [activeChatId, setActiveChatId] = useState(
+    chatFromUrl || "1"
+  );
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -138,35 +164,47 @@ function ChatLayout() {
   const activeChat =
     chats.find((chat) => chat.id === activeChatId) || chats[0];
 
+
+      useEffect(() => {
+    if (!chatFromUrl) return;
+
+    const chatExists = INITIAL_CHATS.some(
+      (chat) => chat.id === chatFromUrl
+    );
+
+    if (chatExists) {
+      setActiveChatId(chatFromUrl);
+    }
+  }, [chatFromUrl]);
   /* =====================================================
      SEND MESSAGE
   ====================================================== */
-  const handleSendMessage = (content) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      senderId: "current-user",
-      content,
-      createdAt: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    setChats((prevChats) =>
-      prevChats.map((chat) => {
-        if (chat.id === activeChatId) {
-          return {
-            ...chat,
-            lastMessage: content,
-            time: "Just now",
-            messages: [...chat.messages, newMessage],
-          };
-        }
-
-        return chat;
-      })
-    );
+const handleSendMessage = (content) => {
+  const newMessage = {
+    id: Date.now().toString(),
+    senderId: "current-user",
+    content,
+    createdAt: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
   };
+
+  setChats((prevChats) =>
+    prevChats.map((chat) => {
+      if (chat.id === activeChatId) {
+        return {
+          ...chat,
+          lastMessage: content,
+          time: "Just now",
+          messages: [...chat.messages, newMessage],
+        };
+      }
+
+      return chat;
+    })
+  );
+};
 
   /* =====================================================
      SELECT CHAT
