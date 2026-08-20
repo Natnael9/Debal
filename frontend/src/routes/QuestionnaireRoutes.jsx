@@ -1,10 +1,16 @@
-import { Routes, Route, Link } from "react-router-dom";
+// src/routes/QuestionnaireRoutes.jsx
+
+import { Routes, Route } from "react-router-dom";
+
 import QuestionnaireWizard from "../pages/QuestionnaireWizard";
 
 function QuestionnaireRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<QuestionnaireWizard />} />
+      <Route
+        path="/"
+        element={<QuestionnaireWizard />}
+      />
     </Routes>
   );
 }

@@ -130,25 +130,7 @@ function LoginForm() {
 
         </div>
 
-        {/* Checkbox for Terms & Privacy */}
-        <div className="flex items-center text-sm">
-          <input
-            id="accept-terms"
-            type="checkbox"
-            required
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <label htmlFor="accept-terms" className="ml-2 text-gray-600">
-            I agree to the{" "}
-            <button
-              type="button"
-              onClick={() => setShowPrivacy(true)}
-              className="font-medium text-blue-600 underline hover:text-blue-500"
-            >
-              Terms and Privacy Policy
-            </button>
-          </label>
-        </div>
+       
 
         {/* Submit */}
         <button
