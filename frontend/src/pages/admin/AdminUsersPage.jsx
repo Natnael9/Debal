@@ -98,6 +98,7 @@ const AdminUsersPage = () => {
 
     setUsers(updatedUsers);
     
+    // Update the selected user in the modal if it's open
     if (selectedUser && selectedUser._id === user._id) {
       setSelectedUser(updatedUsers.find(u => u._id === user._id));
     }
@@ -106,18 +107,16 @@ const AdminUsersPage = () => {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden relative">
       
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-end gap-4 mb-6 sm:mb-8">
+      {/* Main Content Area: Search & Table */}
+      <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Search, review, and moderate user accounts.</p>
+            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+            <p className="text-sm text-gray-500 mt-1">Search, review, and moderate user accounts.</p>
           </div>
           
           {/* UserSearch */}
-          <div className="w-full sm:w-72">
+          <div className="w-72">
             <div className="relative">
               <input 
                 type="text" 
@@ -133,127 +132,90 @@ const AdminUsersPage = () => {
           </div>
         </div>
 
+        {/* UsersTable */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden max-w-6xl mx-auto">
-          
-          {/* DESKTOP VIEW: Standard Table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Joined</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map(user => (
-                  <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.suspended ? (
-                        <span className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-md">Suspended</span>
-                      ) : (
-                        <span className="px-2.5 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-md">Active</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        onClick={() => setSelectedUser(user)}
-                        className="text-[#2274A5] hover:text-[#1A5C83] font-bold"
-                      >
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredUsers.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">No users found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* MOBILE VIEW: Stacked Card List */}
-          <div className="block sm:hidden divide-y divide-gray-100">
-            {filteredUsers.map(user => (
-              <div key={user._id} className="p-4 flex flex-col gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">User</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Joined</th>
+                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map(user => (
+                <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-gray-900">{user.name}</div>
-                    <div className="text-xs text-gray-500">{user.email}</div>
-                  </div>
-                  <div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {user.suspended ? (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-[10px] font-bold rounded-md">Suspended</span>
+                      <span className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-md">Suspended</span>
                     ) : (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold rounded-md">Active</span>
+                      <span className="px-2.5 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-md">Active</span>
                     )}
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center mt-1 pt-3 border-t border-gray-50">
-                  <div className="text-[11px] text-gray-500 font-medium">
-                    Joined: {new Date(user.createdAt).toLocaleDateString()}
-                  </div>
-                  <button 
-                    onClick={() => setSelectedUser(user)}
-                    className="flex items-center gap-1 text-[#2274A5] text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg"
-                  >
-                    View Details
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filteredUsers.length === 0 && (
-              <div className="p-8 text-center text-sm text-gray-500">No users found.</div>
-            )}
-          </div>
-
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button 
+                      onClick={() => setSelectedUser(user)}
+                      className="text-[#2274A5] hover:text-[#1A5C83] font-bold"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500">No users found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* FULL-SCREEN BLURRED MODAL (Remains the exact same logic) */}
+      {/* FULL-SCREEN BLURRED MODAL */}
       {selectedUser && (
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 sm:bg-slate-900/40 backdrop-blur-sm transition-opacity"
-          onClick={() => setSelectedUser(null)} 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={() => setSelectedUser(null)} // Clicking the blurred background closes the modal
         >
+          {/* Modal Container - e.stopPropagation() prevents clicks inside the modal from closing it */}
           <div 
-            className="bg-slate-50 w-full max-w-2xl h-[85vh] sm:h-auto sm:max-h-[95vh] rounded-t-3xl sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative animate-slide-up sm:animate-none"
+            className="bg-slate-50 w-full max-w-2xl max-h-[95vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative"
             onClick={(e) => e.stopPropagation()} 
           >
             
-            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Profile View</h2>
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
+              <h2 className="text-xl font-bold text-gray-900">Admin Profile View</h2>
               <button 
                 onClick={() => setSelectedUser(null)} 
                 className="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-200 p-2 rounded-full transition-colors"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 overflow-y-auto">
+            {/* Scrollable Content */}
+            <div className="p-6 overflow-y-auto">
               
-              <div className="rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              {/* Main Profile Card */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm mb-6">
                 
+                {/* Top Section: Avatar & Badges */}
                 <div className="flex flex-col items-center mb-6">
                   
-                  <div className="relative aspect-square w-24 h-24 sm:w-32 sm:h-32 overflow-hidden rounded-2xl border border-gray-100 bg-blue-100 shadow-inner mb-4">
+                  {/* Avatar */}
+                  <div className="relative aspect-square w-32 h-32 overflow-hidden rounded-2xl border border-gray-100 bg-blue-100 shadow-inner mb-4">
                     {selectedUser.avatarUrl ? (
                       <img
                         src={selectedUser.avatarUrl}
@@ -261,26 +223,28 @@ const AdminUsersPage = () => {
                         className="h-full w-full object-cover object-center"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-300 via-blue-600 to-indigo-950 text-4xl sm:text-5xl font-bold text-white">
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-300 via-blue-600 to-indigo-950 text-5xl font-bold text-white">
                         {selectedUser.name.charAt(0)}
                       </div>
                     )}
                   </div>
 
+                  {/* Name & Email */}
                   <h1 className="text-xl font-bold leading-tight text-gray-900 sm:text-2xl text-center">
                     {selectedUser.name}
                   </h1>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-3">{selectedUser.email}</p>
+                  <p className="text-sm text-gray-500 mb-3">{selectedUser.email}</p>
 
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] sm:text-xs">
-                    <span className="rounded-lg border border-blue-100/70 bg-blue-50 px-2 sm:px-2.5 py-1 font-semibold text-blue-900">
+                  {/* Badges */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+                    <span className="rounded-lg border border-blue-100/70 bg-blue-50 px-2.5 py-1 font-semibold text-blue-900">
                       {selectedUser.age} yrs
                     </span>
-                    <span className="rounded-lg border border-gray-100 bg-gray-50 px-2 sm:px-2.5 py-1 font-medium capitalize text-gray-600">
+                    <span className="rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1 font-medium capitalize text-gray-600">
                       {selectedUser.gender}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-100 bg-gray-50 px-2 sm:px-2.5 py-1 font-medium text-gray-600">
-                      <svg className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1 font-medium text-gray-600">
+                      <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
@@ -289,41 +253,43 @@ const AdminUsersPage = () => {
                   </div>
                 </div>
 
+                {/* About Section */}
                 <div className="mb-6">
-                  <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
+                  <h3 className="border-b border-gray-100 pb-1.5 text-xs font-bold uppercase tracking-wider text-gray-400">
                     About
                   </h3>
-                  <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-700">
+                  <p className="mt-2.5 text-xs leading-relaxed text-gray-700 sm:text-sm">
                     {selectedUser.bio}
                   </p>
                 </div>
 
+                {/* Preferences Grid */}
                 <div className="mb-2">
-                  <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
+                  <h3 className="border-b border-gray-100 pb-1.5 text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
                     Preferences
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Budget Max</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-gray-900">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 text-center sm:text-left">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Budget Max</p>
+                      <p className="mt-0.5 text-xs font-bold text-gray-900 sm:text-sm">
                         {selectedUser.preferences.budgetMax.toLocaleString()} ETB
                       </p>
                     </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Cleanliness</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-gray-900">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 text-center sm:text-left">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Cleanliness</p>
+                      <p className="mt-0.5 text-xs font-bold text-gray-900 sm:text-sm">
                         {selectedUser.preferences.cleanliness}/5
                       </p>
                     </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sleep Schedule</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold capitalize text-gray-900">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 text-center sm:text-left">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sleep Schedule</p>
+                      <p className="mt-0.5 text-xs font-bold capitalize text-gray-900 sm:text-sm">
                         {selectedUser.preferences.sleepSchedule.replace("_", " ")}
                       </p>
                     </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Pets/Smoking</p>
-                      <p className="mt-0.5 text-[10px] sm:text-[11px] font-bold text-gray-900">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3 text-center sm:text-left">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Pets / Smoking</p>
+                      <p className="mt-0.5 text-xs font-bold text-gray-900 sm:text-sm">
                         {selectedUser.preferences.petsOk ? 'Pets OK' : 'No Pets'} <br/> {selectedUser.preferences.smokingOk ? 'Smoking OK' : 'No Smoking'}
                       </p>
                     </div>
@@ -331,20 +297,21 @@ const AdminUsersPage = () => {
                 </div>
               </div>
 
-              <div className="rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
-                <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+              {/* Moderation Controls (Admin Only) */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <h3 className="border-b border-gray-100 pb-1.5 text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
                   Moderation Controls
                 </h3>
                 
-                <div className={`rounded-xl border p-3 sm:p-4 mb-4 ${selectedUser.suspended ? 'bg-red-50/50 border-red-100' : 'bg-gray-50/60 border-gray-100'}`}>
-                  <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${selectedUser.suspended ? 'text-red-500' : 'text-green-500'}`}>
+                <div className={`rounded-2xl border p-4 mb-4 ${selectedUser.suspended ? 'bg-red-50/50 border-red-100' : 'bg-gray-50/60 border-gray-100'}`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider ${selectedUser.suspended ? 'text-red-500' : 'text-green-500'}`}>
                     {selectedUser.suspended ? 'Account Suspended' : 'Account Active'}
                   </p>
                   {selectedUser.suspended && (
-                    <div className="mt-2 text-xs sm:text-sm text-gray-700">
+                    <div className="mt-2 text-sm text-gray-700">
                       <p className="font-medium text-gray-900">Reason:</p>
                       <p className="mt-0.5">{selectedUser.suspendedReason}</p>
-                      <p className="mt-2 text-[9px] sm:text-[10px] text-gray-400">
+                      <p className="mt-2 text-[10px] text-gray-400">
                         Action taken on {new Date(selectedUser.suspendedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -353,7 +320,7 @@ const AdminUsersPage = () => {
 
                 <button
                   onClick={() => handleToggleSuspend(selectedUser)}
-                  className={`w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs font-semibold text-white shadow-sm transition active:scale-95 flex justify-center items-center gap-2 ${
+                  className={`w-full py-3 rounded-xl text-xs font-semibold text-white shadow-sm transition active:scale-95 flex justify-center items-center gap-2 ${
                     selectedUser.suspended 
                       ? 'bg-blue-900 hover:bg-blue-800' 
                       : 'bg-red-600 hover:bg-red-700'
