@@ -15,6 +15,12 @@ function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
 
+    const credentials = {
+      email,
+      password,
+      rememberMe,
+    };
+
     try {
       const result = await login({ email, password, rememberMe });
       if (result?.success) {
