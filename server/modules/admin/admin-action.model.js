@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
@@ -10,9 +9,12 @@ const adminActionSchema = new Schema(
       enum: [
         'approve_verification',
         'reject_verification',
-        'view_verification',    // §13.3 — decrypted identity viewed by admin
-        'list_verifications',  // §13.3 — admin queried the pending-review queue
+        'view_verification',  
+        'list_verifications',  
+        'approve_photo',       
+        'reject_photo',       
       ],
+ 
       required: true,
     },
     metadata: { type: Object }, // optional contextual payload (e.g. status filter, page)

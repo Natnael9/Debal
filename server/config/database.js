@@ -33,7 +33,7 @@ export async function connectDatabase() {
 }
 
 export function isDatabaseHealthy() {
-  return mongoose.connection.readyState === 1;
+  return mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2;
 }
 
 export async function disconnectDatabase() {
