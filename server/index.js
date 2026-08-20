@@ -1,9 +1,6 @@
 import 'dotenv/config';
 import dns from 'dns';
 
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (err) { }
 dns.setDefaultResultOrder('ipv4first');
 
 import Fastify from 'fastify';
@@ -25,6 +22,9 @@ import searchRoutes from './modules/search/search.routes.js';
 import { startModerationWorker } from './modules/moderation/moderation.worker.js';
 import { startNotificationWorker } from './modules/notifications/notification.worker.js';
 import matchmakingRoutes from './modules/matchmaking/matchmaking.routes.js';
+import moderationRoutes from './modules/moderation/moderation.routes.js';
+import googleOauthRoutes from './modules/auth/google-oauth.routes.js';
+
 const PORT = process.env.PORT || 4000;
 
 async function start() {
@@ -42,6 +42,7 @@ async function start() {
 
   await fastify.register(healthRoute);
   await fastify.register(authRoutes);
+  await fastify.register(googleOauthRoutes);
   await fastify.register(usersRoutes);
   await fastify.register(verificationRoutes);
   await fastify.register(chatRoutes);
@@ -52,6 +53,7 @@ async function start() {
 
   await fastify.register(searchRoutes);
   await fastify.register(matchmakingRoutes);
+  await fastify.register(moderationRoutes);
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);

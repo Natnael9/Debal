@@ -3,13 +3,30 @@ import Redis from 'ioredis';
 import { classifyImage } from './moderation.service.js';
 import { User } from '../users/users.model.js';
 
-const connection = new Redis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null,
-  ...(process.env.REDIS_URL?.startsWith('rediss://') && { tls: { rejectUnauthorized: false } }),
-});
+function getWorkerConnection() {
+  const url = process.env.REDIS_URL;
+  const isTls = url?.startsWith('rediss://');
+  let hostname = '';
+  try {
+    hostname = new URL(url).hostname;
+  } catch (err) {}
 
+  const connection = new Redis(url, {
+    maxRetriesPerRequest: null,
+    enableOfflineQueue: false,
+    connectTimeout: 20000,
+    ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
+  });
+
+  connection.on('error', (err) => {
+    console.error('[moderation worker redis error]', err.message);
+  });
+
+  return connection;
+}
 
 export function startModerationWorker() {
+  const connection = getWorkerConnection();
   const worker = new Worker(
     'photo-moderation',
     async (job) => {
