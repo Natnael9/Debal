@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiPost } from "../../services/api";
+import { apiPost, apiDelete } from "../../services/api";
 
 const MatchCard = ({ matchData, onBookmark }) => {
   const [isBookmarked, setIsBookmarked] = useState(matchData.isBookmarked || false);
@@ -17,11 +17,25 @@ const MatchCard = ({ matchData, onBookmark }) => {
   const avatarImage = matchData.avatarUrl || matchData.photoUrl;
   const matchScore = matchData.score ? Math.min(99, Math.max(65, Math.round(matchData.score))) : 88;
 
-  const handleToggleBookmark = (e) => {
+  const handleToggleBookmark = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsBookmarked((prev) => !prev);
-    if (onBookmark) onBookmark(candidateId);
+    const nextState = !isBookmarked;
+    setIsBookmarked(nextState);
+
+    if (onBookmark) {
+      onBookmark(candidateId, nextState);
+    } else {
+      try {
+        if (nextState) {
+          await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
+        } else {
+          await apiDelete(`/bookmarks/${candidateId}`);
+        }
+      } catch (err) {
+        console.warn("Bookmark toggle failed:", err.message);
+      }
+    }
   };
 
   const handleViewProfile = () => {
