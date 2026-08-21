@@ -22,6 +22,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.2",
+    "nodemailer": "^9.0.5",
     "nsfwjs": "^4.3.0",
     "otplib": "^13.4.1",
     "resend": "^6.20.0",
