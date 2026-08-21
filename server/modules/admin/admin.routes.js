@@ -7,6 +7,13 @@ import {
   decideVerificationHandler,
 } from '../verification/verification.controller.js';
 import { getAdminStats, getAuditLogs } from './admin-stats.controller.js';
+import {
+  searchUsers,
+  getUserDetails,
+  suspendUser,
+  reinstateUser,
+  deleteUser,
+} from './admin-users.controller.js';
 /**
  * Self-contained rate limiter, scoped only to admin login.
  * Deliberately NOT reusing shared/middleware/rate-limiter.middleware.js
@@ -137,5 +144,42 @@ export default async function adminRoutes(fastify) {
     '/api/v1/admin/audit-logs',
     { preHandler: requireAdmin },
     getAuditLogs
+  // -------------------------------------------------------------------------
+  // USER MANAGEMENT ENDPOINTS
+  // -------------------------------------------------------------------------
+
+  // GET /api/v1/admin/users - Search users[cite: 3]
+  fastify.get(
+    '/api/v1/admin/users',
+    { preHandler: requireAdmin },
+    searchUsers
+  );
+
+  // GET /api/v1/admin/users/:id - View full profile and report history[cite: 3]
+  fastify.get(
+    '/api/v1/admin/users/:id',
+    { preHandler: requireAdmin },
+    getUserDetails
+  );
+
+  // PATCH /api/v1/admin/users/:id/suspend - Suspend a user[cite: 3]
+  fastify.patch(
+    '/api/v1/admin/users/:id/suspend',
+    { preHandler: requireAdmin },
+    suspendUser
+  );
+
+  // PATCH /api/v1/admin/users/:id/reinstate - Reinstate a user[cite: 3]
+  fastify.patch(
+    '/api/v1/admin/users/:id/reinstate',
+    { preHandler: requireAdmin },
+    reinstateUser
+  );
+
+  // DELETE /api/v1/admin/users/:id - Hard delete a user[cite: 3]
+  fastify.delete(
+    '/api/v1/admin/users/:id',
+    { preHandler: requireAdmin },
+    deleteUser
   );
 }
