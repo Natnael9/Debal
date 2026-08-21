@@ -6,6 +6,7 @@ import {
   getVerificationDetailHandler,
   decideVerificationHandler,
 } from '../verification/verification.controller.js';
+import { getAdminStats, getAuditLogs } from './admin-stats.controller.js';
 import {
   searchUsers,
   getUserDetails,
@@ -126,6 +127,23 @@ export default async function adminRoutes(fastify) {
     decideVerificationHandler
   );
 
+
+  // -------------------------------------------------------------------------
+  // STATS & AUDIT LOG ENDPOINTS
+  // -------------------------------------------------------------------------
+
+  // GET /api/v1/admin/stats - Dashboard summary metrics[cite: 3]
+  fastify.get(
+    '/api/v1/admin/stats',
+    { preHandler: requireAdmin },
+    getAdminStats
+  );
+
+  // GET /api/v1/admin/audit-logs - Filterable activity history[cite: 3]
+  fastify.get(
+    '/api/v1/admin/audit-logs',
+    { preHandler: requireAdmin },
+    getAuditLogs
   // -------------------------------------------------------------------------
   // USER MANAGEMENT ENDPOINTS
   // -------------------------------------------------------------------------
