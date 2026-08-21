@@ -1,9 +1,16 @@
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
-const connection = new Redis(process.env.REDIS_URL, {
+const url = process.env.REDIS_URL;
+const isTls = url?.startsWith('rediss://');
+let hostname = '';
+try {
+  hostname = new URL(url).hostname;
+} catch (err) {}
+
+const connection = new Redis(url, {
     maxRetriesPerRequest: null, // required by BullMQ
-    ...(process.env.REDIS_URL?.startsWith('rediss://') && { tls: { rejectUnauthorized: false } }),
+    ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
 });
 
 export const photoModerationQueue = new Queue('photo-moderation', { connection });

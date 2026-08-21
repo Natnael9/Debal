@@ -3,9 +3,16 @@ import Redis from 'ioredis';
 import { sendEmail } from './email.util.js';
 import User from '../users/users.model.js';
 
-const connection = new Redis(process.env.REDIS_URL, {
+const url = process.env.REDIS_URL;
+const isTls = url?.startsWith('rediss://');
+let hostname = '';
+try {
+  hostname = new URL(url).hostname;
+} catch (err) {}
+
+const connection = new Redis(url, {
   maxRetriesPerRequest: null,
-  ...(process.env.REDIS_URL?.startsWith('rediss://') && { tls: { rejectUnauthorized: false } }),
+  ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
 });
 
 const handlers = {

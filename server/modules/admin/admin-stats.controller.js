@@ -2,7 +2,7 @@ import User from '../users/users.model.js';
 import Report from '../reports/reports.model.js';
 import { Match } from '../chat/matches.model.js';
 // Import the verification model we just found!
-import VerificationRequest from '../verification/verification.model.js'; 
+import { VerificationRequest } from '../verification/verification.model.js'; 
 import AdminAction from './admin-action.model.js';
 
 /**

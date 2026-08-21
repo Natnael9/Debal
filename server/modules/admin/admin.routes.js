@@ -144,6 +144,7 @@ export default async function adminRoutes(fastify) {
     '/api/v1/admin/audit-logs',
     { preHandler: requireAdmin },
     getAuditLogs
+  );
   // -------------------------------------------------------------------------
   // USER MANAGEMENT ENDPOINTS
   // -------------------------------------------------------------------------
