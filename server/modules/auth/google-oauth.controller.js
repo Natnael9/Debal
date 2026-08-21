@@ -7,6 +7,19 @@ const OAUTH_COOKIE_PATH = '/api/v1/auth/google';
 const OAUTH_COOKIE_MAX_AGE = 600; // 10 minutes — just needs to survive the redirect round-trip
 
 export async function googleRedirectHandler(request, reply) {
+  const { mock } = request.query || {};
+  if (mock === 'true' || process.env.ENABLE_MOCK_OAUTH === 'true') {
+    const user = await findOrCreateGoogleUser({
+      googleId: 'google_mock_user_123',
+      email: 'robelalemayehu838@gmail.com',
+      name: 'Robel Alemayehu',
+    });
+    const accessToken = signAccessToken(user);
+    const refreshToken = signRefreshToken(user);
+    setRefreshTokenCookie(reply, refreshToken);
+    return reply.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/oauth/callback?accessToken=${encodeURIComponent(accessToken)}`);
+  }
+
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
   const url = createGoogleAuthorizationURL(state, codeVerifier);

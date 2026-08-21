@@ -3,10 +3,11 @@ import { connectDatabase, disconnectDatabase } from '../../config/database.js';
 import { FaydaSimulatedRecord } from './fayda-simulated.model.js';
 
 const records = [
-  { idNumber: '1234567890', name: 'Robel Alemayehu', dateOfBirth: '1999-03-14' },
-  { idNumber: '2345678901', name: 'Nardos Haile', dateOfBirth: '2000-07-22' },
-  { idNumber: '3456789012', name: 'Test User', dateOfBirth: '1998-01-01' },
-  { idNumber: '4567890123', name: 'Sample Person', dateOfBirth: '2001-11-05' },
+  { idNumber: '1234567890', name: 'Robel Alemayehu', dateOfBirth: '2004-09-05' },
+  { idNumber: '2345678901', name: 'Nardos Haile', dateOfBirth: '2005-08-18' },
+  { idNumber: '3456789012', name: 'Natnael Ashenafi', dateOfBirth: '2003-09-20' },
+  { idNumber: '4567890123', name: 'Natnael Sebhat', dateOfBirth: '2005-09-14' },
+  { idNumber: '4567890167', name: 'Natnael Abrha', dateOfBirth: '2005-07-12' },
 ];
 
 async function seed() {

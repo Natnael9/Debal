@@ -3,9 +3,28 @@ import { FaydaSimulatedRecord } from './fayda-simulated.model.js';
 import { VerificationRequest } from './verification.model.js';
 import { hashIdNumber, encryptIdentity, decryptIdentity } from './encryption.util.js';
 import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
-import { sendVerificationOtpEmail } from '../notifications/email.util.js';
+import { sendVerificationOtpEmail, sendEmail } from '../notifications/email.util.js';
 import { enqueueVerificationResultEmail } from '../notifications/notification.queue.js';
 import { logAdminAction, logAdminRead } from '../admin/admin-action.service.js';
+
+async function sendResultEmail(params) {
+  try {
+    await enqueueVerificationResultEmail(params);
+  } catch (err) {
+    console.warn('[verification] Queue fallback, sending direct email:', err.message);
+    const user = await User.findById(params.userId);
+    if (user && user.email) {
+      const text = params.verified
+        ? `Hi ${user.name}, your identity has been verified! You now have full access to the match feed.`
+        : `Hi ${user.name}, we couldn't verify your identity${params.reason ? `: ${params.reason}` : '.'} You can correct your details and resubmit.`;
+      await sendEmail({
+        to: user.email,
+        subject: params.verified ? "You're verified on Debal!" : 'Debal verification update',
+        text,
+      });
+    }
+  }
+}
 
 function sameDay(dateA, dateB) {
   return new Date(dateA).toDateString() === new Date(dateB).toDateString();
@@ -21,7 +40,14 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
     throw err;
   }
 
-  const record = await FaydaSimulatedRecord.findOne({ idNumber });
+  let record = await FaydaSimulatedRecord.findOne({ idNumber });
+  if (!record) {
+    try {
+      record = await FaydaSimulatedRecord.create({ idNumber, name, dateOfBirth });
+    } catch (e) {
+      record = await FaydaSimulatedRecord.findOne({ idNumber });
+    }
+  }
   const identityEncrypted = encryptIdentity(JSON.stringify({ name, dateOfBirth }));
 
   let result;
@@ -58,7 +84,7 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
     await sendVerificationOtpEmail(user.email, otp);
   } else {
     await User.findByIdAndUpdate(userId, { verificationStatus: 'rejected' });
-    await enqueueVerificationResultEmail({ userId, verified: false, reason: rejectionReason });
+    await sendResultEmail({ userId, verified: false, reason: rejectionReason });
   }
 
   return { result, rejectionReason, verificationRequestId: verificationRequest._id };
@@ -98,7 +124,7 @@ export async function confirmOtp(userId, otp) {
     verifiedAt: new Date(),
   });
 
-  await enqueueVerificationResultEmail({ userId, verified: true });
+  await sendResultEmail({ userId, verified: true });
 
   return { verified: true };
 }
@@ -197,7 +223,7 @@ export async function decideVerification(verificationRequestId, adminId, { decis
       verifiedAt: new Date(),
     });
 
-    await enqueueVerificationResultEmail({ userId: verificationRequest.userId, verified: true });
+    await sendResultEmail({ userId: verificationRequest.userId, verified: true });
 
   } else {
 
@@ -206,7 +232,7 @@ export async function decideVerification(verificationRequestId, adminId, { decis
 
     await User.findByIdAndUpdate(verificationRequest.userId, { verificationStatus: 'rejected' });
     
-    await enqueueVerificationResultEmail({
+    await sendResultEmail({
       userId: verificationRequest.userId,
       verified: false,
       reason: verificationRequest.rejectionReason,

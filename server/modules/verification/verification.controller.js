@@ -131,7 +131,10 @@ export async function getVerificationDetailHandler(request, reply) {
 }
 
 export async function decideVerificationHandler(request, reply) {
-  const { decision, notes } = request.body;
+  let { decision, notes } = request.body || {};
+
+  if (decision === 'approved') decision = 'approve';
+  if (decision === 'rejected') decision = 'reject';
 
   if (!['approve', 'reject'].includes(decision)) {
     return reply.status(400).send({

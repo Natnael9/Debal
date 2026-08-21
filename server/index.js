@@ -24,7 +24,7 @@ import moderationRoutes from './modules/moderation/moderation.routes.js';
 import googleOauthRoutes from './modules/auth/google-oauth.routes.js';
 import reportRoutes from './modules/reports/reports.routes.js';
 import blocksRoutes from './modules/reports/blocks.routes.js';
-
+import uploadRoutes from './routes/upload.route.js';
 
 const PORT = process.env.PORT || 4000;
 
@@ -42,6 +42,7 @@ async function start() {
   await connectRedis();
 
   await fastify.register(healthRoute);
+  await fastify.register(uploadRoutes);
   await fastify.register(authRoutes);
   await fastify.register(googleOauthRoutes);
   await fastify.register(usersRoutes);

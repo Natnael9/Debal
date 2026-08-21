@@ -8,7 +8,9 @@ const google = new Google(
 
 export function createGoogleAuthorizationURL(state, codeVerifier) {
   const scopes = ['openid', 'profile', 'email'];
-  return google.createAuthorizationURL(state, codeVerifier, scopes);
+  const url = google.createAuthorizationURL(state, codeVerifier, scopes);
+  url.searchParams.set('prompt', 'select_account');
+  return url;
 }
 
 export async function exchangeGoogleCode(code, codeVerifier) {
