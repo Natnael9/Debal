@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthProvider';
 
@@ -7,8 +7,14 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const { adminLogin, isLoading } = useAdminAuth();
+  const { admin, adminLogin, isLoading } = useAdminAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (admin) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [admin, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,11 +25,11 @@ const AdminLoginPage = () => {
       return;
     }
 
-    const success = await adminLogin(email, password);
-    if (success) {
-      navigate('/admin/dashboard');
+    const result = await adminLogin(email, password);
+    if (result?.success) {
+      navigate('/admin/dashboard', { replace: true });
     } else {
-      setError('Invalid admin credentials');
+      setError(result?.error || 'Invalid admin credentials');
     }
   };
 

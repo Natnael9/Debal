@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAdminStats } from '../../services/adminApi';
 
 const AdminDashboardPage = () => {
   const [stats, setStats] = useState({
@@ -15,19 +16,19 @@ const AdminDashboardPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setTimeout(() => {
-          setStats({
-            totalUsers: 1420,
-            newSignups7d: 84,
-            openReports: 12,
-            pendingVerifications: 5,
-            matchesMade7d: 315,
-            suspendedUsers: 18,
-          });
-          setIsLoading(false);
-        }, 700);
+        const data = await getAdminStats();
+        const s = data?.data?.stats ?? data?.data ?? {};
+        setStats({
+          totalUsers:           s.totalUsers           ?? 0,
+          newSignups7d:         s.newSignups7d          ?? 0,
+          openReports:          s.openReports           ?? 0,
+          pendingVerifications: s.pendingVerifications  ?? 0,
+          matchesMade7d:        s.matchesMade7d         ?? 0,
+          suspendedUsers:       s.suspendedUsers        ?? 0,
+        });
       } catch (error) {
         console.error("Failed to fetch admin stats", error);
+      } finally {
         setIsLoading(false);
       }
     };

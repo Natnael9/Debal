@@ -1,10 +1,10 @@
 import { useState } from "react";
 
-function ChatList({ chats, activeChatId, onSelectChat, onCloseMobile }) {
+function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredChats = chats.filter((chat) =>
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (chat.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -26,6 +26,7 @@ function ChatList({ chats, activeChatId, onSelectChat, onCloseMobile }) {
         </div>
 
         <button
+          type="button"
           onClick={onCloseMobile}
           className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 md:hidden"
         >
@@ -54,52 +55,66 @@ function ChatList({ chats, activeChatId, onSelectChat, onCloseMobile }) {
         />
       </div>
 
-      {/* Conversations List - Proportional font and sizing */}
+      {/* Conversations List */}
       <div className="flex-1 space-y-1.5 overflow-y-auto pr-0.5">
-        {filteredChats.map((chat) => {
-          const isActive = chat.id === activeChatId;
+        {filteredChats.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 px-2 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 8 4.03 8z" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-gray-600">No conversations</p>
+            <p className="mt-0.5 text-[10px] text-gray-400 leading-tight">
+              {searchTerm ? "No match found for search term." : "Matched roommate connections will appear here."}
+            </p>
+          </div>
+        ) : (
+          filteredChats.map((chat) => {
+            const isActive = chat.id === activeChatId;
 
-          return (
-            <div
-              key={chat.id}
-              onClick={() => onSelectChat(chat.id)}
-              className={`group flex cursor-pointer items-center justify-between rounded-2xl p-2.5 transition ${
-                isActive
-                  ? "border border-blue-100 bg-blue-50/70 text-blue-900"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="relative shrink-0">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
-                    {chat.avatarText}
+            return (
+              <div
+                key={chat.id}
+                onClick={() => onSelectChat(chat.id)}
+                className={`group flex cursor-pointer items-center justify-between rounded-2xl p-2.5 transition ${
+                  isActive
+                    ? "border border-blue-100 bg-blue-50/70 text-blue-900"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="relative shrink-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
+                      {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "?")}
+                    </div>
+                    {chat.isOnline && (
+                      <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
+                    )}
                   </div>
-                  {chat.isOnline && (
-                    <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-xs font-bold text-gray-800 leading-tight">
+                      {chat.name || "User"}
+                    </h3>
+                    <p className="truncate text-[10px] text-gray-400 mt-0.5">
+                      {chat.lastMessage || "No messages yet"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
+                  <span className="text-[9px] font-medium text-gray-400">{chat.time}</span>
+                  {chat.unreadCount > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-900 text-[9px] font-bold text-white">
+                      {chat.unreadCount}
+                    </span>
                   )}
                 </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-xs font-bold text-gray-800 leading-tight">
-                    {chat.name}
-                  </h3>
-                  <p className="truncate text-[10px] text-gray-400 mt-0.5">
-                    {chat.lastMessage}
-                  </p>
-                </div>
               </div>
-
-              <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
-                <span className="text-[9px] font-medium text-gray-400">{chat.time}</span>
-                {chat.unreadCount > 0 && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-900 text-[9px] font-bold text-white">
-                    {chat.unreadCount}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import Step3Location from "../components/questionnaire/Step3Location";
 import Step4Lifestyle from "../components/questionnaire/Step4Lifestyle";
 import Step6TeamUp from "../components/questionnaire/Step6TeamUp";
 import Step5Photos from "../components/questionnaire/Step5Photos";
+import { apiPost } from "../services/api";
 
 function QuestionnaireWizardInner() {
   const navigate = useNavigate();
@@ -35,15 +36,80 @@ function QuestionnaireWizardInner() {
   const handleFinalSubmit = async (values) => {
     setSubmitError(null);
     setIsSubmitting(true);
-    const payload = { ...formData, ...values };
+    const raw = { ...formData, ...values };
+
+    // ── Gender mapping ────────────────────────────────────────────────────────
+    const genderMap = { woman: "female", man: "male" };
+    const gender = genderMap[raw.gender] ?? (raw.gender === "female" || raw.gender === "male" ? raw.gender : "male");
+
+    // ── Cleanliness mapping ───────────────────────────────────────────────────
+    const cleanlinessMap = { relaxed: 2, moderate: 3, very_clean: 5 };
+    const cleanliness = typeof raw.cleanliness === "number"
+      ? raw.cleanliness
+      : (cleanlinessMap[raw.cleanliness] ?? (Number(raw.lifestyle?.cleanliness) || 3));
+
+    // ── Smoking / pets mapping ────────────────────────────────────────────────
+    const smokingOk = raw.smoking === "yes" || raw.smoking === "outdoors_only" || raw.smokingOk === true || raw.lifestyle?.smokingOk === true;
+    const petsOk    = raw.pets === "has_pets" || raw.pets === "okay_with_pets" || raw.petsOk === true || raw.lifestyle?.petsOk === true;
+
+    // ── Sleep Schedule ────────────────────────────────────────────────────────
+    const sleepSchedule = raw.sleepSchedule || raw.lifestyle?.sleepSchedule || "flexible";
+
+    // ── Location mapping ──────────────────────────────────────────────────────
+    const locationCoords = Array.isArray(raw.location?.coordinates) && raw.location.coordinates.length === 2
+      ? raw.location.coordinates.map(Number)
+      : [38.7635, 9.0168]; // Addis Ababa default
+    const locationName   = raw.location?.displayName || raw.preferredLocation || "Addis Ababa";
+    const maxDistance    = Math.max(1, Number(raw.maxDistanceKm ?? raw.maxDistance ?? 10));
+
+    // ── Budget mapping ────────────────────────────────────────────────────────
+    const budgetMin = Math.max(0, Number(raw.budgetMin ?? raw.budget?.budgetMin ?? 0));
+    const rawMax    = Number(raw.budgetMax ?? raw.budget?.budgetMax ?? 10000);
+    const budgetMax = Math.max(budgetMin, rawMax);
+
+    // ── Age ───────────────────────────────────────────────────────────────────
+    const age = Math.min(100, Math.max(18, Number(raw.age || 20)));
+
+    // ── Final payload ─────────────────────────────────────────────────────────
+    const payload = {
+      housingStatus: raw.housingStatus || "needs_room",
+      age,
+      gender,
+      bio:           raw.bio || "",
+      budget: {
+        budgetMin,
+        budgetMax,
+      },
+      location: {
+        coordinates: locationCoords,
+        displayName: locationName,
+      },
+      maxDistance,
+      lifestyle: {
+        cleanliness,
+        sleepSchedule,
+        smokingOk,
+        petsOk,
+      },
+      teamUpEnabled: raw.housingStatus === "needs_room" ? Boolean(raw.teamUp ?? raw.teamUpEnabled) : false,
+    };
 
     try {
-      // TODO: wire up to the real questionnaire submit endpoint
-      console.log("Submitting questionnaire:", payload);
+      await apiPost("/onboarding/questionnaire", payload);
+      
+      // Save avatar if photo was uploaded
+      if (values?.photo?.url) {
+        try {
+          await apiPatch("/users/me", { avatarUrl: values.photo.url });
+        } catch (err) {
+          console.warn("Failed to update profile avatar:", err);
+        }
+      }
+
       clearDraft();
       navigate("/app/dashboard");
     } catch (err) {
-      setSubmitError("Something went wrong submitting your answers. Please try again.");
+      setSubmitError(err.message || "Something went wrong submitting your answers. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

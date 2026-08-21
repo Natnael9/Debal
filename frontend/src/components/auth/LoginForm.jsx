@@ -10,24 +10,27 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
-    const credentials = {
-      email,
-      password,
-      rememberMe,
-    };
-
     try {
-      const result = await login({ email, password, rememberMe });
+      const result = await login({ email, password });
       if (result?.success) {
-        navigate("/app/dashboard", { replace: true });
+        const u = result.user;
+        if (!u?.questionnaireCompleted) {
+          navigate("/questionnaire", { replace: true });
+        } else {
+          navigate("/app/dashboard", { replace: true });
+        }
+      } else {
+        setError(result?.error || "Invalid email or password.");
       }
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (err) {
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +40,7 @@ function LoginForm() {
     <div>
       {/* Google Login */}
       <a
-        href="http://localhost:5000/api/v1/auth/google"
+        href="/api/v1/auth/google"
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-98"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
@@ -58,6 +61,13 @@ function LoginForm() {
           <span className="bg-white px-2 font-medium text-gray-400">or</span>
         </div>
       </div>
+
+      {/* Error message */}
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-2.5">

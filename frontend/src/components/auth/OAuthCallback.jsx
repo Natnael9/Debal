@@ -1,19 +1,48 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { setToken } from "../../services/api";
+import { apiGet } from "../../services/api";
+import { connectSocket } from "../../services/socket";
+import { useAuth } from "../../context/AuthContext";
 
+/**
+ * Landing page for Google OAuth redirect.
+ * Backend sends the user to: /auth/callback?token=<accessToken>
+ *
+ * We store the token, fetch the user profile to populate AuthContext,
+ * then redirect to the appropriate page.
+ */
 function OAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    // Backend redirects to /oauth/callback?accessToken=<token>
+    const token = searchParams.get("accessToken") || searchParams.get("token");
 
-    if (token) {
-      localStorage.setItem("authToken", token);
-      navigate("/app");
-    } else {
-      navigate("/login?error=oauth_failed");
+    if (!token) {
+      navigate("/login?error=oauth_failed", { replace: true });
+      return;
     }
+
+    // Persist the token
+    setToken(token);
+
+    // Hydrate the user from the backend, then redirect
+    apiGet("/users/me")
+      .then((data) => {
+        const user = data?.data?.user;
+        connectSocket(token);
+
+        if (!user?.questionnaireCompleted) {
+          navigate("/questionnaire", { replace: true });
+        } else {
+          navigate("/app/dashboard", { replace: true });
+        }
+      })
+      .catch(() => {
+        navigate("/login?error=oauth_failed", { replace: true });
+      });
   }, [searchParams, navigate]);
 
   return (

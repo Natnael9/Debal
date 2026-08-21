@@ -10,7 +10,8 @@ const VerificationDetailModal = ({ request, onClose, onResolve }) => {
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      onResolve(request.id, actionType);
+      const action = actionType === 'approved' ? 'approve' : actionType === 'rejected' ? 'reject' : actionType;
+      onResolve(request._id || request.id, action, notes);
       onClose();
     }, 500);
   };

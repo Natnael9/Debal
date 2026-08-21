@@ -9,6 +9,19 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-    host: true
-  }
+    host: true,
+    proxy: {
+      // Forward all /api/* requests to the Fastify backend
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      // Proxy Socket.IO WebSocket connections
+      "/socket.io": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  },
 });

@@ -1,293 +1,205 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
 import MeetupCard from "../../components/chat/MeetupCard";
+import { apiGet, apiPost, apiPatch, getToken } from "../../services/api";
+import { connectSocket, getSocket } from "../../services/socket";
+import { useAuth } from "../../context/AuthContext";
 
-const INITIAL_CHATS = [
-  {
-    id: "1",
-    userId: "1",
-    name: "Elias",
-    subtitle: "Roommate match",
-    avatarText: "E",
-    avatarUrl: "",
-    isOnline: true,
-    lastMessage: "Hey, are you still looking for a roommate?",
-    time: "09:24 AM",
-    unreadCount: 0,
-    meetup: {
-      status: "none",
-    },
-    messages: [
-      {
-        id: "m1",
-        senderId: "1",
-        content: "Hey, are you still looking for a roommate?",
-        createdAt: "09:20 AM",
-      },
-      {
-        id: "m2",
-        senderId: "current-user",
-        content: "Yes! Still looking for a spot near campus.",
-        createdAt: "09:24 AM",
-      },
-      {
-        id: "m3",
-        senderId: "1",
-        content: "Awesome, what's your budget range for rent?",
-        createdAt: "09:26 AM",
-      },
-    ],
-  },
-
-  {
-    id: "2",
-    userId: "2",
-    name: "Sara",
-    subtitle: "Roommate match",
-    avatarText: "S",
-    avatarUrl: "",
-    isOnline: true,
-    lastMessage: "Hi! I saw your roommate profile.",
-    time: "Yesterday",
-    unreadCount: 2,
-    meetup: {
-      status: "pending",
-      proposedBy: "Sara",
-      date: "August 22, 2026",
-      time: "3:00 PM",
-      location: "Kazanchis, Addis Ababa",
-      note: "Let's meet for coffee!",
-    },
-    messages: [
-      {
-        id: "m4",
-        senderId: "2",
-        content: "Hi there! I saw your roommate profile.",
-        createdAt: "03:15 PM",
-      },
-      {
-        id: "m5",
-        senderId: "2",
-        content: "Are you still looking for a roommate?",
-        createdAt: "03:16 PM",
-      },
-    ],
-  },
-
-  {
-    id: "3",
-    userId: "3",
-    name: "Daniel",
-    subtitle: "Roommate match",
-    avatarText: "D",
-    avatarUrl: "",
-    isOnline: false,
-    lastMessage: "Would you like to talk about our preferences?",
-    time: "Nov 12",
-    unreadCount: 0,
-    meetup: {
-      status: "pending",
-      proposedBy: "Daniel",
-      date: "August 24, 2026",
-      time: "5:00 PM",
-      location: "CMC, Addis Ababa",
-      note: "Let's discuss our roommate preferences.",
-    },
-    messages: [
-      {
-        id: "m6",
-        senderId: "3",
-        content: "Hey! We seem to have similar roommate preferences.",
-        createdAt: "11:40 AM",
-      },
-      {
-        id: "m7",
-        senderId: "3",
-        content: "Would you like to talk about our preferences?",
-        createdAt: "11:45 AM",
-      },
-    ],
-  },
-
-  {
-    id: "4",
-    userId: "4",
-    name: "Hana",
-    subtitle: "Roommate match",
-    avatarText: "H",
-    avatarUrl: "",
-    isOnline: false,
-    lastMessage: "I am also looking for a quiet home.",
-    time: "Nov 10",
-    unreadCount: 0,
-    meetup: {
-      status: "none",
-    },
-    messages: [
-      {
-        id: "m8",
-        senderId: "4",
-        content: "Hi! I am also looking for a quiet and clean home.",
-        createdAt: "02:00 PM",
-      },
-    ],
-  },
-];
+/* ============================================================
+   ChatLayout
+   - Fetches accepted matches from GET /api/v1/matches/feed
+   - Loads message history from GET /api/v1/matches/:matchId/messages
+   - Sends messages via Socket.IO `message:send`
+   - Receives messages via Socket.IO `message:new`
+   - Accepts/Declines meetups via PATCH /api/v1/meetups/:id
+============================================================ */
 
 function ChatLayout() {
-  
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
-
   const chatFromUrl = searchParams.get("chat");
 
-  const [chats, setChats] = useState(INITIAL_CHATS);
+  // ── State ──────────────────────────────────────────────────
+  const [chats,        setChats]        = useState([]);
+  const [activeChatId, setActiveChatId] = useState(chatFromUrl || null);
+  const [messages,     setMessages]     = useState([]);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMsgs,  setIsLoadingMsgs]  = useState(false);
+  const [isSidebarOpen,  setIsSidebarOpen]  = useState(false);
+  const [isMeetupOpen,   setIsMeetupOpen]   = useState(false);
+  const [meetupAction,   setMeetupAction]   = useState(null);
 
-  const [activeChatId, setActiveChatId] = useState(
-    chatFromUrl || "1"
-  );
+  const activeChat = chats.find((c) => c.id === activeChatId) || chats[0] || null;
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // ── Load match list on mount ───────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingChats(true);
 
-  const [isMeetupOpen, setIsMeetupOpen] = useState(false);
+    apiGet("/matches/feed?pageSize=50")
+      .then((data) => {
+        if (cancelled) return;
+        const matches = data?.data?.matches ?? [];
+        // Map backend match objects to chat-list shape
+        const mapped = matches.map((m) => ({
+          id:          m._id,
+          matchId:     m._id,
+          userId:      m.user?._id ?? m._id,
+          name:        m.user?.name  ?? "Unknown",
+          avatarUrl:   m.user?.photoUrl ?? "",
+          avatarText:  (m.user?.name ?? "?")[0].toUpperCase(),
+          isOnline:    false,
+          lastMessage: m.lastMessage ?? "",
+          time:        m.lastMessageAt ? new Date(m.lastMessageAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+          unreadCount: 0,
+          meetup:      m.meetup ?? { status: "none" },
+        }));
+        setChats(mapped);
+        if (!activeChatId && mapped.length > 0) {
+          setActiveChatId(mapped[0].id);
+        }
+      })
+      .catch((err) => console.error("[chat] failed to load matches:", err.message))
+      .finally(() => { if (!cancelled) setIsLoadingChats(false); });
 
-  /*
-   * Meetup confirmation action.
-   *
-   * null      = no confirmation prompt
-   * "accept"  = asking user to confirm acceptance
-   * "decline" = asking user to confirm decline
-   */
-  const [meetupAction, setMeetupAction] = useState(null);
+    return () => { cancelled = true; };
+  }, []);
 
-  const activeChat =
-    chats.find((chat) => chat.id === activeChatId) || chats[0];
+  // ── Load messages when active chat changes ─────────────────
+  useEffect(() => {
+    if (!activeChatId) return;
+    let cancelled = false;
+    setIsLoadingMsgs(true);
 
+    apiGet(`/matches/${activeChatId}/messages`)
+      .then((data) => {
+        if (cancelled) return;
+        setMessages(data?.data?.messages ?? []);
+      })
+      .catch((err) => console.error("[chat] failed to load messages:", err.message))
+      .finally(() => { if (!cancelled) setIsLoadingMsgs(false); });
 
-      useEffect(() => {
-    if (!chatFromUrl) return;
+    return () => { cancelled = true; };
+  }, [activeChatId]);
 
-    const chatExists = INITIAL_CHATS.some(
-      (chat) => chat.id === chatFromUrl
+  // ── Socket.IO: connect + listen for incoming messages ──────
+  useEffect(() => {
+    const token = getToken();
+    const socket = connectSocket(token);
+
+    const handleNewMessage = (msg) => {
+      // Only append if the message belongs to the active conversation
+      if (msg.matchId === activeChatId) {
+        setMessages((prev) => [...prev, msg]);
+      }
+      // Update the last message preview in the chat list
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === msg.matchId
+            ? { ...c, lastMessage: msg.content, time: "Now" }
+            : c
+        )
+      );
+    };
+
+    socket?.on("message:new", handleNewMessage);
+    return () => { socket?.off("message:new", handleNewMessage); };
+  }, [activeChatId]);
+
+  // ── Send message ───────────────────────────────────────────
+  const handleSendMessage = useCallback((content) => {
+    if (!activeChatId || !content.trim()) return;
+
+    const socket = getSocket();
+
+    // Optimistic update
+    const tempMsg = {
+      _id:       `temp-${Date.now()}`,
+      matchId:   activeChatId,
+      senderId:  user?._id ?? "me",
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setChats((prev) =>
+      prev.map((c) =>
+        c.id === activeChatId
+          ? { ...c, lastMessage: content, time: "Just now" }
+          : c
+      )
     );
 
-    if (chatExists) {
-      setActiveChatId(chatFromUrl);
+    if (socket?.connected) {
+      socket.emit("message:send", { matchId: activeChatId, content });
+    } else {
+      // Fallback: REST
+      apiPost(`/matches/${activeChatId}/messages`, { content }).catch(console.error);
     }
-  }, [chatFromUrl]);
-  /* =====================================================
-     SEND MESSAGE
-  ====================================================== */
-const handleSendMessage = (content) => {
-  const newMessage = {
-    id: Date.now().toString(),
-    senderId: "current-user",
-    content,
-    createdAt: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
+  }, [activeChatId, user]);
 
-  setChats((prevChats) =>
-    prevChats.map((chat) => {
-      if (chat.id === activeChatId) {
-        return {
-          ...chat,
-          lastMessage: content,
-          time: "Just now",
-          messages: [...chat.messages, newMessage],
-        };
-      }
-
-      return chat;
-    })
-  );
-};
-
-  /* =====================================================
-     SELECT CHAT
-  ====================================================== */
-  const handleSelectChat = (chatId) => {
+  // ── Select chat ────────────────────────────────────────────
+  const handleSelectChat = useCallback((chatId) => {
     setActiveChatId(chatId);
     setIsSidebarOpen(false);
+    setChats((prev) =>
+      prev.map((c) => c.id === chatId ? { ...c, unreadCount: 0 } : c)
+    );
+  }, []);
 
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === chatId
-          ? {
-              ...chat,
-              unreadCount: 0,
-            }
-          : chat
+  // ── Meetup actions ─────────────────────────────────────────
+  const handleAcceptMeetup = async () => {
+    const meetupId = activeChat?.meetup?._id;
+    if (meetupId) {
+      try {
+        await apiPatch(`/meetups/${meetupId}`, { action: "accept" });
+      } catch (err) { console.error("Accept meetup failed:", err.message); }
+    }
+    setChats((prev) =>
+      prev.map((c) =>
+        c.id === activeChatId
+          ? { ...c, meetup: { ...c.meetup, status: "confirmed" } }
+          : c
       )
     );
-  };
-
-  /* =====================================================
-     ACCEPT MEETUP
-  ====================================================== */
-  const handleAcceptMeetup = () => {
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === activeChatId
-          ? {
-              ...chat,
-              meetup: {
-                ...chat.meetup,
-                status: "confirmed",
-              },
-            }
-          : chat
-      )
-    );
-
-    // Close confirmation prompt
     setMeetupAction(null);
-
-    // Close mobile meetup modal
     setIsMeetupOpen(false);
   };
 
-  /* =====================================================
-     DECLINE MEETUP
-  ====================================================== */
-  const handleDeclineMeetup = () => {
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === activeChatId
-          ? {
-              ...chat,
-              meetup: {
-                ...chat.meetup,
-                status: "declined",
-              },
-            }
-          : chat
+  const handleDeclineMeetup = async () => {
+    const meetupId = activeChat?.meetup?._id;
+    if (meetupId) {
+      try {
+        await apiPatch(`/meetups/${meetupId}`, { action: "decline" });
+      } catch (err) { console.error("Decline meetup failed:", err.message); }
+    }
+    setChats((prev) =>
+      prev.map((c) =>
+        c.id === activeChatId
+          ? { ...c, meetup: { ...c.meetup, status: "declined" } }
+          : c
       )
     );
-
-    // Close confirmation prompt
     setMeetupAction(null);
-
-    // Close mobile meetup modal
     setIsMeetupOpen(false);
   };
 
-  /* =====================================================
-     CANCEL MEETUP ACTION
-  ====================================================== */
-  const handleCancelMeetupAction = () => {
-    setMeetupAction(null);
-  };
+  const handleCancelMeetupAction = () => setMeetupAction(null);
+
+  // ── Loading state ──────────────────────────────────────────
+  if (isLoadingChats) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-[#2274A5]" />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 flex h-[calc(100dvh-3.5rem)] w-full justify-center overflow-hidden bg-slate-100 p-0 sm:top-20 md:static md:top-auto md:min-h-[calc(100vh-80px)] md:h-auto md:overflow-y-auto md:p-6 lg:p-8">
 
-      {/* =====================================================
-          MOBILE SIDEBAR OVERLAY
-      ====================================================== */}
+      {/* MOBILE SIDEBAR OVERLAY */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
@@ -295,19 +207,13 @@ const handleSendMessage = (content) => {
         />
       )}
 
-      {/* =====================================================
-          MAIN FRAME
-      ====================================================== */}
+      {/* MAIN FRAME */}
       <div className="relative flex h-full w-full max-w-[1400px] gap-0 overflow-hidden md:h-[80vh] md:gap-3 md:overflow-visible">
 
-        {/* =====================================================
-            1. CHAT LIST
-        ====================================================== */}
+        {/* 1. CHAT LIST */}
         <div
           className={`fixed inset-y-0 left-0 z-50 h-full transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[280px] md:shrink-0 md:translate-x-0 ${
-            isSidebarOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <ChatList
@@ -318,207 +224,113 @@ const handleSendMessage = (content) => {
           />
         </div>
 
-        {/* =====================================================
-            2. CHAT WINDOW
-        ====================================================== */}
+        {/* 2. CHAT WINDOW */}
         <div className="mt-6 flex h-[87vh] min-w-0 flex-1 sm:mt-0 sm:h-[80vh]">
           <ChatWindow
-            chat={activeChat}
+            chat={activeChat ? { ...activeChat, messages } : null}
+            isLoadingMessages={isLoadingMsgs}
             onSendMessage={handleSendMessage}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             onOpenMeetups={() => setIsMeetupOpen(true)}
           />
         </div>
 
-        {/* =====================================================
-            3. DESKTOP MEETUP PANEL
-        ====================================================== */}
+        {/* 3. DESKTOP MEETUP PANEL */}
         <aside className="hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:h-[80vh] md:flex">
-
-          {/* Panel Header */}
           <div className="mb-3 flex w-full flex-col items-center border-b border-gray-100 pb-2.5 text-center">
-            <h2 className="text-xs font-bold leading-tight text-gray-900">
-              Meetups
-            </h2>
-
+            <h2 className="text-xs font-bold leading-tight text-gray-900">Meetups</h2>
             <p className="mt-0.5 text-[9px] leading-none text-gray-400">
-              Meetup proposals with {activeChat.name}
+              Meetup proposals with {activeChat?.name ?? "..."}
             </p>
           </div>
-
-          {/* Meetup Card */}
           <MeetupCard
-            {...activeChat.meetup}
-            onAccept={() => {
-              setMeetupAction("accept");
-            }}
-            onDecline={() => {
-              setMeetupAction("decline");
-            }}
+            {...(activeChat?.meetup ?? { status: "none" })}
+            onAccept={() => setMeetupAction("accept")}
+            onDecline={() => setMeetupAction("decline")}
           />
         </aside>
       </div>
 
-      {/* =====================================================
-          MOBILE MEETUP MODAL
-      ====================================================== */}
+      {/* MOBILE MEETUP MODAL */}
       {isMeetupOpen && (
         <>
-          {/* Overlay */}
           <div
             onClick={() => setIsMeetupOpen(false)}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
           />
-
-          {/* Modal */}
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:hidden">
             <div className="relative flex max-h-[90vh] w-full max-w-[280px] flex-col items-center overflow-y-auto rounded-3xl bg-white p-3.5 shadow-2xl">
-
-              {/* Header */}
               <div className="mb-2 flex w-full items-center justify-between">
-                <h3 className="text-xs font-bold text-gray-900">
-                  Meetup Details
-                </h3>
-
+                <h3 className="text-xs font-bold text-gray-900">Meetup Details</h3>
                 <button
                   type="button"
                   onClick={() => setIsMeetupOpen(false)}
                   className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-500 hover:bg-gray-200"
-                >
-                  ✕
-                </button>
+                >✕</button>
               </div>
-
-              {/* Meetup Card */}
               <MeetupCard
-                {...activeChat.meetup}
-                onAccept={() => {
-                  setMeetupAction("accept");
-                }}
-                onDecline={() => {
-                  setMeetupAction("decline");
-                }}
+                {...(activeChat?.meetup ?? { status: "none" })}
+                onAccept={() => setMeetupAction("accept")}
+                onDecline={() => setMeetupAction("decline")}
               />
             </div>
           </div>
         </>
       )}
 
-      {/* =====================================================
-          MEETUP CONFIRMATION PROMPT
-      ====================================================== */}
+      {/* MEETUP CONFIRMATION DIALOG */}
       {meetupAction && (
         <>
-          {/* Confirmation overlay */}
-          <div
-            onClick={handleCancelMeetupAction}
-            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
-          />
-
-          {/* Confirmation dialog */}
+          <div onClick={handleCancelMeetupAction} className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm" />
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-
             <div className="w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl">
-
-              {/* Icon */}
               <div
                 className={`flex h-11 w-11 items-center justify-center rounded-full ${
-                  meetupAction === "accept"
-                    ? "bg-emerald-50 text-emerald-600"
-                    : "bg-rose-50 text-rose-600"
+                  meetupAction === "accept" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                 }`}
               >
                 {meetupAction === "accept" ? (
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="m5 12 4 4L19 6"
-                    />
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m5 12 4 4L19 6" />
                   </svg>
                 ) : (
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18 18 6M6 6l12 12"
-                    />
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 18 6M6 6l12 12" />
                   </svg>
                 )}
               </div>
 
-              {/* Title */}
               <h2 className="mt-4 text-base font-bold text-gray-900">
-                {meetupAction === "accept"
-                  ? "Accept this meetup?"
-                  : "Decline this meetup?"}
+                {meetupAction === "accept" ? "Accept this meetup?" : "Decline this meetup?"}
               </h2>
-
-              {/* Description */}
               <p className="mt-1 text-sm leading-relaxed text-gray-500">
                 {meetupAction === "accept"
-                  ? `Are you sure you want to accept the meetup with ${activeChat.meetup?.proposedBy || activeChat.name}?`
-                  : `Are you sure you want to decline the meetup with ${activeChat.meetup?.proposedBy || activeChat.name}?`}
+                  ? `Are you sure you want to accept the meetup with ${activeChat?.name}?`
+                  : `Are you sure you want to decline the meetup with ${activeChat?.name}?`}
               </p>
 
-              {/* Meetup summary */}
-              {activeChat.meetup?.status === "pending" && (
+              {activeChat?.meetup?.status === "pending" && (
                 <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
-                  <p className="text-xs font-semibold text-gray-800">
-                    {activeChat.meetup.date}
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    {activeChat.meetup.time}
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    {activeChat.meetup.location}
-                  </p>
+                  <p className="text-xs font-semibold text-gray-800">{activeChat.meetup.date}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{activeChat.meetup.time}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{activeChat.meetup.location}</p>
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="mt-5 flex gap-2">
-
-                {/* Cancel */}
                 <button
                   type="button"
                   onClick={handleCancelMeetupAction}
                   className="flex-1 rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-
-                {/* Confirm */}
+                >Cancel</button>
                 <button
                   type="button"
-                  onClick={
-                    meetupAction === "accept"
-                      ? handleAcceptMeetup
-                      : handleDeclineMeetup
-                  }
+                  onClick={meetupAction === "accept" ? handleAcceptMeetup : handleDeclineMeetup}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition ${
-                    meetupAction === "accept"
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-rose-600 hover:bg-rose-700"
+                    meetupAction === "accept" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
                   }`}
                 >
-                  {meetupAction === "accept"
-                    ? "Accept"
-                    : "Decline"}
+                  {meetupAction === "accept" ? "Accept" : "Decline"}
                 </button>
               </div>
             </div>

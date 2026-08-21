@@ -1,76 +1,31 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { apiPost, apiDelete } from "./api";
 
-/*
- * Report a user
+/**
+ * Report a user.
+ * POST /api/v1/reports
  *
- * POST /reports
- *
- * Body:
- * {
- *   userId,
- *   reason,
- *   details
- * }
+ * Note: backend expects `reportedUserId`, not `userId`.
  */
 export async function reportUser({ userId, reason, details }) {
-  const response = await fetch(`${API_BASE_URL}/reports`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
-      userId,
-      reason,
-      details,
-    }),
+  return apiPost("/reports", {
+    reportedUserId: userId,   // backend field name
+    reason,
+    details,
   });
-
-  if (!response.ok) {
-    let message = "Failed to submit report.";
-
-    try {
-      const data = await response.json();
-      message = data.message || message;
-    } catch {
-      // Keep default error message
-    }
-
-    throw new Error(message);
-  }
-
-  // Any 2xx response is considered successful
-  return response;
 }
 
-/*
- * Block a user
- *
- * POST /blocks/:userId
+/**
+ * Block a user.
+ * POST /api/v1/blocks/:userId
  */
 export async function blockUser(userId) {
-  const response = await fetch(`${API_BASE_URL}/blocks/${userId}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
+  return apiPost(`/blocks/${userId}`);
+}
 
-  if (!response.ok) {
-    let message = "Failed to block user.";
-
-    try {
-      const data = await response.json();
-      message = data.message || message;
-    } catch {
-      // Keep default error message
-    }
-
-    throw new Error(message);
-  }
-
-  // Any 2xx response is considered successful
-  return response;
+/**
+ * Unblock a user.
+ * DELETE /api/v1/blocks/:userId
+ */
+export async function unblockUser(userId) {
+  return apiDelete(`/blocks/${userId}`);
 }

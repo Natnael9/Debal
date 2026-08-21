@@ -1,32 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import VerificationDetailModal from '../../components/admin/VerificationDetailModal';
+import { getVerificationQueue, decideVerification } from '../../services/adminApi';
 
 const VerificationQueuePage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [queue, setQueue] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [queue, setQueue] = useState([
-    {
-      id: 'req_1',
-      userId: 'user_99',
-      fullName: 'Natnael Sebhat',
-      idNumber: 'ET-99482-11A',
-      dob: '2004-05-12',
-      submittedAt: 'Today, 10:23 AM',
-      status: 'pending_review'
-    },
-    {
-      id: 'req_2',
-      userId: 'user_104',
-      fullName: 'Sara Ahmed',
-      idNumber: 'ET-33214-88B',
-      dob: '2005-11-30',
-      submittedAt: 'Yesterday, 4:15 PM',
-      status: 'pending_review'
+  useEffect(() => {
+    setIsLoading(true);
+    getVerificationQueue()
+      .then((data) => {
+        const items = data?.data?.requests ?? data?.data?.verifications ?? (Array.isArray(data?.data) ? data?.data : []);
+        setQueue(items);
+      })
+      .catch((err) => console.error("Failed to load verification queue:", err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleResolve = async (requestId, decision = 'approve', notes = '') => {
+    try {
+      const normalizedDecision = decision === 'approved' ? 'approve' : decision === 'rejected' ? 'reject' : decision;
+      await decideVerification(requestId, normalizedDecision, notes);
+    } catch (err) {
+      console.warn("Decide verification error:", err.message);
     }
-  ]);
-
-  const handleResolve = (requestId) => {
-    setQueue(prev => prev.filter(req => req.id !== requestId));
+    setQueue((prev) => prev.filter((req) => (req._id ?? req.id) !== requestId));
+    setSelectedRequest(null);
   };
 
   return (
@@ -51,50 +51,65 @@ const VerificationQueuePage = () => {
 
         {/* Table Container */}
         <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="px-5 py-3.5">Candidate Identity</th>
-                  <th className="px-5 py-3.5">Document Number</th>
-                  <th className="px-5 py-3.5">Submission Timestamp</th>
-                  <th className="px-5 py-3.5 text-right">Review Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {queue.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="h-7 w-7 animate-spin rounded-full border-3 border-sky-500 border-t-transparent" />
+              <p className="text-xs font-semibold text-slate-400">Loading verification queue...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-xs text-slate-400">
-                      No pending identity verifications in queue.
-                    </td>
+                    <th className="px-5 py-3.5">Candidate Identity</th>
+                    <th className="px-5 py-3.5">Document Number</th>
+                    <th className="px-5 py-3.5">Submission Timestamp</th>
+                    <th className="px-5 py-3.5 text-right">Review Action</th>
                   </tr>
-                ) : (
-                  queue.map((req) => (
-                    <tr key={req.id} className="transition hover:bg-slate-50/50">
-                      <td className="whitespace-nowrap px-5 py-3.5">
-                        <div className="font-bold text-slate-900">{req.fullName}</div>
-                        <div className="font-mono text-[10px] text-slate-400">{req.userId}</div>
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3.5 font-mono text-slate-700">
-                        {req.idNumber}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
-                        {req.submittedAt}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-3.5 text-right">
-                        <button
-                          onClick={() => setSelectedRequest(req)}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
-                        >
-                          Review
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {queue.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-12 text-center text-xs text-slate-400">
+                        No pending identity verifications in queue.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    queue.map((req) => {
+                      const reqId = req._id ?? req.id;
+                      const name = req.fullName ?? req.name ?? 'Unspecified Name';
+                      const userId = req.userId?._id ?? req.userId ?? 'N/A';
+                      const idNum = req.idNumber ?? 'N/A';
+                      const time = req.submittedAt ? new Date(req.submittedAt).toLocaleString() : 'Recent';
+
+                      return (
+                        <tr key={reqId} className="transition hover:bg-slate-50/50">
+                          <td className="whitespace-nowrap px-5 py-3.5">
+                            <div className="font-bold text-slate-900">{name}</div>
+                            <div className="font-mono text-[10px] text-slate-400">{userId}</div>
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5 font-mono text-slate-700">
+                            {idNum}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
+                            {time}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5 text-right">
+                            <button
+                              onClick={() => setSelectedRequest(req)}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              Review
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
       </div>

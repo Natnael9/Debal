@@ -23,14 +23,22 @@
  * { url, key }.
  */
 
-const UPLOAD_ENDPOINT = "/api/v1/uploads/photo"; // TODO(Robel): replace with real endpoint
+const UPLOAD_ENDPOINT = "/api/v1/uploads/photo";
+
 export async function uploadPhoto(file, { signal } = {}) {
   const formData = new FormData();
   formData.append("photo", file);
 
+  const token = localStorage.getItem("accessToken");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(UPLOAD_ENDPOINT, {
     method: "POST",
     body: formData,
+    headers,
     signal,
   });
 
@@ -38,6 +46,6 @@ export async function uploadPhoto(file, { signal } = {}) {
     throw new Error(`Upload failed with status ${response.status}`);
   }
 
-  // Expected shape once wired: { url: string, key: string }
-  return response.json();
+  const json = await response.json();
+  return json.data || json;
 }

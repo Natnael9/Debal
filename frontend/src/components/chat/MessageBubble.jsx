@@ -1,4 +1,9 @@
 function MessageBubble({ message, isOwn }) {
+  const content = message?.content || message?.text || "";
+  const time = message?.createdAt
+    ? new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "";
+
   return (
     <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
       <div
@@ -19,11 +24,11 @@ function MessageBubble({ message, isOwn }) {
               : "rounded-2xl rounded-bl-xs border border-gray-100 bg-white text-gray-800"
           }`}
         >
-          {message.content}
+          {content}
         </div>
 
         <div className="mt-0.5 flex items-center gap-1 px-1">
-          <span className="text-[9px] text-gray-400">{message.createdAt}</span>
+          {time && <span className="text-[9px] text-gray-400">{time}</span>}
           {isOwn && (
             <svg className="h-2.5 w-2.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />

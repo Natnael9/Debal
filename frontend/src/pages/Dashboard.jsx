@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MatchCard from "../components/matchmaking/MatchCard";
+import { apiGet, apiPost } from "../services/api";
 
 // Search page components
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
 
 const MatchFeed = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [filters, setFilters] = useState({
     location: "",
@@ -18,89 +20,51 @@ const MatchFeed = () => {
     status: "any",
   });
 
-  // Temporary mock candidates
-  // Each candidate has a unique _id so we can open
-  // a different profile page for each person.
-  const [results, setResults] = useState([
-    {
-      _id: "1",
-      name: "Elias",
-      age: 21,
-      gender: "male",
-      bio: "Looking for a chill roommate. I study computer science.",
-      avatarUrl: "",
-      preferences: {
-        budgetMax: 6000,
-        cleanliness: 4,
-        sleepSchedule: "night_owl",
-      },
-    },
+  const [results, setResults] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-    {
-      _id: "2",
-      name: "Sara",
-      age: 20,
-      gender: "female",
-      bio: "Architecture student! Very tidy and organized.",
-      avatarUrl: "",
-      preferences: {
-        budgetMax: 8000,
-        cleanliness: 5,
-        sleepSchedule: "early_bird",
-      },
-    },
+  // Load match feed from backend
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
 
-    {
-      _id: "3",
-      name: "Daniel",
-      age: 23,
-      gender: "male",
-      bio: "Easygoing person who enjoys cooking and watching movies.",
-      avatarUrl: "",
-      preferences: {
-        budgetMax: 7000,
-        cleanliness: 4,
-        sleepSchedule: "flexible",
-      },
-    },
+    apiGet(`/matches/feed?page=${page}&pageSize=20`)
+      .then((data) => {
+        if (cancelled) return;
+        const matches = data?.data?.matches ?? [];
+        setResults(matches);
+        setHasMore(matches.length === 20);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || "Failed to load match feed.");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
 
-    {
-      _id: "4",
-      name: "Hana",
-      age: 22,
-      gender: "female",
-      bio: "Medical student looking for a quiet and clean roommate.",
-      avatarUrl: "",
-      preferences: {
-        budgetMax: 9000,
-        cleanliness: 5,
-        sleepSchedule: "early_bird",
-      },
-    },
-  ]);
+    return () => { cancelled = true; };
+  }, [page]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
+    setPage(1); // reset to first page on new search
+  };
 
-    setIsLoading(true);
-
-    console.log("Applying filters:", filters);
-
-    // TODO:
-    // Replace this with the backend search API later.
-
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+  // Bookmark a candidate
+  const handleBookmark = async (candidateId) => {
+    try {
+      await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
+    } catch (err) {
+      console.warn("Bookmark failed:", err.message);
+    }
   };
 
   return (
@@ -139,17 +103,26 @@ const MatchFeed = () => {
             <div className="flex items-center justify-center py-20">
               <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-[#2274A5]" />
             </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-red-100 bg-red-50 py-12 text-center">
+              <p className="text-sm font-medium text-red-600">{error}</p>
+              <button
+                onClick={() => setPage(1)}
+                className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700"
+              >
+                Retry
+              </button>
+            </div>
           ) : results.length > 0 ? (
 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
-
               {results.map((match) => (
                 <MatchCard
                   key={match._id}
                   matchData={match}
+                  onBookmark={() => handleBookmark(match._id)}
                 />
               ))}
-
             </div>
 
           ) : (
@@ -158,9 +131,8 @@ const MatchFeed = () => {
               <h3 className="mb-2 text-xl font-bold text-gray-900">
                 No matches found
               </h3>
-
               <p className="text-gray-500">
-                Try adjusting your filters to see more people.
+                Try adjusting your filters or complete your profile to see more people.
               </p>
             </div>
 

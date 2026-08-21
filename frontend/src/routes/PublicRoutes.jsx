@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import OAuthCallback from "../components/auth/OAuthCallback";
 
 function PublicRoutes() {
   return (
@@ -14,6 +15,9 @@ function PublicRoutes() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route path="/register" element={<RegisterPage />} />
+
+      {/* Google OAuth redirect landing – backend sends user here with ?accessToken= */}
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
 
       <Route
         path="*"

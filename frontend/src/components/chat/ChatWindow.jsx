@@ -7,6 +7,7 @@ import MeetupRequestModal from "./MeetupRequestModal";
 
 function ChatWindow({
   chat,
+  isLoadingMessages = false,
   onSendMessage,
   onOpenSidebar,
   onOpenMeetups,
@@ -38,6 +39,32 @@ function ChatWindow({
     };
   }, []);
 
+  // Empty or Unselected Chat Fallback UI
+  if (!chat) {
+    return (
+      <div className="flex flex-1 h-full min-h-[350px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-none border-0 bg-white p-8 text-center shadow-none md:rounded-3xl md:border md:border-gray-100 md:shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl border border-sky-100 bg-sky-50 text-sky-600">
+          <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 8 4.03 8z" />
+          </svg>
+        </div>
+        <h3 className="mt-4 text-sm font-bold text-gray-800">No Conversation Selected</h3>
+        <p className="mt-1 max-w-xs text-xs text-gray-400 leading-relaxed">
+          Select a chat from your contacts list or connect with new roommate candidates to start messaging.
+        </p>
+        {onOpenSidebar && (
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            className="mt-5 rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 md:hidden"
+          >
+            View Messages
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-none border-0 bg-white shadow-none md:rounded-3xl md:border md:border-gray-100 md:shadow-sm">
 
@@ -47,6 +74,7 @@ function ChatWindow({
         <div className="flex items-center gap-2.5">
           {/* Mobile Drawer Opener */}
           <button
+            type="button"
             onClick={onOpenSidebar}
             className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition hover:bg-gray-200 md:hidden"
             aria-label="Open chat list"
@@ -69,7 +97,7 @@ function ChatWindow({
           {/* Avatar */}
           <div className="relative">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
-              {chat.avatarText}
+              {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")}
             </div>
 
             {chat.isOnline && (
@@ -80,33 +108,17 @@ function ChatWindow({
           {/* User Info */}
           <div>
             <h1 className="text-xs font-bold leading-tight text-gray-800">
-              {chat.name}
+              {chat.name || "Chat"}
             </h1>
 
             <p className="text-[10px] text-gray-400 leading-none">
-              {chat.subtitle} • {chat.isOnline ? "Online" : "Offline"}
+              {chat.isOnline ? "Online" : "Offline"}
             </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-1 text-gray-400">
-          <button className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-gray-100 hover:text-gray-600">
-            <svg
-              className="h-3.5 w-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a2 2 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-          </button>
-
           {/* Three Dots Menu */}
           <div ref={actionsRef} className="relative">
             <button
@@ -140,7 +152,7 @@ function ChatWindow({
                   type="button"
                   onClick={() => {
                     setShowActions(false);
-                    onOpenMeetups();
+                    onOpenMeetups?.();
                   }}
                   className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-900"
                 >
@@ -161,6 +173,7 @@ function ChatWindow({
                   </div>
                   <span>Show Meetups</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -193,7 +206,6 @@ function ChatWindow({
                 <button
                   type="button"
                   onClick={() => {
-                    console.log("Report user");
                     setShowActions(false);
                     setShowReportModal(true);
                   }}
@@ -220,10 +232,8 @@ function ChatWindow({
                 <button
                   type="button"
                   onClick={() => {
-                    console.log("Block user");
                     setShowActions(false);
                     setShowBlockModal(true);
-                    
                   }}
                   className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
                 >
@@ -245,7 +255,6 @@ function ChatWindow({
                   <span>Block User</span>
                 </button>
               </div>
-              
             )}
           </div>
         </div>
@@ -253,9 +262,10 @@ function ChatWindow({
 
       {/* Messages */}
       <MessageList
-        messages={chat.messages}
+        messages={chat.messages || []}
         currentUserId={currentUserId}
         isTyping={isTyping}
+        isLoading={isLoadingMessages}
       />
 
       {/* Input */}
@@ -285,8 +295,8 @@ function ChatWindow({
           }}
           onClose={() => setShowBlockModal(false)}
         />
-        
       )}
+
       {/* Meetup Request Modal */}
       {showMeetupRequest && (
         <MeetupRequestModal
@@ -297,45 +307,42 @@ function ChatWindow({
           onClose={() => setShowMeetupRequest(false)}
           onSent={() => {
             setShowMeetupSuccess(true);
-
             setTimeout(() => {
               setShowMeetupSuccess(false);
             }, 3000);
           }}
         />
       )}
-      
+
       {/* Meetup Success Notification */}
-      
-    {showMeetupSuccess && (
-      <div className="fixed right-4 top-4 z-[110] flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-white/95 px-3.5 py-2.5 shadow-lg shadow-emerald-950/5 backdrop-blur-xs transition sm:right-6 sm:top-6">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/80">
-          <svg
-            className="h-3.5 w-3.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2.5"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
+      {showMeetupSuccess && (
+        <div className="fixed right-4 top-4 z-[110] flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-white/95 px-3.5 py-2.5 shadow-lg shadow-emerald-950/5 backdrop-blur-xs transition sm:right-6 sm:top-6">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/80">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
 
-        <div className="min-w-0 pr-1">
-          <p className="text-xs font-bold leading-tight text-gray-900">
-            Meetup request sent
-          </p>
-
-          <p className="mt-0.5 text-[10px] text-gray-500 leading-none">
-            Your suggestion was sent successfully.
-          </p>
+          <div className="min-w-0 pr-1">
+            <p className="text-xs font-bold leading-tight text-gray-900">
+              Meetup request sent
+            </p>
+            <p className="mt-0.5 text-[10px] text-gray-500 leading-none">
+              Your suggestion was sent successfully.
+            </p>
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }

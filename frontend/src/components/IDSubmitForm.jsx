@@ -1,28 +1,44 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { apiPost } from '../services/api';
 
-// Zod schema for form validation
 const idSchema = z.object({
   idNumber: z.string().min(5, "ID number must be at least 5 characters"),
   fullName: z.string().min(2, "Please enter your full legal name"),
   dob: z.string().nonempty("Date of birth is required"),
 });
 
-// 1. CHANGED PROPS: We now accept 'onSubmit' and 'onCancel' from ProfilePage
 const IDSubmitForm = ({ onSubmit, onCancel }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(idSchema),
   });
 
-  const handleFormSubmit = (data) => {
-    console.log("Submitting ID Data:", data);
-    // TODO: Wire this to POST /verification/submit on the backend
-    
-    // 2. TRIGGER PROP: Tell ProfilePage to move to step 2
-    if (onSubmit) {
-        onSubmit(data);
+  const handleFormSubmit = async (data) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      const res = await apiPost('/verification/submit', {
+        idNumber: data.idNumber,
+        name: data.fullName,
+        dateOfBirth: data.dob,
+      });
+
+      if (res?.success) {
+        if (onSubmit) {
+          onSubmit(data);
+        }
+      } else {
+        setErrorMessage(res?.message || 'Verification submission failed.');
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to connect to verification service.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -32,6 +48,12 @@ const IDSubmitForm = ({ onSubmit, onCancel }) => {
         <h2 className="text-xl font-bold text-gray-900">Verify Your Identity</h2>
         <p className="text-sm text-gray-500 mt-1">Please enter your details exactly as they appear on your National ID (Fayda).</p>
       </div>
+
+      {errorMessage && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700">
+          {errorMessage}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <div>
@@ -79,21 +101,22 @@ const IDSubmitForm = ({ onSubmit, onCancel }) => {
           </div>
         </div>
 
-        {/* 3. BUTTONS: Added a Cancel button next to Submit */}
         <div className="flex gap-4 pt-4 border-t border-gray-100">
           <button
             type="button"
             onClick={onCancel}
-            className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors"
+            disabled={isSubmitting}
+            className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           
           <button
             type="submit"
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2274A5] transition-colors"
+            disabled={isSubmitting}
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2274A5] transition-colors disabled:opacity-50"
           >
-            Submit & Continue
+            {isSubmitting ? "Submitting..." : "Submit & Continue"}
           </button>
         </div>
       </form>

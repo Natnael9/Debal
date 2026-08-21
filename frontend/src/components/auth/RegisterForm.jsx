@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -6,9 +6,11 @@ import { useAuth } from "../../context/AuthContext";
 import { registerSchema } from "../../schemas/authSchema";
 
 function RegisterForm() {
-  const { login } = useAuth();
+  const { register: registerUser, login } = useAuth();
+  const navigate = useNavigate();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const {
     register,
@@ -19,14 +21,22 @@ function RegisterForm() {
   });
 
   const onSubmit = async (data) => {
+    setError("");
     try {
       setIsSubmitting(true);
-      await login({
+      const result = await registerUser({
         name: data.name,
         email: data.email,
+        password: data.password,
       });
-    } catch (error) {
-      console.error("Registration error:", error);
+      if (result?.success) {
+        // New users always go to questionnaire first
+        navigate("/questionnaire", { replace: true });
+      } else {
+        setError(result?.error || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -36,7 +46,7 @@ function RegisterForm() {
     <div>
       {/* Google Sign Up */}
       <a
-        href="http://localhost:5000/api/v1/auth/google"
+        href="/api/v1/auth/google"
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-98"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
@@ -57,6 +67,13 @@ function RegisterForm() {
           <span className="bg-white px-2 font-medium text-gray-400">or</span>
         </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          {error}
+        </p>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
