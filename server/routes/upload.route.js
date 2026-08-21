@@ -5,7 +5,7 @@ import { authMiddleware } from '../modules/auth/auth.middleware.js';
 export default async function uploadRoutes(fastify) {
   await fastify.register(multipart, {
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: 10 * 1024 * 1024, // 10MB
     },
   });
 

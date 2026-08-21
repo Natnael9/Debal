@@ -43,7 +43,8 @@ export async function uploadPhoto(file, { signal } = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed with status ${response.status}`);
+    const errJson = await response.json().catch(() => ({}));
+    throw new Error(errJson.message || `Upload failed with status ${response.status}`);
   }
 
   const json = await response.json();

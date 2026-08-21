@@ -29,7 +29,10 @@ import uploadRoutes from './routes/upload.route.js';
 const PORT = process.env.PORT || 4001;
 
 async function start() {
-  const fastify = Fastify({ logger: true });
+  const fastify = Fastify({ 
+    logger: true,
+    bodyLimit: 15 * 1024 * 1024, // 15MB limit for image uploads
+  });
 
   // Global User-Friendly Error Handler
   fastify.setErrorHandler((error, request, reply) => {
