@@ -40,7 +40,7 @@ function ProfilePage() {
 
         photoUrl: "",
 
-        verificationStatus: "verified",
+        verificationStatus: "not Verified",
 
         teamUpEnabled: false,
 
