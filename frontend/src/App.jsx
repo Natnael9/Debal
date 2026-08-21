@@ -1,20 +1,13 @@
-import Navbar from "./components/common/Navbar";
-import Footer from "./components/common/Footer";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
+import { AdminAuthProvider } from "./context/AdminAuthProvider";
 
 function App() {
   return (
     <AuthProvider>
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-
-        <main className="flex-1">
-          <AppRoutes />
-        </main>
-
-        <Footer />
-      </div>
+      <AdminAuthProvider>
+        <AppRoutes />
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }

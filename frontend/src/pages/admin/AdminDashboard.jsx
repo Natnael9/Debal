@@ -57,39 +57,7 @@ const AdminDashboardPage = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       
-      {/* Midaso's Nav Shell (Sidebar) */}
-      <aside className="w-64 bg-[#0B3954] text-white hidden md:flex flex-col shadow-lg">
-        <div className="p-6 text-2xl font-bold border-b border-[#1A5C83]">
-          Debal Admin
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <Link 
-            to="/admin/dashboard" 
-            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin/dashboard' ? 'bg-[#2274A5]' : 'hover:bg-[#1A5C83]'}`}
-          >
-            Dashboard
-          </Link>
-          <Link 
-            to="/admin/activity" 
-            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin/activity' ? 'bg-[#2274A5]' : 'hover:bg-[#1A5C83]'}`}
-          >
-            Activity Log
-          </Link>
-          <Link 
-            to="/admin/verifications" 
-            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin/verifications' ? 'bg-[#2274A5]' : 'hover:bg-[#1A5C83]'}`}
-          >
-            Verification Queue
-          </Link>
-          <Link 
-            to="/admin/photos" 
-            className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin/photos' ? 'bg-[#2274A5]' : 'hover:bg-[#1A5C83]'}`}
-          >
-            Photo Review
-          </Link>
-        </nav>
-      </aside>
-
+      
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="mb-8">
