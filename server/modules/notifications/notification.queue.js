@@ -36,7 +36,7 @@ async function enqueueMeetupUpdateEmail({ userId, meetupId, summary }) {
     return;
   }
 
-  const jobId = `meetup-update:${userId}:${meetupId}:${Date.now()}`;
+  const jobId = `meetup-update_${userId}_${meetupId}_${Date.now()}`;
   await notificationQueue.add(
     'email:meetup-update',
     { userId, meetupId, summary },

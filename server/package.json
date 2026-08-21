@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "start": "node index.js",
+    "test": "node scripts/test-all.js",
+    "test:e2e": "node scripts/test-all.js"
+  },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
