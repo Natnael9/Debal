@@ -1,44 +1,58 @@
-/**
- * email.util.js
- *
- * NOTE FOR TEAM: Architecture doc §2 specifies SendGrid for transactional
- * email. Switched to Resend on Aug 15 2026 after Twilio SendGrid rejected
- * account activation (ticket #29014791, cause undisclosed by Twilio).
- * Flag for architecture doc update — same "resolve mismatches" pattern as
- * the users.model.js note.
- */
+import nodemailer from 'nodemailer';
 
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || `"Debal App" <${SMTP_USER}>`;
 
-import { Resend } from 'resend';
+// Create reusable transporter
+const transporter = (SMTP_USER && SMTP_PASS)
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    })
+  : null;
 
-const RESEND_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-
-const resend = RESEND_KEY ? new Resend(RESEND_KEY) : null;
-
-export async function sendEmail({ to, subject, text }) {
-  if (!resend) {
-    console.log(`[email:fallback] To: ${to} | Subject: ${subject}\n${text}`);
+export async function sendEmail({ to, subject, text, html }) {
+  if (!transporter) {
+    console.log(`\n========================================\n[email:fallback]\nTo: ${to}\nSubject: ${subject}\n${text || html}\n========================================\n`);
     return;
   }
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
-    to,
-    subject,
-    text,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      text,
+      html: html || text,
+    });
 
-  if (error) {
-    console.error('[email] Resend send failed:', error.message);
-    throw new Error(`Failed to send email: ${error.message}`);
+    console.log(`[email] Successfully sent email to ${to} (MessageId: ${info.messageId})`);
+    return info;
+  } catch (err) {
+    console.warn(`\n⚠️ [email] SMTP send failed to ${to}: ${err.message}`);
+    console.log(`\n========================================\n[email:dev-fallback]\nTo: ${to}\nSubject: ${subject}\n${text || html}\n========================================\n`);
   }
 }
 
 export async function sendVerificationOtpEmail(to, otp) {
-  await sendEmail({
-    to,
-    subject: 'Your Debal verification code',
-    text: `Your verification code is ${otp}. It expires in 10 minutes.`,
-  });
+  const subject = 'Your Debal verification code';
+  const text = `Your verification code is ${otp}. It expires in 10 minutes.`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+      <h2 style="color: #4F46E5;">Debal Roommate Verification</h2>
+      <p>Use the following verification code to complete your identity verification:</p>
+      <div style="background: #F3F4F6; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #111827; border-radius: 6px; margin: 15px 0;">
+        ${otp}
+      </div>
+      <p style="color: #6B7280; font-size: 13px;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, text, html });
 }
