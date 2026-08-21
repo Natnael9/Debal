@@ -8,9 +8,11 @@ const otpSchema = z.object({
   otp: z.string().length(6, "OTP must be exactly 6 digits"),
 });
 
-const OTPConfirmForm = ({ onSuccess }) => {
+const OTPConfirmForm = ({ onSuccess, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(otpSchema),
@@ -19,6 +21,7 @@ const OTPConfirmForm = ({ onSuccess }) => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     setErrorMessage('');
+    setResendMessage('');
     try {
       const res = await apiPost('/verification/confirm-otp', { otp: data.otp });
       if (res?.success) {
@@ -30,6 +33,24 @@ const OTPConfirmForm = ({ onSuccess }) => {
       setErrorMessage(err.message || 'Invalid or expired OTP code.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setIsResending(true);
+    setErrorMessage('');
+    setResendMessage('');
+    try {
+      const res = await apiPost('/verification/resend-otp');
+      if (res?.success) {
+        setResendMessage(res?.message || 'A new verification code has been sent to your email.');
+      } else {
+        setErrorMessage(res?.message || 'Failed to resend verification code.');
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to resend verification code.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -45,6 +66,12 @@ const OTPConfirmForm = ({ onSuccess }) => {
       {errorMessage && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs font-medium text-red-700 text-center">
           {errorMessage}
+        </div>
+      )}
+
+      {resendMessage && (
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700 text-center">
+          {resendMessage}
         </div>
       )}
 
@@ -67,19 +94,34 @@ const OTPConfirmForm = ({ onSuccess }) => {
         </div>
       </div>
 
-      <div>
+      <div className="flex gap-3">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting || isResending}
+            className="w-1/3 flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2274A5] transition-colors disabled:opacity-70"
+          className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2274A5] transition-colors disabled:opacity-70"
         >
           {isSubmitting ? 'Verifying...' : 'Verify Identity'}
         </button>
       </div>
       
       <div className="text-center mt-4">
-        <button type="button" className="text-sm font-medium text-[#2274A5] hover:text-[#1A5C83]">
-          Didn't receive a code? Resend
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isResending || isSubmitting}
+          className="text-sm font-medium text-[#2274A5] hover:text-[#1A5C83] disabled:opacity-50 transition-colors"
+        >
+          {isResending ? "Resending code..." : "Didn't receive a code? Resend"}
         </button>
       </div>
     </form>

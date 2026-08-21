@@ -1,6 +1,7 @@
 import {
   submitVerification,
   confirmOtp,
+  resendOtp,
   listVerifications,
   getVerificationDetail,
   decideVerification,
@@ -65,6 +66,22 @@ export async function confirmOtpHandler(request, reply) {
   } catch (err) {
     const knownErrors = ['NO_PENDING_VERIFICATION', 'OTP_EXPIRED', 'OTP_INCORRECT'];
     if (knownErrors.includes(err.code)) {
+      return reply.status(400).send({ success: false, error: err.code, message: err.message });
+    }
+    request.log.error(err);
+    return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });
+  }
+}
+
+export async function resendOtpHandler(request, reply) {
+  try {
+    const result = await resendOtp(request.user._id);
+    return reply.send({
+      success: true,
+      message: result.message,
+    });
+  } catch (err) {
+    if (err.code === 'NO_PENDING_VERIFICATION' || err.code === 'USER_NOT_FOUND') {
       return reply.status(400).send({ success: false, error: err.code, message: err.message });
     }
     request.log.error(err);

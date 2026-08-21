@@ -129,6 +129,36 @@ export async function confirmOtp(userId, otp) {
   return { verified: true };
 }
 
+export async function resendOtp(userId) {
+  const verificationRequest = await VerificationRequest.findOne({
+    userId,
+    result: 'matched',
+    otpVerifiedAt: { $exists: false },
+  }).sort({ submittedAt: -1 });
+
+  if (!verificationRequest) {
+    const err = new Error('No pending verification found. Please submit your Fayda ID details first.');
+    err.code = 'NO_PENDING_VERIFICATION';
+    throw err;
+  }
+
+  const { otp, expiresAt } = generateOtp();
+  verificationRequest.otpHash = hashOtp(otp);
+  verificationRequest.otpExpiresAt = expiresAt;
+  await verificationRequest.save();
+
+  const user = await User.findById(userId);
+  if (!user || !user.email) {
+    const err = new Error('User email not found.');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  await sendVerificationOtpEmail(user.email, otp);
+
+  return { message: 'Verification code resent successfully.' };
+}
+
 
 // ---------------------------------------------------------------------------
 // Admin queue (FR-2.7, FR-12.2, §13.3)

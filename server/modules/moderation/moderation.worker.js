@@ -9,7 +9,7 @@ function getWorkerConnection() {
   let hostname = '';
   try {
     hostname = new URL(url).hostname;
-  } catch (err) {}
+  } catch (err) { }
 
   const connection = new Redis(url, {
     maxRetriesPerRequest: null,

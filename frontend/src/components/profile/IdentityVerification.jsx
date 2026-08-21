@@ -1,5 +1,17 @@
-function IdentityVerification({ status = "pending" }) {
+function IdentityVerification({ status = "unverified" }) {
   const verificationConfig = {
+    unverified: {
+      label: "Unverified",
+      containerClass: "border-slate-200 bg-slate-50 text-slate-800",
+      badgeClass: "border-slate-200 bg-slate-100 text-slate-700",
+      iconBg: "bg-slate-200 text-slate-700",
+      description: "Your identity is not verified yet. Verify your ID to increase trust and unlock all features.",
+      icon: (
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      ),
+    },
     pending: {
       label: "Verification Pending",
       containerClass: "border-amber-100/80 bg-amber-50/40 text-amber-800",
@@ -38,7 +50,7 @@ function IdentityVerification({ status = "pending" }) {
     },
   };
 
-  const current = verificationConfig[status] || verificationConfig.pending;
+  const current = verificationConfig[status] || verificationConfig.unverified;
 
   return (
     <div className="w-full rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7 md:p-8">

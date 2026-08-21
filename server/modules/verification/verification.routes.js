@@ -2,6 +2,7 @@ import { authMiddleware } from '../auth/auth.middleware.js';
 import {
   submitVerificationHandler,
   confirmOtpHandler,
+  resendOtpHandler,
 } from './verification.controller.js';
 
 // User-facing (self-service) verification routes only.
@@ -17,5 +18,11 @@ export default async function verificationRoutes(fastify) {
     '/api/v1/verification/confirm-otp',
     { preHandler: authMiddleware },
     confirmOtpHandler
+  );
+
+  fastify.post(
+    '/api/v1/verification/resend-otp',
+    { preHandler: authMiddleware },
+    resendOtpHandler
   );
 }

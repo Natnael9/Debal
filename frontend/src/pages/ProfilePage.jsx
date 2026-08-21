@@ -190,6 +190,7 @@ function ProfilePage() {
   const handleCancelVerification = () => setVerificationStep(null);
   
   const handleIDSubmit = () => {
+    setProfile((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
     setVerificationStep("OTP_FORM");
   };
   
@@ -197,9 +198,17 @@ function ProfilePage() {
     setVerificationStep("STATUS_SCREEN");
   };
   
-  const handleFinishVerification = () => {
-    setProfile((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
-    setVerificationStep(null);
+  const handleFinishVerification = async () => {
+    try {
+      const user = await getMyProfile();
+      if (user) {
+        setProfile(mapUserToProfile(user));
+      }
+    } catch (err) {
+      console.error("Failed to refresh profile after verification:", err);
+    } finally {
+      setVerificationStep(null);
+    }
   };
 
   if (isLoading) {
@@ -241,6 +250,7 @@ function ProfilePage() {
 
           {verificationStep === "STATUS_SCREEN" && (
             <VerificationStatusScreen 
+              status="verified"
               onClose={handleFinishVerification} 
             />
           )}

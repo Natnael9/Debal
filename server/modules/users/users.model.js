@@ -71,8 +71,8 @@ const userSchema = new Schema(
     // ---- Identity verification placeholders (module built Day 2 — FR-2.x) ----
     verificationStatus: {
       type: String,
-      enum: ['pending', 'verified', 'rejected'],
-      default: 'pending',
+      enum: ['unverified', 'pending', 'verified', 'rejected'],
+      default: 'unverified',
     },
     idNumberHash: {
       type: String, // never store the raw ID number
