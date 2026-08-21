@@ -24,11 +24,11 @@ export function signAccessToken(user) {
   );
 }
 
-export function signRefreshToken(user) {
+export function signRefreshToken(user, rememberMe = false) {
   return jwt.sign(
     { sub: user._id.toString(), type: 'refresh' },
     REFRESH_SECRET,
-    { expiresIn: REFRESH_EXPIRY }
+    { expiresIn: rememberMe ? '30d' : REFRESH_EXPIRY }
   );
 }
 
@@ -44,13 +44,14 @@ const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days, in seconds
 
 
-export function setRefreshTokenCookie(reply, refreshToken) {
+export function setRefreshTokenCookie(reply, refreshToken, rememberMe = false) {
+  const maxAge = rememberMe ? 30 * 24 * 60 * 60 : REFRESH_COOKIE_MAX_AGE;
   reply.setCookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/api/v1/auth',
-    maxAge: REFRESH_COOKIE_MAX_AGE,
+    maxAge,
   });
 }
 

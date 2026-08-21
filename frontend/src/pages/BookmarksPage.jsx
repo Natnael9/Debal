@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { apiGet, apiDelete } from '../services/api';
 
 const BookmarksPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +63,7 @@ const BookmarksPage = () => {
         {/* 1. LOADING STATE */}
         {isLoading ? (
           <div className="flex flex-col justify-center items-center py-32">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2274A5] mb-4"></div>
+            <LoadingSpinner size="lg" className="mb-4" />
             <p className="text-gray-500 text-sm font-medium animate-pulse">Loading your bookmarks...</p>
           </div>
         ) : bookmarks.length > 0 ? (

@@ -19,7 +19,6 @@ async function comparePassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-
 // Key under which we store the single "currently valid" refresh-token jti
 // for a user in Redis. Used for rotation + logout invalidation.
 const refreshKey = (userId) => `refresh:${userId}`;
@@ -28,6 +27,43 @@ class AuthError extends Error {
   constructor(message, statusCode = 400) {
     super(message);
     this.statusCode = statusCode;
+  }
+}
+
+/**
+ * Helper to safely issue token storage without failing authentication if Redis is unreachable
+ */
+async function safeRedisSet(key, value, mode, ttl) {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient && redisClient.status === 'ready') {
+      await redisClient.set(key, value, mode, ttl);
+    }
+  } catch (err) {
+    console.warn('[redis] set operation skipped (redis offline):', err.message);
+  }
+}
+
+async function safeRedisGet(key) {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient && redisClient.status === 'ready') {
+      return await redisClient.get(key);
+    }
+  } catch (err) {
+    console.warn('[redis] get operation skipped (redis offline):', err.message);
+  }
+  return null;
+}
+
+async function safeRedisDel(key) {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient && redisClient.status === 'ready') {
+      await redisClient.del(key);
+    }
+  } catch (err) {
+    console.warn('[redis] del operation skipped (redis offline):', err.message);
   }
 }
 
@@ -59,7 +95,16 @@ async function registerUser({ email, password, name, acceptedPolicyVersion }) {
 async function loginUser({ email, password }) {
   const user = await User.findOne({ email }).select('+passwordHash');
 
-  if (!user || !user.passwordHash) {
+  if (!user) {
+    throw new AuthError('Invalid email or password.', 401);
+  }
+
+  // Handle Google OAuth registered accounts attempting password login
+  if (!user.passwordHash && user.googleId) {
+    throw new AuthError('This account was registered using Google Sign-In. Please click "Continue with Google" to sign in.', 400);
+  }
+
+  if (!user.passwordHash) {
     throw new AuthError('Invalid email or password.', 401);
   }
 
@@ -95,9 +140,8 @@ async function refreshTokens(refreshToken) {
     throw new AuthError('Invalid or expired refresh token.', 401);
   }
 
-  const redisClient = getRedisClient();
-  const storedJti = await redisClient.get(refreshKey(payload.sub));
-  if (!storedJti || storedJti !== payload.jti) {
+  const storedJti = await safeRedisGet(refreshKey(payload.sub));
+  if (storedJti && storedJti !== payload.jti) {
     throw new AuthError('Refresh token is no longer valid.', 401);
   }
 
@@ -111,18 +155,16 @@ async function refreshTokens(refreshToken) {
 }
 
 async function logoutUser(userId) {
-  const redisClient = getRedisClient();
-  await redisClient.del(refreshKey(userId));
+  await safeRedisDel(refreshKey(userId));
   return { message: 'Logged out.' };
 }
 
 async function issueTokenPair(user) {
-  const redisClient = getRedisClient();
   const jti = crypto.randomUUID();
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user, jti);
 
-  await redisClient.set(
+  await safeRedisSet(
     refreshKey(user._id.toString()),
     jti,
     'EX',
@@ -162,5 +204,3 @@ export {
   AuthError,
   findOrCreateGoogleUser,
 };
-
-

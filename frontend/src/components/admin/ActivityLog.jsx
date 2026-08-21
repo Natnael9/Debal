@@ -1,85 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAuditLogs } from '../../services/adminApi';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const ActivityLog = () => {
-  const [logs] = useState([
-    {
-      _id: 'act_1',
-      adminId: 'admin_1',
-      adminName: 'Abebe Kebede',
-      action: 'suspend_user',
-      targetType: 'user',
-      targetId: 'user_456',
-      notes: 'Suspended account due to repeated abusive language in chat.',
-      createdAt: '2026-08-18T09:15:00Z',
-    },
-    {
-      _id: 'act_2',
-      adminId: 'admin_2',
-      adminName: 'Sara Feysa',
-      action: 'resolve_report',
-      targetType: 'report',
-      targetId: 'rep_89',
-      notes: 'Reviewed chat logs; issued warning to reported user.',
-      createdAt: '2026-08-17T14:22:00Z',
-    },
-    {
-      _id: 'act_3',
-      adminId: 'admin_1',
-      adminName: 'John Doe',
-      action: 'dismiss_report',
-      targetType: 'report',
-      targetId: 'rep_90',
-      notes: 'No evidence of violation found in the provided screenshots.',
-      createdAt: '2026-08-17T11:05:00Z',
-    },
-    {
-      _id: 'act_4',
-      adminId: 'admin_3',
-      adminName: 'Super Admin',
-      action: 'delete_user',
-      targetType: 'user',
-      targetId: 'user_102',
-      notes: 'Spam/bot account. Hard deletion executed.',
-      createdAt: '2026-08-16T16:45:00Z',
-    },
-    {
-      _id: 'act_5',
-      adminId: 'admin_2',
-      adminName: 'Super_admin',
-      action: 'reinstate_user',
-      targetType: 'user',
-      targetId: 'user_456',
-      notes: 'User appealed suspension; agreed to community guidelines.',
-      createdAt: '2026-08-18T10:30:00Z',
-    },
-  ]);
-
+  const [logs, setLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAdminId, setSelectedAdminId] = useState('');
 
-  const uniqueAdmins = Array.from(new Set(logs.map((log) => log.adminId))).map(
-    (id) => ({
-      id,
-      name: logs.find((log) => log.adminId === id).adminName,
-    })
-  );
+  useEffect(() => {
+    setIsLoading(true);
+    getAuditLogs()
+      .then((res) => {
+        const list = res?.data?.data ?? res?.data ?? (Array.isArray(res) ? res : []);
+        setLogs(list);
+      })
+      .catch((err) => console.error("Failed to fetch audit logs:", err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const uniqueAdmins = Array.from(
+    new Set(
+      logs
+        .map((log) => {
+          if (typeof log.adminId === 'object' && log.adminId?._id) return log.adminId._id;
+          return log.adminId;
+        })
+        .filter(Boolean)
+    )
+  ).map((id) => {
+    const found = logs.find((log) => (log.adminId?._id || log.adminId) === id);
+    const name = found?.adminId?.name || found?.adminName || 'Admin User';
+    return { id, name };
+  });
 
   const filteredLogs = selectedAdminId
-    ? logs.filter((log) => log.adminId === selectedAdminId)
+    ? logs.filter((log) => (log.adminId?._id || log.adminId) === selectedAdminId)
     : logs;
 
   const formatActionName = (action) =>
     action
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      ? action
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      : 'Action';
 
   const getBadgeColor = (action) => {
     switch (action) {
       case 'suspend_user':
       case 'delete_user':
+      case 'reject_verification':
+      case 'reject_photo':
         return 'bg-rose-50 text-rose-700 border-rose-200/80';
       case 'resolve_report':
       case 'reinstate_user':
+      case 'approve_verification':
+      case 'approve_photo':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
       case 'dismiss_report':
         return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -129,55 +105,69 @@ const ActivityLog = () => {
 
       {/* Table Container */}
       <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-5 py-3.5">Timestamp</th>
-                <th className="px-5 py-3.5">Administrator</th>
-                <th className="px-5 py-3.5">Action Executed</th>
-                <th className="px-5 py-3.5">Target Entity</th>
-                <th className="px-5 py-3.5">Audit Trail Note</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredLogs.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <LoadingSpinner size="md" />
+            <p className="text-xs font-semibold text-slate-400">Loading activity audit log...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-xs text-slate-400">
-                    No activity logs recorded matching this filter.
-                  </td>
+                  <th className="px-5 py-3.5">Timestamp</th>
+                  <th className="px-5 py-3.5">Administrator</th>
+                  <th className="px-5 py-3.5">Action Executed</th>
+                  <th className="px-5 py-3.5">Target Entity</th>
+                  <th className="px-5 py-3.5">Audit Trail Note</th>
                 </tr>
-              ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log._id} className="transition hover:bg-slate-50/50">
-                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
-                      {new Date(log.createdAt).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5">
-                      <div className="font-bold text-slate-900">{log.adminName}</div>
-                      <div className="font-mono text-[10px] text-slate-400">{log.adminId}</div>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5">
-                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getBadgeColor(log.action)}`}>
-                        {formatActionName(log.action)}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-3.5">
-                      <div className="font-semibold capitalize text-slate-800">{log.targetType}</div>
-                      <div className="font-mono text-[10px] text-slate-400">{log.targetId}</div>
-                    </td>
-                    <td className="max-w-xs px-5 py-3.5 text-slate-600 truncate" title={log.notes}>
-                      {log.notes}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-12 text-center text-xs text-slate-400">
+                      No activity logs recorded matching this filter.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filteredLogs.map((log) => {
+                    const adminName = log.adminId?.name || log.adminName || 'Admin User';
+                    const adminIdStr = log.adminId?._id || log.adminId || 'admin_id';
+                    const targetStr = log.targetUserId || log.targetId || 'N/A';
+                    const noteText = log.notes || (log.metadata ? JSON.stringify(log.metadata) : 'Executed administrative action');
+
+                    return (
+                      <tr key={log._id || log.id} className="transition hover:bg-slate-50/50">
+                        <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
+                          {new Date(log.createdAt).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-3.5">
+                          <div className="font-bold text-slate-900">{adminName}</div>
+                          <div className="font-mono text-[10px] text-slate-400">{adminIdStr}</div>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-3.5">
+                          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getBadgeColor(log.action)}`}>
+                            {formatActionName(log.action)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-3.5">
+                          <div className="font-semibold capitalize text-slate-800">{log.targetType || 'User'}</div>
+                          <div className="font-mono text-[10px] text-slate-400">{targetStr}</div>
+                        </td>
+                        <td className="max-w-xs px-5 py-3.5 text-slate-600 truncate" title={noteText}>
+                          {noteText}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

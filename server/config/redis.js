@@ -16,6 +16,7 @@ export async function connectRedis() {
   redisClient = new Redis(url, {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
+    enableOfflineQueue: true,
     connectTimeout: 20000,
     keepAlive: 10000,
     retryStrategy: (times) => {

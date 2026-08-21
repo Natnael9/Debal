@@ -250,43 +250,6 @@ function Footer() {
           </div>
         </div>
 
-        {/* Newsletter / CTA */}
-        <div className="mt-12 rounded-2xl bg-gray-50 p-6">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-            <div>
-              <h3 className="font-semibold text-gray-900">
-                Find your perfect roommate
-              </h3>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Complete your profile to get better roommate matches.
-              </p>
-            </div>
-
-            <Link
-              to="/app/profile"
-              className="inline-flex w-fit items-center gap-2 rounded-xl bg-[#2274A5] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-            >
-              Complete Profile
-
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 12h14m-6-6l6 6-6 6"
-                />
-              </svg>
-            </Link>
-          </div>
-        </div>
-
         {/* Bottom Section */}
         <div className="mt-8 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
 

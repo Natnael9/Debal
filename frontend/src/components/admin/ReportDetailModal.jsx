@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { REPORT_REASONS } from "../../mocks/reportsMockData";
+
+const REPORT_REASONS = {
+  inappropriate: "Inappropriate Content / Harassment",
+  fake_profile: "Fake Profile / Identity Issue",
+  scam: "Spam or Commercial Link",
+  safety: "Safety or Offline Conduct Concern",
+};
 
 const STATUS_STYLES = {
   open: "bg-amber-50 text-amber-800 border-amber-200/80",

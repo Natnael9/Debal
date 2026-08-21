@@ -105,4 +105,14 @@ async function updateProfile(userId, data) {
   return user;
 }
 
-export { submitQuestionnaire, updateProfile, UsersError };
+async function getUserProfileById(userId) {
+  const user = await User.findById(userId).select(
+    '-passwordHash -refreshTokenHashes -idNumberHash'
+  );
+  if (!user || user.suspended) {
+    throw new UsersError('User profile not found.', 404);
+  }
+  return user;
+}
+
+export { submitQuestionnaire, updateProfile, getUserProfileById, UsersError };

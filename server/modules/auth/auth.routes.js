@@ -1,4 +1,4 @@
-import { register, login, refresh, logout } from './auth.controller.js';
+import { register, login, refresh, logout, forgotPassword, resetPassword } from './auth.controller.js';
 
 export default async function authRoutes(fastify) {
   // Register a new user
@@ -12,4 +12,8 @@ export default async function authRoutes(fastify) {
 
   // Clear the refresh-token cookie
   fastify.post('/api/v1/auth/logout', logout);
+
+  // Password recovery endpoints
+  fastify.post('/api/v1/auth/forgot-password', forgotPassword);
+  fastify.post('/api/v1/auth/reset-password', resetPassword);
 }

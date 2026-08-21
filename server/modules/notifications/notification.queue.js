@@ -11,10 +11,24 @@ try {
 
 const connection = new Redis(url, {
   maxRetriesPerRequest: null, // required by BullMQ
+  enableOfflineQueue: true,
+  keepAlive: 10000,
+  connectTimeout: 20000,
+  retryStrategy: (times) => Math.min(times * 500, 3000),
   ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
 });
 
+connection.on('error', (err) => {
+  if (err.message?.includes("Stream isn't writeable")) return;
+  console.warn('[notifications] queue connection warning:', err.message);
+});
+
 export const notificationQueue = new Queue('notifications', { connection });
+
+notificationQueue.on('error', (err) => {
+  if (err.message?.includes("Stream isn't writeable")) return;
+  console.warn('[notifications] queue error:', err.message);
+});
 
 // ~2 min, matches the debounce window architecture doc §9.4 describes for email:new-message
 const PRESENCE_DEBOUNCE_MS = 2 * 60 * 1000;
@@ -58,20 +72,25 @@ async function enqueueMeetupUpdateEmail({ userId, meetupId, summary }) {
  * reconnect (chat.gateway.js). Safe to call even if nothing is pending.
  */
 async function cancelPendingEmailsForUser(userId) {
-  const redisClient = getRedisClient();
-  const key = pendingKey(userId);
-  const jobIds = await redisClient.smembers(key);
+  try {
+    const redisClient = getRedisClient();
+    if (!redisClient || !['ready', 'connecting', 'connect'].includes(redisClient.status)) return;
+    const key = pendingKey(userId);
+    const jobIds = await redisClient.smembers(key);
 
-  for (const jobId of jobIds) {
-    const job = await notificationQueue.getJob(jobId);
-    if (job) {
-      const state = await job.getState();
-      if (state === 'delayed' || state === 'waiting') {
-        await job.remove();
+    for (const jobId of jobIds) {
+      const job = await notificationQueue.getJob(jobId);
+      if (job) {
+        const state = await job.getState();
+        if (state === 'delayed' || state === 'waiting') {
+          await job.remove();
+        }
       }
     }
+    await redisClient.del(key);
+  } catch (err) {
+    console.warn('[notifications] cancelPendingEmailsForUser warning:', err.message);
   }
-  await redisClient.del(key);
 }
 
 /**

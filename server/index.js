@@ -31,6 +31,41 @@ const PORT = process.env.PORT || 4000;
 async function start() {
   const fastify = Fastify({ logger: true });
 
+  // Global User-Friendly Error Handler
+  fastify.setErrorHandler((error, request, reply) => {
+    request.log.error(error);
+
+    // If a custom 4xx user error is thrown (e.g. 400 validation, 401 unauthenticated, 403 forbidden, 409 duplicate)
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({
+        success: false,
+        error: error.name || 'REQUEST_ERROR',
+        message: error.message || 'Invalid request. Please check your inputs.',
+      });
+    }
+
+    // Handle Mongo / DB Connection Failures Gracefully
+    if (
+      error.name === 'MongoServerSelectionError' ||
+      error.name === 'MongoNetworkError' ||
+      error.name === 'MongoTimeoutError' ||
+      error.name === 'MongoNetworkTimeoutError'
+    ) {
+      return reply.status(503).send({
+        success: false,
+        error: 'SERVICE_UNAVAILABLE',
+        message: 'The service is temporarily unavailable. Please try again in a few moments.',
+      });
+    }
+
+    // Default 500 Internal Server Error (Never expose raw code stacks to user)
+    return reply.status(500).send({
+      success: false,
+      error: 'SERVER_ERROR',
+      message: 'Something went wrong on our end. Please try again in a few moments.',
+    });
+  });
+
   await fastify.register(cors, {
     origin: true,
     credentials: true,
@@ -52,12 +87,11 @@ async function start() {
   await fastify.register(chatRoutes);
   await fastify.register(meetupsRoutes);
   await fastify.register(adminRoutes);
-
   await fastify.register(bookmarksRoutes);
-
   await fastify.register(searchRoutes);
   await fastify.register(matchmakingRoutes);
   await fastify.register(moderationRoutes);
+
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);

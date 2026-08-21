@@ -8,13 +8,13 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
   );
 
   return (
-    <div className="flex h-full w-72 md:w-full shrink-0 flex-col rounded-none md:rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="flex h-full w-full flex-col rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
       
       {/* Header - Matching ChatWindow Header size */}
       <div className="mb-3 flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-900 text-[11px] font-bold text-white shadow-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2274A5] text-[11px] font-bold text-white shadow-xs">
               ME
             </div>
             <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-white bg-emerald-500" />
@@ -51,7 +51,7 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search..."
-          className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-1.5 pl-8 pr-3 text-xs text-gray-800 placeholder-gray-400 outline-none transition focus:border-blue-500 focus:bg-white"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-1.5 pl-8 pr-3 text-xs text-gray-800 placeholder-gray-400 outline-none transition focus:border-[#2274A5] focus:bg-white"
         />
       </div>
 
@@ -79,13 +79,13 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
                 onClick={() => onSelectChat(chat.id)}
                 className={`group flex cursor-pointer items-center justify-between rounded-2xl p-2.5 transition ${
                   isActive
-                    ? "border border-blue-100 bg-blue-50/70 text-blue-900"
+                    ? "border border-blue-100 bg-blue-50/70 text-[#2274A5]"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="relative shrink-0">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-[#2274A5] shadow-xs">
                       {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "?")}
                     </div>
                     {chat.isOnline && (
@@ -106,7 +106,7 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
                 <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
                   <span className="text-[9px] font-medium text-gray-400">{chat.time}</span>
                   {chat.unreadCount > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-900 text-[9px] font-bold text-white">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2274A5] text-[9px] font-bold text-white">
                       {chat.unreadCount}
                     </span>
                   )}

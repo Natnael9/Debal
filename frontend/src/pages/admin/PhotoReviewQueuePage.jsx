@@ -1,31 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getFlaggedPhotos, decidePhotoReview } from '../../services/adminApi';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const PhotoReviewQueuePage = () => {
-  const [flaggedPhotos, setFlaggedPhotos] = useState([
-    {
-      userId: 'user_789',
-      name: 'Abebe Kebede',
-      avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
-      flagReason: 'Potential explicit content (89%)',
-      submittedAt: 'Today, 11:23 AM'
-    },
-    {
-      userId: 'user_890',
-      name: 'Sara Ahmed',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-      flagReason: 'Graphic content detected (75%)',
-      submittedAt: 'Yesterday, 4:15 PM'
-    }
-  ]);
-
+  const [flaggedPhotos, setFlaggedPhotos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAction = (userId, actionType) => {
+  useEffect(() => {
+    setIsLoading(true);
+    getFlaggedPhotos()
+      .then((data) => {
+        const list = data?.data?.users ?? data?.users ?? (Array.isArray(data?.data) ? data?.data : []);
+        const formatted = list.map((u) => ({
+          userId: u._id || u.id,
+          name: u.name || 'User',
+          avatarUrl: u.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.name || 'user')}`,
+          flagReason: u.flagReason || 'Automated safety filter flag (high risk score)',
+          submittedAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Recent',
+        }));
+        setFlaggedPhotos(formatted);
+      })
+      .catch((err) => console.error("Failed to load flagged photos:", err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleAction = async (userId, actionType) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setFlaggedPhotos(prev => prev.filter(photo => photo.userId !== userId));
+    try {
+      const decision = actionType === 'approved' ? 'approve' : 'reject';
+      await decidePhotoReview(userId, decision);
+    } catch (err) {
+      console.warn("Photo review action failed:", err.message);
+    } finally {
+      setFlaggedPhotos((prev) => prev.filter((photo) => photo.userId !== userId));
       setIsSubmitting(false);
-    }, 400);
+    }
   };
 
   return (
@@ -48,7 +58,12 @@ const PhotoReviewQueuePage = () => {
           </p>
         </div>
 
-        {flaggedPhotos.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+            <LoadingSpinner size="md" />
+            <p className="text-xs font-semibold text-slate-400">Loading flagged photo queue...</p>
+          </div>
+        ) : flaggedPhotos.length === 0 ? (
           <div className="rounded-3xl border border-slate-200/80 bg-white p-12 text-center shadow-sm">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

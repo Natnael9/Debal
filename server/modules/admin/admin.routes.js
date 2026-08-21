@@ -14,6 +14,7 @@ import {
   reinstateUser,
   deleteUser,
 } from './admin-users.controller.js';
+import { listReports, updateReportStatus } from '../reports/reports.controller.js';
 /**
  * Self-contained rate limiter, scoped only to admin login.
  * Deliberately NOT reusing shared/middleware/rate-limiter.middleware.js
@@ -182,5 +183,19 @@ export default async function adminRoutes(fastify) {
     '/api/v1/admin/users/:id',
     { preHandler: requireAdmin },
     deleteUser
+  );
+
+  // GET /api/v1/admin/reports - List user reports
+  fastify.get(
+    '/api/v1/admin/reports',
+    { preHandler: requireAdmin },
+    listReports
+  );
+
+  // PATCH /api/v1/admin/reports/:id - Update report status
+  fastify.patch(
+    '/api/v1/admin/reports/:id',
+    { preHandler: requireAdmin },
+    updateReportStatus
   );
 }

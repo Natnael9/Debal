@@ -12,9 +12,13 @@ const adminActionSchema = new Schema(
         'view_verification',  
         'list_verifications',  
         'approve_photo',       
-        'reject_photo',       
+        'reject_photo',
+        'suspend_user',
+        'reinstate_user',
+        'delete_user',
+        'resolve_report',
+        'dismiss_report',       
       ],
- 
       required: true,
     },
     metadata: { type: Object }, // optional contextual payload (e.g. status filter, page)

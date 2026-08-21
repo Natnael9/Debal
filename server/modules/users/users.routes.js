@@ -1,5 +1,9 @@
 import { authMiddleware } from '../auth/auth.middleware.js';
-import { submitQuestionnaireHandler, updateProfileHandler } from './users.controller.js';
+import {
+  submitQuestionnaireHandler,
+  updateProfileHandler,
+  getUserProfileByIdHandler,
+} from './users.controller.js';
 
 export default async function usersRoutes(fastify) {
   fastify.get(
@@ -8,6 +12,12 @@ export default async function usersRoutes(fastify) {
     async (request, reply) => {
       return reply.send({ success: true, data: { user: request.user } });
     }
+  );
+
+  fastify.get(
+    '/api/v1/users/:id',
+    { preHandler: authMiddleware },
+    getUserProfileByIdHandler
   );
 
   fastify.post(

@@ -20,6 +20,14 @@ const userSchema = new Schema(
       unique: true,
       sparse: true, // allows many docs with no googleId
     },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
 
     // ---- Policy acceptance (FR-1.8) ----
     privacyPolicyAccepted: {
@@ -103,9 +111,9 @@ const userSchema = new Schema(
   { timestamps: true } // gives createdAt / updatedAt automatically
 );
 
-// ---- Compound & Special Indexes ----
+// ---- Compound & Special Indexes for Fast Lookups ----
 userSchema.index({ location: '2dsphere' }, { sparse: true });
-userSchema.index({ questionnaireCompleted: 1, verificationStatus: 1 });
+userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1 });
 
 export const User = mongoose.model('User', userSchema);
 export default User;

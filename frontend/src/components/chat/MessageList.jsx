@@ -1,14 +1,38 @@
+import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
+import LoadingSpinner from "../common/LoadingSpinner";
 
-function MessageList({ messages = [], currentUserId, isTyping = false, isLoading = false }) {
+function MessageList({
+  messages = [],
+  currentUserId,
+  partnerAvatarText = "P",
+  isTyping = false,
+  isLoading = false,
+}) {
   const safeMessages = Array.isArray(messages) ? messages : [];
+  const messagesEndRef = useRef(null);
+
+  const currentUserIdStr = (
+    currentUserId?._id ||
+    currentUserId?.id ||
+    currentUserId ||
+    ""
+  ).toString();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [safeMessages.length, isTyping]);
 
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-slate-50/40 p-6">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <LoadingSpinner size="sm" />
           <p className="text-[11px] font-semibold text-gray-400">Loading messages...</p>
         </div>
       </div>
@@ -29,15 +53,34 @@ function MessageList({ messages = [], currentUserId, isTyping = false, isLoading
         </div>
       ) : (
         <>
-          {safeMessages.map((message, index) => (
-            <MessageBubble
-              key={message._id || message.id || `msg-${index}`}
-              message={message}
-              isOwn={message.senderId === currentUserId || message.sender === currentUserId}
-            />
-          ))}
+          {safeMessages.map((message, index) => {
+            const msgSenderIdStr = (
+              message?.senderId?._id ||
+              message?.senderId?.id ||
+              message?.senderId ||
+              message?.sender?._id ||
+              message?.sender?.id ||
+              message?.sender ||
+              ""
+            ).toString();
+
+            const isOwn =
+              Boolean(currentUserIdStr) &&
+              Boolean(msgSenderIdStr) &&
+              msgSenderIdStr === currentUserIdStr;
+
+            return (
+              <MessageBubble
+                key={message._id || message.id || `msg-${index}`}
+                message={message}
+                isOwn={isOwn}
+                partnerAvatarText={partnerAvatarText}
+              />
+            );
+          })}
 
           {isTyping && <TypingIndicator />}
+          <div ref={messagesEndRef} />
         </>
       )}
     </div>

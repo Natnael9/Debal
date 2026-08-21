@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import VerificationDetailModal from '../../components/admin/VerificationDetailModal';
 import { getVerificationQueue, decideVerification } from '../../services/adminApi';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const VerificationQueuePage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -53,7 +54,7 @@ const VerificationQueuePage = () => {
         <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="h-7 w-7 animate-spin rounded-full border-3 border-sky-500 border-t-transparent" />
+              <LoadingSpinner size="md" />
               <p className="text-xs font-semibold text-slate-400">Loading verification queue...</p>
             </div>
           ) : (

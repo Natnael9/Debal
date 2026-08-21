@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import ProfileCompletionMeter from "../components/profile/ProfileCompletionMeter";
 import BasicInfo from "../components/profile/BasicInfo";
 import HousingStatus from "../components/profile/HousingStatus";
@@ -215,7 +216,7 @@ function ProfilePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-900 border-t-transparent" />
+          <LoadingSpinner size="lg" />
           <p className="text-sm font-medium text-gray-500">Loading your profile...</p>
         </div>
       </div>

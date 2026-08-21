@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from './common/LoadingSpinner';
 
 const VerificationStatusScreen = ({ status, onResubmit }) => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const VerificationStatusScreen = ({ status, onResubmit }) => {
   if (status === 'pending') {
     return (
       <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2274A5] mx-auto mb-4"></div>
+        <LoadingSpinner size="lg" className="mx-auto mb-4" />
         <h3 className="text-xl font-bold text-gray-900 mb-2">Verifying Your Identity</h3>
         <p className="text-gray-500">
           Please wait while we check your Fayda ID records. This usually takes just a few seconds.

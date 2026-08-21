@@ -1,1 +1,94 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f0f7fc;
+  --color-primary-100: #e0eff8;
+  --color-primary-200: #b9dff2;
+  --color-primary-300: #7cc4e8;
+  --color-primary-400: #36a4da;
+  --color-primary-500: #2274a5;
+  --color-primary-600: #1b5e87;
+  --color-primary-700: #164a6c;
+  --color-primary-800: #143f5b;
+  --color-primary-900: #15364d;
+}
+
+/* Custom Dropdown Styling throughout website */
+select {
+  accent-color: #2274A5;
+}
+
+select:focus {
+  border-color: #2274A5 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(34, 116, 165, 0.15) !important;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #1f2937;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:active,
+select option:checked {
+  background-color: #2274A5 !important;
+  color: #ffffff !important;
+}
+
+/* Custom Calendar & Date Picker Styling */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  accent-color: #2274A5;
+}
+
+input[type="date"]:focus,
+input[type="datetime-local"]:focus {
+  border-color: #2274A5 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(34, 116, 165, 0.15) !important;
+}
+
+::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(36%) sepia(85%) saturate(460%) hue-rotate(160deg) brightness(90%) contrast(85%);
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(34, 116, 165, 0.1);
+}
+
+/* Unified Brand Color Overrides */
+.bg-blue-900 {
+  background-color: #2274A5 !important;
+}
+
+.hover\:bg-blue-800:hover {
+  background-color: #1b5e87 !important;
+}
+
+.text-blue-900 {
+  color: #2274A5 !important;
+}
+
+.border-blue-900 {
+  border-color: #2274A5 !important;
+}
+
+.bg-[#0B3954] {
+  background-color: #2274A5 !important;
+}
+
+.text-[#0B3954] {
+  color: #2274A5 !important;
+}
+
+.border-[#0B3954] {
+  border-color: #2274A5 !important;
+}

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import bgImage from '../assets/Background.jpg';
 
 // Helper component for smooth scroll-reveal animations
@@ -42,6 +43,8 @@ const FadeInSection = ({ children, delay = 0 }) => {
 };
 
 const LandingPage = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="font-sans selection:bg-[#2274A5] selection:text-white scroll-smooth">
       
@@ -78,11 +81,19 @@ const LandingPage = () => {
             <FadeInSection delay={400}>
               {/* CTA BUTTON */}
               <div className="flex">
-                <Link to="/signup">
-                  <button className="bg-[#2274A5] hover:bg-[#1A5C83] text-white font-bold py-3.5 px-8 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 uppercase tracking-wide text-sm">
-                    Get Started
-                  </button>
-                </Link>
+                {isAuthenticated ? (
+                  <Link to="/app/dashboard">
+                    <button className="bg-[#2274A5] hover:bg-[#1A5C83] text-white font-bold py-3.5 px-8 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 uppercase tracking-wide text-sm">
+                      Go to Dashboard
+                    </button>
+                  </Link>
+                ) : (
+                  <Link to="/register">
+                    <button className="bg-[#2274A5] hover:bg-[#1A5C83] text-white font-bold py-3.5 px-8 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 uppercase tracking-wide text-sm">
+                      Get Started
+                    </button>
+                  </Link>
+                )}
               </div>
             </FadeInSection>
 

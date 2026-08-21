@@ -7,13 +7,16 @@ import MeetupRequestModal from "./MeetupRequestModal";
 
 function ChatWindow({
   chat,
+  currentUserId,
   isLoadingMessages = false,
+  isPartnerTyping = false,
   onSendMessage,
+  onTypingStart,
+  onTypingStop,
+  onMeetupSent,
   onOpenSidebar,
   onOpenMeetups,
 }) {
-  const currentUserId = "current-user";
-  const [isTyping, setIsTyping] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);   
@@ -42,8 +45,8 @@ function ChatWindow({
   // Empty or Unselected Chat Fallback UI
   if (!chat) {
     return (
-      <div className="flex flex-1 h-full min-h-[350px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-none border-0 bg-white p-8 text-center shadow-none md:rounded-3xl md:border md:border-gray-100 md:shadow-sm">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl border border-sky-100 bg-sky-50 text-sky-600">
+      <div className="flex flex-1 h-full min-h-[350px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl border border-blue-100 bg-blue-50 text-[#2274A5]">
           <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 8 4.03 8z" />
           </svg>
@@ -56,7 +59,7 @@ function ChatWindow({
           <button
             type="button"
             onClick={onOpenSidebar}
-            className="mt-5 rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 md:hidden"
+            className="mt-5 rounded-xl bg-[#2274A5] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#1b5e87] md:hidden"
           >
             View Messages
           </button>
@@ -66,7 +69,7 @@ function ChatWindow({
   }
 
   return (
-    <div className="flex flex-1 h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-none border-0 bg-white shadow-none md:rounded-3xl md:border md:border-gray-100 md:shadow-sm">
+    <div className="flex flex-1 h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
 
       {/* Header */}
       <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-3">
@@ -96,7 +99,7 @@ function ChatWindow({
 
           {/* Avatar */}
           <div className="relative">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-900 shadow-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-[#2274A5] shadow-xs">
               {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")}
             </div>
 
@@ -264,15 +267,16 @@ function ChatWindow({
       <MessageList
         messages={chat.messages || []}
         currentUserId={currentUserId}
-        isTyping={isTyping}
+        partnerAvatarText={chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : 'P')}
+        isTyping={isPartnerTyping}
         isLoading={isLoadingMessages}
       />
 
       {/* Input */}
       <MessageInput
         onSend={onSendMessage}
-        onTyping={() => setIsTyping(true)}
-        onStopTyping={() => setIsTyping(false)}
+        onTyping={onTypingStart}
+        onStopTyping={onTypingStop}
       />
 
       {/* Report Modal */}
@@ -300,12 +304,14 @@ function ChatWindow({
       {/* Meetup Request Modal */}
       {showMeetupRequest && (
         <MeetupRequestModal
+          matchId={chat.matchId || chat.id}
           user={{
             id: chat.userId || chat.id,
             name: chat.name,
           }}
           onClose={() => setShowMeetupRequest(false)}
-          onSent={() => {
+          onSent={(newMeetup) => {
+            onMeetupSent?.(newMeetup);
             setShowMeetupSuccess(true);
             setTimeout(() => {
               setShowMeetupSuccess(false);

@@ -12,7 +12,16 @@ try {
 
 const connection = new Redis(url, {
   maxRetriesPerRequest: null,
+  enableOfflineQueue: true,
+  keepAlive: 10000,
+  connectTimeout: 20000,
+  retryStrategy: (times) => Math.min(times * 500, 3000),
   ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
+});
+
+connection.on('error', (err) => {
+  if (err.message?.includes("Stream isn't writeable")) return;
+  console.warn('[notifications] redis connection warning:', err.message);
 });
 
 const handlers = {
@@ -43,7 +52,6 @@ const handlers = {
   'email:verification-result': async ({ userId, verified, reason }) => {
     const user = await User.findById(userId);
     if (!user) return;
-    // Non-toggleable — no preference check, always sends.
 
     const text = verified
       ? `Hi ${user.name}, your identity has been verified! You now have full access to the match feed.`
@@ -70,6 +78,11 @@ export function startNotificationWorker() {
     },
     { connection }
   );
+
+  worker.on('error', (err) => {
+    if (err.message?.includes("Stream isn't writeable")) return;
+    console.warn('[notifications] worker error:', err.message);
+  });
 
   worker.on('failed', (job, err) => {
     console.error(`[notifications] job ${job.id} (${job.name}) failed:`, err.message);

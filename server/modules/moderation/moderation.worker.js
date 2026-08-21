@@ -13,13 +13,16 @@ function getWorkerConnection() {
 
   const connection = new Redis(url, {
     maxRetriesPerRequest: null,
-    enableOfflineQueue: false,
+    enableOfflineQueue: true,
+    keepAlive: 10000,
     connectTimeout: 20000,
+    retryStrategy: (times) => Math.min(times * 500, 3000),
     ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
   });
 
   connection.on('error', (err) => {
-    console.error('[moderation worker redis error]', err.message);
+    if (err.message?.includes("Stream isn't writeable")) return;
+    console.warn('[moderation worker redis error]', err.message);
   });
 
   return connection;
@@ -32,11 +35,8 @@ export function startModerationWorker() {
     async (job) => {
       const { userId, imageUrl } = job.data;
 
-
       const imageBuffer = await fetchImageBuffer(imageUrl);
-
       const { flagged, highestRiskScore } = await classifyImage(imageBuffer);
-
       const photoModerationStatus = flagged ? 'flagged' : 'approved';
 
       await User.findByIdAndUpdate(userId, { photoModerationStatus });
@@ -49,6 +49,11 @@ export function startModerationWorker() {
     },
     { connection }
   );
+
+  worker.on('error', (err) => {
+    if (err.message?.includes("Stream isn't writeable")) return;
+    console.warn('[moderation worker error]', err.message);
+  });
 
   worker.on('failed', (job, err) => {
     console.error(`[moderation] job ${job.id} failed:`, err.message);
@@ -64,7 +69,6 @@ async function fetchImageBuffer(imageUrl) {
     const arrayBuffer = await res.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
-  // local file path (used by the test script below)
   const fs = await import('fs/promises');
   return fs.readFile(imageUrl);
 }

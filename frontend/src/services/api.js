@@ -8,7 +8,7 @@
  *  - Attaches `Authorization: Bearer <token>` from localStorage automatically
  *  - On 401, attempts one silent token refresh via the HttpOnly refreshToken
  *    cookie, then retries the original request once
- *  - Throws descriptive errors for non-2xx responses
+ *  - Sanitizes technical/database errors into clean, user-friendly messages
  */
 
 const BASE = "/api/v1";
@@ -63,14 +63,22 @@ async function _fetch(path, options = {}, retried = false) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    const networkError = new Error("Unable to connect to the server. Please check your internet connection.");
+    networkError.status = 0;
+    throw networkError;
+  }
 
-  // Silent refresh on first 401
-  if (res.status === 401 && !retried) {
+  // Silent refresh on first 401 for authenticated endpoints (exclude auth/login and auth/register)
+  const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/register') || path.includes('/auth/refresh');
+  if (res.status === 401 && !retried && !isAuthEndpoint) {
     const newToken = await _refreshAccessToken();
     if (newToken) return _fetch(path, options, true);
     // Refresh failed — clear stale token
@@ -78,7 +86,7 @@ async function _fetch(path, options = {}, retried = false) {
   }
 
   if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
+    let message = "";
     try {
       const err = await res.json();
       const raw = err?.message;
@@ -87,7 +95,7 @@ async function _fetch(path, options = {}, retried = false) {
       } else if (Array.isArray(raw)) {
         message = raw.map((e) => e?.message ?? JSON.stringify(e)).join('; ');
       } else if (typeof raw === 'object' && raw !== null) {
-        // Zod flatten() format: { formErrors: [...], fieldErrors: { age: ['...'], location: ['...'] } }
+        // Zod flatten() format
         const fieldMsgs = Object.entries(raw.fieldErrors || {})
           .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
           .join('; ');
@@ -97,6 +105,31 @@ async function _fetch(path, options = {}, retried = false) {
         message = err.error;
       }
     } catch { /* ignore parse errors */ }
+
+    // Clean user-friendly message mapping
+    if (
+      res.status >= 500 ||
+      message.includes('Mongo') ||
+      message.includes('ECONNRESET') ||
+      message.includes('ETIMEDOUT') ||
+      message.includes('Request failed:') ||
+      message.includes('connection <monitor>')
+    ) {
+      message = "Service temporarily unavailable. Please try again in a few moments.";
+    } else if (res.status === 401) {
+      if (path.includes('/auth/login')) {
+        message = "Invalid email or password. Please check your credentials and try again.";
+      } else {
+        message = "Your session has expired. Please log in again.";
+      }
+    } else if (res.status === 403) {
+      message = "Access denied. You do not have permission for this action.";
+    } else if (res.status === 404) {
+      message = "The requested resource could not be found.";
+    } else if (!message) {
+      message = "An unexpected error occurred. Please try again.";
+    }
+
     const error = new Error(message);
     error.status = res.status;
     throw error;

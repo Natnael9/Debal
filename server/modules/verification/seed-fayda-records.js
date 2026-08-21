@@ -8,6 +8,7 @@ const records = [
   { idNumber: '3456789012', name: 'Natnael Ashenafi', dateOfBirth: '2003-09-20' },
   { idNumber: '4567890123', name: 'Natnael Sebhat', dateOfBirth: '2005-09-14' },
   { idNumber: '4567890167', name: 'Natnael Abrha', dateOfBirth: '2005-07-12' },
+  { idNumber: '4547890167', name: 'Natnael Zerihun', dateOfBirth: '2004-09-05' },
 ];
 
 async function seed() {

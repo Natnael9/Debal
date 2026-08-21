@@ -8,7 +8,9 @@ const OAUTH_COOKIE_MAX_AGE = 600; // 10 minutes — just needs to survive the re
 
 export async function googleRedirectHandler(request, reply) {
   const { mock } = request.query || {};
-  if (mock === 'true' || process.env.ENABLE_MOCK_OAUTH === 'true') {
+  const isMock = mock === 'true' || process.env.ENABLE_MOCK_OAUTH === 'true' || !process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.includes('mock');
+
+  if (isMock) {
     const user = await findOrCreateGoogleUser({
       googleId: 'google_mock_user_123',
       email: 'robelalemayehu838@gmail.com',

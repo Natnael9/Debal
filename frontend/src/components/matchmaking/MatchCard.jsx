@@ -1,128 +1,252 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiPost } from "../../services/api";
 
-const MatchCard = ({ matchData }) => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
+const MatchCard = ({ matchData, onBookmark }) => {
+  const [isBookmarked, setIsBookmarked] = useState(matchData.isBookmarked || false);
+  const [isRequestSent, setIsRequestSent] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [requestSuccess, setRequestSuccess] = useState(false);
+
   const navigate = useNavigate();
+
+  const candidateId = matchData._id || matchData.id;
+  const avatarImage = matchData.avatarUrl || matchData.photoUrl;
+  const matchScore = matchData.score ? Math.min(99, Math.max(65, Math.round(matchData.score))) : 88;
 
   const handleToggleBookmark = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsBookmarked((prev) => !prev);
+    if (onBookmark) onBookmark(candidateId);
   };
 
   const handleViewProfile = () => {
-    navigate(`/app/candidate-profile/${matchData._id}`);
+    if (candidateId) {
+      navigate(`/app/candidate-profile/${candidateId}`);
+    }
+  };
+
+  const handleSendMatchRequest = async (e) => {
+    e.preventDefault();
+    setRequestError("");
+    setIsSending(true);
+
+    try {
+      await apiPost(`/matches/request/${candidateId}`, { message: requestMessage });
+      setRequestSuccess(true);
+      setIsRequestSent(true);
+      setTimeout(() => {
+        setShowRequestModal(false);
+        setRequestSuccess(false);
+        setRequestMessage("");
+      }, 1800);
+    } catch (err) {
+      setRequestError(err.message || "Failed to send match request.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-100 hover:shadow-md">
-      
-      {/* Top Section: Avatar + Header + Bookmark */}
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          
-          <div className="flex items-center gap-3.5 min-w-0">
-            {/* Avatar with initial or photo */}
+    <>
+      <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-gray-300 hover:shadow-md">
+        
+        {/* Top Header */}
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            {/* Compatibility score */}
+            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+              {matchScore}% match
+            </span>
+
+            <div className="flex items-center gap-2">
+              {matchData.housingStatus === "has_room" ? (
+                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                  Has room
+                </span>
+              ) : matchData.housingStatus === "needs_room" ? (
+                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                  Seeking room
+                </span>
+              ) : null}
+
+              {/* Bookmark Button */}
+              <button
+                type="button"
+                onClick={handleToggleBookmark}
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                  isBookmarked
+                    ? "text-rose-600 bg-rose-50"
+                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                }`}
+                title={isBookmarked ? "Remove bookmark" : "Save for later"}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill={isBookmarked ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* User Profile Info */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={handleViewProfile}>
             <div className="relative shrink-0">
-              <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-blue-100/70 bg-blue-100 text-lg font-bold text-blue-900 shadow-2xs">
-                {matchData.photoUrl ? (
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-100 text-base font-semibold text-gray-700">
+                {avatarImage ? (
                   <img
-                    src={matchData.photoUrl}
+                    src={avatarImage}
                     alt={matchData.name}
-                    className="h-full w-full rounded-2xl object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   matchData.name?.charAt(0) || "U"
                 )}
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 shadow-2xs" />
             </div>
 
-            {/* Name, Age & Location */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-sm font-bold text-gray-900 leading-snug">
-                {matchData.name}, {matchData.age}
-              </h3>
-
-              <p className="mt-0.5 truncate text-xs text-gray-500">
-                <span className="capitalize">{matchData.gender}</span>
-                {matchData.location && (
-                  <>
-                    <span className="mx-1.5 text-gray-300">•</span>
-                    <span>{matchData.location}</span>
-                  </>
+              <div className="flex items-center gap-1">
+                <h3 className="truncate text-sm font-semibold text-gray-900 group-hover:text-blue-900">
+                  {matchData.name}
+                </h3>
+                {matchData.age && (
+                  <span className="text-xs text-gray-500">, {matchData.age}</span>
                 )}
+              </div>
+
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {matchData.location || "Addis Ababa"}
               </p>
             </div>
           </div>
 
-          {/* Bookmark Button */}
-          <button
-            type="button"
-            onClick={handleToggleBookmark}
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 ${
-              isBookmarked
-                ? "border-blue-200 bg-blue-50 text-blue-900"
-                : "border-gray-100 bg-gray-50/60 text-gray-400 hover:border-gray-200 hover:bg-white hover:text-gray-600"
-            }`}
-            title={isBookmarked ? "Remove bookmark" : "Save for later"}
-          >
-            <svg
-              className="h-4 w-4"
-              fill={isBookmarked ? "currentColor" : "none"}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
-          </button>
+          {/* Bio Preview (Natural text) */}
+          {matchData.bio && (
+            <p className="mt-3 line-clamp-2 text-xs text-gray-600 leading-relaxed">
+              {matchData.bio}
+            </p>
+          )}
+
+          {/* Preference Details (Only show real values) */}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {matchData.preferences?.budgetMax && (
+              <span className="text-xs text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md">
+                Up to {Number(matchData.preferences.budgetMax).toLocaleString()} ETB/mo
+              </span>
+            )}
+
+            {matchData.preferences?.cleanliness && (
+              <span className="text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                Cleanliness {matchData.preferences.cleanliness}/5
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Bio snippet */}
-        <p className="mt-3.5 line-clamp-2 text-xs leading-relaxed text-gray-600">
-          {matchData.bio || "Looking for a compatible and friendly roommate to share an apartment."}
-        </p>
+        {/* Action Buttons */}
+        <div className="mt-4 flex items-center gap-2 pt-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={handleViewProfile}
+            className="flex-1 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-98"
+          >
+            View Profile
+          </button>
 
-        {/* Key Preference Badges */}
-        <div className="mt-3.5 flex flex-wrap gap-1.5">
-          {matchData.preferences?.budgetMax && (
-            <span className="inline-flex items-center gap-1 rounded-lg border border-blue-100/60 bg-blue-50/50 px-2.5 py-1 text-[11px] font-semibold text-blue-950">
-              <svg className="h-3 w-3 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Max {matchData.preferences.budgetMax.toLocaleString()} ETB
-            </span>
-          )}
-
-          {matchData.preferences?.cleanliness && (
-            <span className="inline-flex items-center gap-1 rounded-lg border border-gray-100 bg-gray-50/80 px-2.5 py-1 text-[11px] font-medium text-gray-700">
-              <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              Clean: {matchData.preferences.cleanliness}/5
-            </span>
-          )}
+          <button
+            type="button"
+            disabled={isRequestSent}
+            onClick={() => setShowRequestModal(true)}
+            className={`flex-1 flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold text-white transition active:scale-98 ${
+              isRequestSent
+                ? "bg-emerald-600 cursor-default"
+                : "bg-[#2274A5] hover:bg-[#1b5e87]"
+            }`}
+          >
+            {isRequestSent ? "Request Sent" : "Connect"}
+          </button>
         </div>
       </div>
 
-      {/* Action CTA */}
-      <button
-        type="button"
-        onClick={handleViewProfile}
-        className="mt-4.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-900 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-blue-800 active:scale-98"
-      >
-        <span>View Profile</span>
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </div>
+      {/* Send Request Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-sm font-semibold text-gray-900">Connect with {matchData.name}</h3>
+              <button
+                type="button"
+                onClick={() => setShowRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {requestSuccess ? (
+              <div className="my-6 rounded-xl bg-emerald-50 p-4 text-center">
+                <p className="text-xs font-semibold text-emerald-800">Match Request Sent</p>
+                <p className="mt-1 text-xs text-emerald-600">You will be notified once {matchData.name} responds.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMatchRequest} className="mt-4 space-y-3">
+                {requestError && (
+                  <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600">
+                    {requestError}
+                  </p>
+                )}
+
+                <div>
+                  <label htmlFor="requestMessage" className="mb-1 block text-xs font-medium text-gray-700">
+                    Add a message (optional)
+                  </label>
+                  <textarea
+                    id="requestMessage"
+                    rows={3}
+                    maxLength={300}
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    placeholder={`Hi ${matchData.name}, I'm looking for a roommate in your area.`}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-900 placeholder-gray-400 outline-none focus:border-blue-900 focus:bg-white"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestModal(false)}
+                    className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSending}
+                    className="rounded-xl bg-[#2274A5] px-5 py-2 text-xs font-semibold text-white hover:bg-[#1b5e87] disabled:opacity-60"
+                  >
+                    {isSending ? "Sending..." : "Send Request"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

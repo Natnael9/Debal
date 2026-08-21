@@ -1,5 +1,5 @@
 import { questionnaireSchema, profileUpdateSchema } from './questionnaire.validator.js';
-import { submitQuestionnaire, updateProfile, UsersError } from './users.service.js';
+import { submitQuestionnaire, updateProfile, getUserProfileById, UsersError } from './users.service.js';
 
 async function submitQuestionnaireHandler(request, reply) {
   const parsed = questionnaireSchema.safeParse(request.body);
@@ -67,4 +67,22 @@ async function updateProfileHandler(request, reply) {
   }
 }
 
-export { submitQuestionnaireHandler, updateProfileHandler };
+async function getUserProfileByIdHandler(request, reply) {
+  const { id } = request.params;
+  try {
+    const user = await getUserProfileById(id);
+    return reply.status(200).send({ success: true, data: { user } });
+  } catch (err) {
+    if (err instanceof UsersError) {
+      return reply
+        .status(err.statusCode)
+        .send({ success: false, error: 'USERS_ERROR', message: err.message });
+    }
+    request.log.error(err);
+    return reply
+      .status(500)
+      .send({ success: false, error: 'SERVER_ERROR', message: 'Something went wrong.' });
+  }
+}
+
+export { submitQuestionnaireHandler, updateProfileHandler, getUserProfileByIdHandler };

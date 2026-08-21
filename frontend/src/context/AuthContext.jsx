@@ -51,10 +51,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   // ─── Login ──────────────────────────────────────────────────────────────────
-  const login = useCallback(async ({ email, password }) => {
+  const login = useCallback(async ({ email, password, rememberMe }) => {
     setLoading(true);
     try {
-      return await _doLogin(email, password);
+      return await _doLogin(email, password, rememberMe);
     } catch (error) {
       return { success: false, error: error.message };
     } finally {
@@ -62,8 +62,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  async function _doLogin(email, password) {
-    const data = await apiPost("/auth/login", { email, password });
+  async function _doLogin(email, password, rememberMe = false) {
+    const data = await apiPost("/auth/login", { email, password, rememberMe });
     const token = data?.data?.accessToken;
     const u     = data?.data?.user;
 
@@ -92,6 +92,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    setUser,
     isAuthenticated: !!user,
   };
 

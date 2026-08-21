@@ -1,28 +1,46 @@
 import { useState } from "react";
+import { apiPost } from "../../services/api";
 
-function MeetupRequestModal({ user, onClose, onSent }) {
+function MeetupRequestModal({ matchId, user, onClose, onSent }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [locationNote, setLocationNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!date || !time) {
       return;
     }
 
-    const meetup = {
-      date,
-      time,
-      locationNote,
-      status: "pending",
-    };
+    setIsSubmitting(true);
+    setError("");
 
-    console.log("Meetup request:", meetup);
+    try {
+      const res = await apiPost(`/matches/${matchId}/meetups`, {
+        proposedTime: `${date}T${time}:00.000Z`,
+        date,
+        time,
+        locationNote,
+      });
 
-    onSent?.();
-    onClose();
+      const meetup = res?.data?.meetup || {
+        date,
+        time,
+        locationNote,
+        status: "proposed",
+      };
+
+      onSent?.(meetup);
+      onClose();
+    } catch (err) {
+      console.error("Meetup creation failed:", err.message);
+      setError(err.message || "Failed to send meetup request");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -121,21 +139,27 @@ function MeetupRequestModal({ user, onClose, onSent }) {
             />
           </div>
 
+          {error && (
+            <p className="text-xs text-rose-600 font-medium">{error}</p>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              disabled={isSubmitting}
+              className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="rounded-xl bg-[#2274A5] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+              disabled={isSubmitting}
+              className="rounded-xl bg-[#2274A5] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              Send Request
+              {isSubmitting ? "Sending..." : "Send Request"}
             </button>
           </div>
         </form>

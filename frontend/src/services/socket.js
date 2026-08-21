@@ -17,7 +17,13 @@ let _socket = null;
  * Pass the JWT accessToken so the server can identify the user.
  */
 export function connectSocket(token) {
-  if (_socket?.connected) return _socket;
+  if (_socket) {
+    _socket.auth = { token };
+    if (!_socket.connected) {
+      _socket.connect();
+    }
+    return _socket;
+  }
 
   _socket = io("/", {
     // Vite proxies "/" to localhost:4000 in dev

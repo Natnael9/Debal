@@ -1,5 +1,8 @@
 import { MatchRequest } from './matchrequest.model.js';
 import { Match } from '../chat/matches.model.js';
+import { Message } from '../chat/message.model.js';
+import { User } from '../users/users.model.js';
+import { getIO } from '../chat/chat.gateway.js';
 import { enqueueNewMatchEmail } from '../notifications/notification.queue.js';
 import { getCandidatePoolA, scoreCandidate } from './matchmaking.algorithm.js';
 
@@ -13,7 +16,6 @@ class MatchmakingError extends Error {
 /**
  * GET /matches/feed
  * Gated behind questionnaireCompleted + verificationStatus === 'verified'.
- * Team-up Pool B is a stretch goal — not included yet, moves to Day 3.
  */
 async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   if (!user.questionnaireCompleted) {
@@ -44,7 +46,7 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
       avatarUrl: candidate.avatarUrl,
       housingStatus: candidate.housingStatus,
       location: candidate.location?.displayName,
-      matchType: 'has_room', // Pool A is always cross-type; Pool B (team-up) is a stretch goal
+      matchType: 'has_room',
       score,
     })),
   };
@@ -53,9 +55,9 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
 /**
  * POST /matches/request/:userId
  * Send a chat request to a candidate (FR-7.1, FR-7.2, FR-7.6).
+ * Creates active Match, saves initial Message, and broadcasts real-time Socket.IO notification.
  */
 async function sendMatchRequest(fromUser, toUserId, message) {
-
   if (!fromUser.questionnaireCompleted) {
     throw new MatchmakingError('Complete the onboarding questionnaire first.', 403);
   }
@@ -72,30 +74,63 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     throw new MatchmakingError('Message must be 300 characters or fewer.', 400);
   }
 
-  const alreadyMatched = await Match.findOne({
+  const targetUser = await User.findById(toUserId).lean();
+  if (!targetUser) {
+    throw new MatchmakingError('Target candidate not found.', 404);
+  }
+
+  // 1. Find or create active Match connection between users
+  let match = await Match.findOne({
     $or: [
       { userA: fromUser._id, userB: toUserId },
       { userA: toUserId, userB: fromUser._id },
     ],
-
   });
 
-  if (alreadyMatched) {
-    throw new MatchmakingError('You are already matched with this user.', 409);
+  if (!match) {
+    match = await Match.create({
+      userA: fromUser._id,
+      userB: toUserId,
+      status: 'active',
+    });
+  } else if (match.status === 'blocked') {
+    throw new MatchmakingError('You cannot send a request to this user.', 403);
   }
 
-  const existing = await MatchRequest.findOne({ fromUser: fromUser._id, toUser: toUserId });
-  if (existing) {
-    throw new MatchmakingError('You already have a pending request to this user.', 409);
+  // 2. Track or update MatchRequest record
+  let request = await MatchRequest.findOne({ fromUser: fromUser._id, toUser: toUserId });
+  if (!request) {
+    request = await MatchRequest.create({
+      fromUser: fromUser._id,
+      toUser: toUserId,
+      status: 'accepted',
+      message: message || '',
+    });
   }
 
-  const request = await MatchRequest.create({
-    fromUser: fromUser._id,
-    toUser: toUserId,
-    message,
+  // 3. Save initial message into conversation so recipient immediately receives it in Chat
+  const initialContent = (message && message.trim())
+    ? message.trim()
+    : `Hi ${targetUser.name || ''}, I sent you a roommate connection request!`.trim();
+
+  const savedMessage = await Message.create({
+    matchId: match._id,
+    senderId: fromUser._id,
+    content: initialContent,
   });
 
-  return request;
+  // 4. Real-time Socket.IO notification to recipient and sender
+  try {
+    const io = getIO();
+    const payloadData = { matchId: match._id.toString(), message: savedMessage };
+    io.to(`user:${toUserId.toString()}`).emit('chat:new_message', payloadData);
+    io.to(`user:${fromUser._id.toString()}`).emit('chat:new_message', payloadData);
+    io.to(`match:${match._id.toString()}`).emit('chat:new_message', payloadData);
+  } catch (e) {
+    // Socket.IO may be offline or initializing
+  }
+
+  return { request, match, message: savedMessage };
 }
 
 /**
@@ -124,14 +159,25 @@ async function respondToMatchRequest(currentUser, requestId, accept) {
     return { request, match: null };
   }
 
-  const match = await Match.create({
-    userA: request.fromUser,
-    userB: request.toUser,
+  let match = await Match.findOne({
+    $or: [
+      { userA: request.fromUser, userB: request.toUser },
+      { userA: request.toUser, userB: request.fromUser },
+    ],
   });
 
-  // Notify the original requester that their request was accepted (email:new-match).
+  if (!match) {
+    match = await Match.create({
+      userA: request.fromUser,
+      userB: request.toUser,
+      status: 'active',
+    });
+  }
+
+  // Notify original requester that request was accepted
   await enqueueNewMatchEmail({ userId: request.fromUser, matchId: match._id });
 
   return { request, match };
 }
+
 export { getMatchFeed, sendMatchRequest, respondToMatchRequest, MatchmakingError };

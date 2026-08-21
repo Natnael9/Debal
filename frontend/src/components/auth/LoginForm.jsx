@@ -18,7 +18,7 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const result = await login({ email, password });
+      const result = await login({ email, password, rememberMe });
       if (result?.success) {
         const u = result.user;
         if (!u?.questionnaireCompleted) {
@@ -114,9 +114,9 @@ function LoginForm() {
             <span className="text-gray-500">Remember me</span>
           </label>
 
-          <a href="#" className="font-semibold text-blue-900 hover:underline">
-            Forgot?
-          </a>
+          <Link to="/forgot-password" className="font-semibold text-blue-900 hover:underline">
+            Forgot password?
+          </Link>
         </div>
 
         {/* Submit */}

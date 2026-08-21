@@ -36,14 +36,14 @@ function Navbar() {
   const navLinkStyle = ({ isActive }) =>
     `text-xs font-semibold tracking-wide transition ${
       isActive
-        ? "text-blue-900 font-bold"
-        : "text-gray-600 hover:text-blue-900"
+        ? "text-[#2274A5] font-bold"
+        : "text-gray-600 hover:text-[#2274A5]"
     }`;
 
   const mobileNavLinkStyle = ({ isActive }) =>
     `block px-4 py-2.5 text-xs font-semibold transition rounded-xl ${
       isActive
-        ? "text-blue-900 bg-blue-50/70 font-bold"
+        ? "text-[#2274A5] bg-blue-50/70 font-bold"
         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
     }`;
 
@@ -51,7 +51,7 @@ function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
 
-        {/* Logo */}
+        {/* Logo - click navigates to Landing Page */}
         <NavLink
           to="/"
           className="flex items-center gap-2"
@@ -68,13 +68,12 @@ function Navbar() {
             DESKTOP NAVIGATION
         ================================= */}
         <div className="hidden md:flex items-center gap-8">
-          
-          <NavLink to="/" className={navLinkStyle}>
-            Home
-          </NavLink>
-
           {isAuthenticated && (
             <>
+              <NavLink to="/" className={navLinkStyle}>
+                Home
+              </NavLink>
+
               <NavLink to="/app/dashboard" className={navLinkStyle}>
                 Find Matches
               </NavLink>
@@ -85,7 +84,6 @@ function Navbar() {
               <NavLink to="/app/bookmarks" className={navLinkStyle}>
                 Book Marks
               </NavLink>
-              
             </>
           )}
         </div>
@@ -106,7 +104,7 @@ function Navbar() {
 
               <NavLink
                 to="/register"
-                className="rounded-xl bg-blue-900 px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-blue-800 active:scale-98"
+                className="rounded-xl bg-[#2274A5] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-[#1b5e87] active:scale-98"
               >
                 Register
               </NavLink>
@@ -119,12 +117,12 @@ function Navbar() {
                 onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
                 className={`flex items-center gap-2 rounded-full border p-1 pr-3 transition active:scale-98 ${
                   isProfileDropdownOpen
-                    ? "border-blue-900 bg-blue-50/50 shadow-2xs"
+                    ? "border-[#2274A5] bg-blue-50/50 shadow-2xs"
                     : "border-gray-200 bg-gray-50/70 hover:border-gray-300 hover:bg-white"
                 }`}
               >
                 {/* Circular Avatar */}
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-900 text-xs font-bold text-white shadow-2xs">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2274A5] text-xs font-bold text-white shadow-2xs">
                   {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </div>
 
@@ -239,12 +237,12 @@ function Navbar() {
         <div className="border-t border-gray-100 bg-white md:hidden">
           <div className="space-y-1 px-4 pb-5 pt-3">
             
-            <NavLink to="/" className={mobileNavLinkStyle} onClick={closeMenu}>
-              Home
-            </NavLink>
-
             {isAuthenticated && (
               <>
+                <NavLink to="/" className={mobileNavLinkStyle} onClick={closeMenu}>
+                  Home
+                </NavLink>
+
                 <NavLink to="/app/dashboard" className={mobileNavLinkStyle} onClick={closeMenu}>
                   Find Matches
                 </NavLink>
@@ -275,7 +273,7 @@ function Navbar() {
                   </NavLink>
                   <NavLink
                     to="/register"
-                    className="rounded-xl bg-blue-900 py-2 text-center text-xs font-semibold text-white shadow-xs hover:bg-blue-800"
+                    className="rounded-xl bg-[#2274A5] py-2 text-center text-xs font-semibold text-white shadow-xs hover:bg-[#1b5e87]"
                     onClick={closeMenu}
                   >
                     Register

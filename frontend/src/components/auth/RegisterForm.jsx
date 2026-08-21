@@ -131,6 +131,24 @@ function RegisterForm() {
           )}
         </div>
 
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1 block text-[11px] font-semibold text-gray-700">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            {...register("confirmPassword")}
+            className="w-full rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900/20"
+          />
+          {errors.confirmPassword && (
+            <p className="mt-0.5 text-[10px] font-medium text-rose-600 leading-tight">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+        </div>
+
         {/* Terms */}
         <div className="flex items-center gap-1.5 pt-0.5 text-[10px]">
           <input
@@ -157,7 +175,7 @@ function RegisterForm() {
           disabled={isSubmitting}
           className="mt-1 w-full rounded-lg bg-blue-900 py-2 text-xs font-bold text-white transition hover:bg-blue-800 active:scale-98 disabled:opacity-60"
         >
-          {isSubmitting ? "Creating account..." : "Get Started"}
+          {isSubmitting ? "Creating account..." : "Sign Up"}
         </button>
       </form>
 

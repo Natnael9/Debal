@@ -78,3 +78,13 @@ export const getAdminReports = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return adminFetch(`/admin/reports${qs ? `?${qs}` : ""}`);
 };
+
+// ── Photo Moderation ─────────────────────────────────────────────────────────
+export const getFlaggedPhotos = () =>
+  adminFetch("/admin/photo-review");
+
+export const decidePhotoReview = (userId, decision) =>
+  adminFetch(`/admin/photo-review/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ decision }),
+  });

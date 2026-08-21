@@ -56,3 +56,22 @@ export async function sendVerificationOtpEmail(to, otp) {
 
   await sendEmail({ to, subject, text, html });
 }
+
+export async function sendPasswordResetEmail(to, resetUrl) {
+  const subject = 'Reset your Debal password';
+  const text = `You requested a password reset. Please use the following link to reset your password: ${resetUrl}\nThis link expires in 1 hour.`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #E5E7EB; border-radius: 12px; max-width: 500px;">
+      <h2 style="color: #071E2D; margin-top: 0;">Reset Your Password</h2>
+      <p style="color: #4B5563; font-size: 14px;">We received a request to reset your password for your Debal account. Click the button below to set a new password:</p>
+      <div style="margin: 24px 0;">
+        <a href="${resetUrl}" style="background-color: #071E2D; color: #FFFFFF; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block;">
+          Reset Password
+        </a>
+      </div>
+      <p style="color: #6B7280; font-size: 12px;">This link is valid for 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, text, html });
+}

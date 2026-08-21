@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAdminUsers, suspendUser, reinstateUser } from '../../services/adminApi';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -89,7 +90,7 @@ const AdminUsersPage = () => {
         <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="h-7 w-7 animate-spin rounded-full border-3 border-sky-500 border-t-transparent" />
+              <LoadingSpinner size="md" />
               <p className="text-xs font-semibold text-slate-400">Loading user directory...</p>
             </div>
           ) : (
