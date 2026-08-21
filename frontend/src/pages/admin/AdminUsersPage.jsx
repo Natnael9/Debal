@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const AdminUsersPage = () => {
-  // MOCK DATA: Simulating GET /admin/users matching §6.2 schema
   const [users, setUsers] = useState([
     {
       _id: 'user_1',
@@ -70,17 +69,13 @@ const AdminUsersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // UserSearch Logic
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     u.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Mocking PATCH /admin/users/:id/suspend and /reinstate
   const handleToggleSuspend = (user) => {
     const isCurrentlySuspended = user.suspended;
-    
-    // If suspending, require a reason
     const reason = isCurrentlySuspended ? null : prompt('Enter reason for suspension:');
     if (!isCurrentlySuspended && !reason) return; 
 
@@ -97,76 +92,89 @@ const AdminUsersPage = () => {
     });
 
     setUsers(updatedUsers);
-    
     if (selectedUser && selectedUser._id === user._id) {
       setSelectedUser(updatedUsers.find(u => u._id === user._id));
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden relative">
-      
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
+    <div className="min-h-screen bg-slate-50/70 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
         
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-end gap-4 mb-6 sm:mb-8">
+        {/* Header & Search */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Search, review, and moderate user accounts.</p>
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-600" />
+              <h1 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                User Directory
+              </h1>
+            </div>
+            <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
+              User Management
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Inspect user profiles, manage account states, and execute moderation actions.
+            </p>
           </div>
-          
-          {/* UserSearch */}
-          <div className="w-full sm:w-72">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search by name or email..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-[#2274A5] focus:border-[#2274A5] text-sm"
-              />
-              <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+          <div className="relative w-full sm:w-72">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
+            <input 
+              type="text" 
+              placeholder="Search by name or email..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-9.5 pr-3.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-sky-600 focus:ring-2 focus:ring-sky-600/10 shadow-2xs"
+            />
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden max-w-6xl mx-auto">
-          
-          {/* DESKTOP VIEW: Standard Table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+        {/* Table Container */}
+        <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Joined</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Actions</th>
+                  <th className="px-5 py-3.5">User Identity</th>
+                  <th className="px-5 py-3.5">Location</th>
+                  <th className="px-5 py-3.5">Account Status</th>
+                  <th className="px-5 py-3.5">Registered Date</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map(user => (
-                  <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
+                  <tr key={user._id} className="transition hover:bg-slate-50/50">
+                    <td className="whitespace-nowrap px-5 py-3.5">
+                      <div className="font-bold text-slate-900">{user.name}</div>
+                      <div className="text-[11px] text-slate-400">{user.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-600">
+                      {user.location.displayName}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5">
                       {user.suspended ? (
-                        <span className="px-2.5 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-md">Suspended</span>
+                        <span className="inline-flex rounded-full border border-rose-200/80 bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
+                          Suspended
+                        </span>
                       ) : (
-                        <span className="px-2.5 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-md">Active</span>
+                        <span className="inline-flex rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                          Active
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
+                      {new Date(user.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right">
                       <button 
                         onClick={() => setSelectedUser(user)}
-                        className="text-[#2274A5] hover:text-[#1A5C83] font-bold"
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
                       >
                         Details
                       </button>
@@ -175,208 +183,149 @@ const AdminUsersPage = () => {
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">No users found.</td>
+                    <td colSpan="5" className="px-6 py-12 text-center text-xs text-slate-400">
+                      No users match the search criteria.
+                    </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-
-          {/* MOBILE VIEW: Stacked Card List */}
-          <div className="block sm:hidden divide-y divide-gray-100">
-            {filteredUsers.map(user => (
-              <div key={user._id} className="p-4 flex flex-col gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">{user.name}</div>
-                    <div className="text-xs text-gray-500">{user.email}</div>
-                  </div>
-                  <div>
-                    {user.suspended ? (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-[10px] font-bold rounded-md">Suspended</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold rounded-md">Active</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center mt-1 pt-3 border-t border-gray-50">
-                  <div className="text-[11px] text-gray-500 font-medium">
-                    Joined: {new Date(user.createdAt).toLocaleDateString()}
-                  </div>
-                  <button 
-                    onClick={() => setSelectedUser(user)}
-                    className="flex items-center gap-1 text-[#2274A5] text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg"
-                  >
-                    View Details
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {filteredUsers.length === 0 && (
-              <div className="p-8 text-center text-sm text-gray-500">No users found.</div>
-            )}
-          </div>
-
         </div>
+
       </div>
 
-      {/* FULL-SCREEN BLURRED MODAL (Remains the exact same logic) */}
+      {/* Detail Modal */}
       {selectedUser && (
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 sm:bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
           onClick={() => setSelectedUser(null)} 
         >
           <div 
-            className="bg-slate-50 w-full max-w-2xl h-[85vh] sm:h-auto sm:max-h-[95vh] rounded-t-3xl sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative animate-slide-up sm:animate-none"
+            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()} 
           >
-            
-            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Profile View</h2>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-600" />
+                <h2 className="text-base font-bold text-slate-900">
+                  User Profile Overview
+                </h2>
+              </div>
               <button 
                 onClick={() => setSelectedUser(null)} 
-                className="text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-200 p-2 rounded-full transition-colors"
+                className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                ✕
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 overflow-y-auto">
+            <div className="mt-5 space-y-4 text-xs">
               
-              <div className="rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
-                
-                <div className="flex flex-col items-center mb-6">
+              {/* User Identity Info */}
+              <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                <div className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-blue-100">
+                  {selectedUser.avatarUrl ? (
+                    <img
+                      src={selectedUser.avatarUrl}
+                      alt={selectedUser.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-blue-900 text-xl font-bold text-white">
+                      {selectedUser.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {selectedUser.name}, {selectedUser.age}
+                  </h3>
+                  <p className="text-xs text-slate-500">{selectedUser.email}</p>
                   
-                  <div className="relative aspect-square w-24 h-24 sm:w-32 sm:h-32 overflow-hidden rounded-2xl border border-gray-100 bg-blue-100 shadow-inner mb-4">
-                    {selectedUser.avatarUrl ? (
-                      <img
-                        src={selectedUser.avatarUrl}
-                        alt={selectedUser.name}
-                        className="h-full w-full object-cover object-center"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-300 via-blue-600 to-indigo-950 text-4xl sm:text-5xl font-bold text-white">
-                        {selectedUser.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-
-                  <h1 className="text-xl font-bold leading-tight text-gray-900 sm:text-2xl text-center">
-                    {selectedUser.name}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-3">{selectedUser.email}</p>
-
-                  <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] sm:text-xs">
-                    <span className="rounded-lg border border-blue-100/70 bg-blue-50 px-2 sm:px-2.5 py-1 font-semibold text-blue-900">
-                      {selectedUser.age} yrs
-                    </span>
-                    <span className="rounded-lg border border-gray-100 bg-gray-50 px-2 sm:px-2.5 py-1 font-medium capitalize text-gray-600">
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-700">
                       {selectedUser.gender}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-lg border border-gray-100 bg-gray-50 px-2 sm:px-2.5 py-1 font-medium text-gray-600">
-                      <svg className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                    <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                       {selectedUser.location.displayName}
                     </span>
                   </div>
                 </div>
+              </div>
 
-                <div className="mb-6">
-                  <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">
-                    About
-                  </h3>
-                  <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-700">
-                    {selectedUser.bio}
+              {/* Bio */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Bio / Statement
+                </p>
+                <p className="mt-1 leading-relaxed text-slate-700">
+                  {selectedUser.bio}
+                </p>
+              </div>
+
+              {/* Preferences Grid */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Budget</p>
+                  <p className="mt-0.5 text-xs font-bold text-slate-900">
+                    {selectedUser.preferences.budgetMax.toLocaleString()} ETB
                   </p>
                 </div>
-
-                <div className="mb-2">
-                  <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
-                    Preferences
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Budget Max</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-gray-900">
-                        {selectedUser.preferences.budgetMax.toLocaleString()} ETB
-                      </p>
-                    </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Cleanliness</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-gray-900">
-                        {selectedUser.preferences.cleanliness}/5
-                      </p>
-                    </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Sleep Schedule</p>
-                      <p className="mt-0.5 text-[11px] sm:text-xs font-bold capitalize text-gray-900">
-                        {selectedUser.preferences.sleepSchedule.replace("_", " ")}
-                      </p>
-                    </div>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:p-3 text-center sm:text-left">
-                      <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-gray-400">Pets/Smoking</p>
-                      <p className="mt-0.5 text-[10px] sm:text-[11px] font-bold text-gray-900">
-                        {selectedUser.preferences.petsOk ? 'Pets OK' : 'No Pets'} <br/> {selectedUser.preferences.smokingOk ? 'Smoking OK' : 'No Smoking'}
-                      </p>
-                    </div>
-                  </div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Cleanliness</p>
+                  <p className="mt-0.5 text-xs font-bold text-slate-900">
+                    {selectedUser.preferences.cleanliness}/5
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Routine</p>
+                  <p className="mt-0.5 text-xs font-bold capitalize text-slate-900">
+                    {selectedUser.preferences.sleepSchedule.replace("_", " ")}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pets / Smoke</p>
+                  <p className="mt-0.5 text-[11px] font-bold text-slate-900">
+                    {selectedUser.preferences.petsOk ? 'Pets' : 'No Pets'} • {selectedUser.preferences.smokingOk ? 'Smoke' : 'No Smoke'}
+                  </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
-                <h3 className="border-b border-gray-100 pb-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
-                  Moderation Controls
-                </h3>
-                
-                <div className={`rounded-xl border p-3 sm:p-4 mb-4 ${selectedUser.suspended ? 'bg-red-50/50 border-red-100' : 'bg-gray-50/60 border-gray-100'}`}>
-                  <p className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${selectedUser.suspended ? 'text-red-500' : 'text-green-500'}`}>
-                    {selectedUser.suspended ? 'Account Suspended' : 'Account Active'}
+              {/* Moderation Controls */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Status Information
                   </p>
-                  {selectedUser.suspended && (
-                    <div className="mt-2 text-xs sm:text-sm text-gray-700">
-                      <p className="font-medium text-gray-900">Reason:</p>
-                      <p className="mt-0.5">{selectedUser.suspendedReason}</p>
-                      <p className="mt-2 text-[9px] sm:text-[10px] text-gray-400">
-                        Action taken on {new Date(selectedUser.suspendedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${selectedUser.suspended ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                    {selectedUser.suspended ? 'Suspended' : 'Active'}
+                  </span>
                 </div>
+
+                {selectedUser.suspended && (
+                  <div className="mt-2 text-xs text-slate-700">
+                    <p className="font-semibold text-rose-700">Reason: {selectedUser.suspendedReason}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      Suspended on {new Date(selectedUser.suspendedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
 
                 <button
                   onClick={() => handleToggleSuspend(selectedUser)}
-                  className={`w-full py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs font-semibold text-white shadow-sm transition active:scale-95 flex justify-center items-center gap-2 ${
+                  className={`mt-4 w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-98 ${
                     selectedUser.suspended 
-                      ? 'bg-blue-900 hover:bg-blue-800' 
-                      : 'bg-red-600 hover:bg-red-700'
+                      ? 'bg-[#071E2D] hover:bg-slate-800' 
+                      : 'bg-rose-600 hover:bg-rose-700'
                   }`}
                 >
-                  {selectedUser.suspended ? (
-                    <>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Reinstate User
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      Suspend User
-                    </>
-                  )}
+                  {selectedUser.suspended ? 'Reinstate User Account' : 'Suspend User Account'}
                 </button>
               </div>
-              
+
             </div>
           </div>
         </div>
