@@ -408,14 +408,20 @@ function ProfilePage() {
                     {profile.housingStatus === "has_room" ? "Has a Room Available" : "Seeking a Room"}
                   </span>
                 </div>
-
-                {uploadError && (
-                  <p className="mt-2 text-xs font-medium text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
-                    {uploadError}
-                  </p>
-                )}
               </div>
             </div>
+
+            {uploadError && (
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-100">
+                <span>{uploadError}</span>
+                <button
+                  onClick={() => setUploadError(null)}
+                  className="rounded-lg p-1 text-red-500 hover:bg-red-100"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Profile Completion Meter */}
             <div className="mt-4 pt-4 border-t border-gray-100">
