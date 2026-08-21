@@ -4,9 +4,6 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "node scripts/test-all.js",
-    "test:e2e": "node scripts/test-all.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
