@@ -1,5 +1,6 @@
 import User from './users.model.js';
 import { calculateProfileCompletion } from './completion.util.js';
+import { enqueuePhotoModerationJob } from '../moderation/moderation.queue.js';
 
 class UsersError extends Error {
   constructor(message, statusCode = 400) {
@@ -65,7 +66,13 @@ async function updateProfile(userId, data) {
   if (age !== undefined) user.age = age;
   if (gender !== undefined) user.gender = gender;
   if (bio !== undefined) user.bio = bio;
-  if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+  if (avatarUrl !== undefined) {
+    user.avatarUrl = avatarUrl;
+    user.photoModerationStatus = 'pending';
+    if (avatarUrl) {
+      await enqueuePhotoModerationJob({ userId: user._id.toString(), imageUrl: avatarUrl });
+    }
+  }
   if (housingStatus !== undefined) user.housingStatus = housingStatus;
   if (teamUpEnabled !== undefined) user.teamUpEnabled = teamUpEnabled;
 
