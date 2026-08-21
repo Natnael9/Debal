@@ -82,9 +82,12 @@ function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioText, setBioText] = useState("");
   const [verificationStep, setVerificationStep] = useState(null);
   const [editProfile, setEditProfile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
@@ -99,6 +102,7 @@ function ProfilePage() {
           const mapped = mapUserToProfile(user);
           setProfile(mapped);
           setEditProfile(mapped);
+          setBioText(mapped.bio || "");
         }
       } catch (err) {
         console.error("Failed to load user profile:", err);
@@ -113,11 +117,39 @@ function ProfilePage() {
   const handleStartEditing = () => {
     setEditProfile(profile);
     setIsEditing(true);
+    setIsEditingBio(false);
   };
 
   const handleCancelEditing = () => {
     setEditProfile(profile);
     setIsEditing(false);
+  };
+
+  const handleStartEditingBio = () => {
+    setBioText(profile?.bio || "");
+    setIsEditingBio(true);
+    setIsEditing(false);
+  };
+
+  const handleCancelEditingBio = () => {
+    setBioText(profile?.bio || "");
+    setIsEditingBio(false);
+  };
+
+  const handleSaveBioOnly = async () => {
+    setIsSavingBio(true);
+    try {
+      const updatedUser = await updateMyProfile({ bio: bioText });
+      if (updatedUser) setUser(updatedUser);
+      const mapped = mapUserToProfile(updatedUser);
+      setProfile(mapped);
+      setEditProfile(mapped);
+      setIsEditingBio(false);
+    } catch (error) {
+      console.error("Failed to update bio:", error);
+    } finally {
+      setIsSavingBio(false);
+    }
   };
 
   const handleSave = async () => {
@@ -161,11 +193,8 @@ function ProfilePage() {
     }
   };
 
-  const handlePromptSelect = (prompt) => {
-    setEditProfile((currentProfile) => ({
-      ...currentProfile,
-      bio: `${currentProfile?.bio || ""}${currentProfile?.bio ? "\n\n" : ""}${prompt} `,
-    }));
+  const handlePromptSelectBioMode = (prompt) => {
+    setBioText((current) => `${current || ""}${current ? "\n\n" : ""}${prompt} `);
   };
 
   const handlePhotoChange = async (event) => {
@@ -280,12 +309,12 @@ function ProfilePage() {
               <button
                 type="button"
                 onClick={handleStartEditing}
-                className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 hover:bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#0B3954] shadow-md transition-all active:scale-95"
+                className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 hover:bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#0B3954] shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <svg className="w-4 h-4 text-[#2274A5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
                 </svg>
-                Edit Profile
+                Edit Full Profile
               </button>
             )}
           </div>
@@ -347,7 +376,7 @@ function ProfilePage() {
                     </span>
                   )}
 
-                  {/* Active Profile Indicator (Moved cleanly next to name) */}
+                  {/* Active Profile Indicator */}
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     Active Profile
@@ -368,7 +397,7 @@ function ProfilePage() {
                   )}
                 </div>
 
-                {/* Subtitle location & Housing status (Search icon removed) */}
+                {/* Subtitle location & Housing status */}
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500">
                   <span className="flex items-center gap-1">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,7 +429,7 @@ function ProfilePage() {
           </div>
         </div>
 
-        {/* ── MAIN CONTENT (EDIT MODE VS READ MODE) ───────────────────────── */}
+        {/* ── MAIN CONTENT (EDIT FULL VS EDIT BIO VS READ MODE) ─────────────── */}
         {isEditing ? (
           <div className="space-y-6">
             <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -411,10 +440,6 @@ function ProfilePage() {
                 onCancel={handleCancelEditing}
                 isSaving={isSaving}
               />
-            </div>
-
-            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-              <GuidedBioPrompts onSelectPrompt={handlePromptSelect} />
             </div>
           </div>
         ) : (
@@ -456,7 +481,7 @@ function ProfilePage() {
                 {profile.verificationStatus !== "verified" && profile.verificationStatus !== "pending" && (
                   <button
                     onClick={handleVerifyClick}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer"
                   >
                     Verify My Identity Now
                   </button>
@@ -504,35 +529,90 @@ function ProfilePage() {
             {/* ── RIGHT COLUMN (2/3 Width): Bio & Detailed Preferences ────── */}
             <div className="lg:col-span-2 space-y-6">
 
-              {/* Bio & About Me Card */}
+              {/* Bio & About Me Card (Focused Bio Edit vs View) */}
               <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-[#2274A5]" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                       About Me & Bio
                     </h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleStartEditing}
-                    className="text-xs font-semibold text-[#2274A5] hover:underline"
-                  >
-                    Edit Bio
-                  </button>
+                  
+                  {!isEditingBio && (
+                    <button
+                      type="button"
+                      onClick={handleStartEditingBio}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#2274A5] hover:text-[#0B3954] transition cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 210.3H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Edit Bio Only
+                    </button>
+                  )}
                 </div>
 
-                <div className="rounded-2xl border border-blue-50 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 p-5">
-                  <p className="text-sm leading-relaxed text-gray-800 whitespace-pre-line font-normal">
-                    {profile.bio ? (
-                      profile.bio
-                    ) : (
-                      <span className="italic text-gray-400">
-                        No bio added yet. Tell potential roommates about your daily routine, habits, and housing goals!
-                      </span>
-                    )}
-                  </p>
-                </div>
+                {isEditingBio ? (
+                  /* ── FOCUSED EDIT BIO ONLY ────────────────────────────── */
+                  <div className="space-y-4 pt-1">
+                    <div>
+                      <label htmlFor="bioInput" className="block text-xs font-semibold text-gray-700 mb-1.5">
+                        Your Bio Introduction
+                      </label>
+                      <textarea
+                        id="bioInput"
+                        rows={4}
+                        maxLength={500}
+                        value={bioText}
+                        onChange={(e) => setBioText(e.target.value)}
+                        placeholder="Share a bit about yourself, your hobbies, work/study routine, and what you look for in a roommate..."
+                        className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 p-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#2274A5] focus:bg-white focus:ring-2 focus:ring-[#2274A5]/10 transition-all"
+                      />
+                      <div className="flex justify-between items-center mt-1 text-[11px] text-gray-400 px-1">
+                        <span>Tip: Select prompts below to add to your bio</span>
+                        <span>{bioText.length}/500</span>
+                      </div>
+                    </div>
+
+                    {/* Guided Prompts helper for Bio Edit */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <GuidedBioPrompts onSelectPrompt={handlePromptSelectBioMode} />
+                    </div>
+
+                    {/* Action buttons for Bio Save/Cancel */}
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={handleCancelEditingBio}
+                        className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveBioOnly}
+                        disabled={isSavingBio}
+                        className="rounded-xl bg-[#2274A5] hover:bg-[#1b5e87] px-5 py-2 text-xs font-semibold text-white shadow-sm transition disabled:opacity-60 cursor-pointer"
+                      >
+                        {isSavingBio ? "Saving Bio..." : "Save Bio"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── READ BIO VIEW ─────────────────────────────────────── */
+                  <div className="rounded-2xl border border-blue-50 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 p-5">
+                    <p className="text-sm leading-relaxed text-gray-800 whitespace-pre-line font-normal">
+                      {profile.bio ? (
+                        profile.bio
+                      ) : (
+                        <span className="italic text-gray-400">
+                          No bio added yet. Click "Edit Bio Only" above to introduce yourself to potential roommates!
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Lifestyle Attributes Card */}
