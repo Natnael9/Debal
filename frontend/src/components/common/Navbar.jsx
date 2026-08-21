@@ -122,8 +122,18 @@ function Navbar() {
                 }`}
               >
                 {/* Circular Avatar */}
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2274A5] text-xs font-bold text-white shadow-2xs">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-[#2274A5] text-xs font-bold text-white shadow-2xs">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name || "User"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : user?.name ? (
+                    user.name.charAt(0).toUpperCase()
+                  ) : (
+                    "U"
+                  )}
                 </div>
 
                 <span className="text-xs font-semibold text-gray-800 max-w-[100px] truncate">

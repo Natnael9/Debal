@@ -26,7 +26,7 @@ import reportRoutes from './modules/reports/reports.routes.js';
 import blocksRoutes from './modules/reports/blocks.routes.js';
 import uploadRoutes from './routes/upload.route.js';
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
 async function start() {
   const fastify = Fastify({ logger: true });

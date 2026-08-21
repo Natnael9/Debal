@@ -38,7 +38,7 @@ To get the entire stack (Frontend, Backend API, MongoDB, Redis) running on any c
 
 3. **Access the application**:
    - **Frontend App**: `http://localhost:5173`
-   - **Backend API**: `http://localhost:4000`
+   - **Backend API**: `http://localhost:4001`
    - **MongoDB**: `localhost:27017`
    - **Redis**: `localhost:6379`
 

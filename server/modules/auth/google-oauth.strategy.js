@@ -3,7 +3,7 @@ import { Google, decodeIdToken } from 'arctic';
 const google = new Google(
   process.env.GOOGLE_CLIENT_ID || 'mock_client_id',
   process.env.GOOGLE_CLIENT_SECRET || 'mock_client_secret',
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:4000/api/v1/auth/google/callback'
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:4001/api/v1/auth/google/callback'
 );
 
 export function createGoogleAuthorizationURL(state, codeVerifier) {

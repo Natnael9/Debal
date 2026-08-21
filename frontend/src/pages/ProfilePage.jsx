@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import ProfileCompletionMeter from "../components/profile/ProfileCompletionMeter";
 import BasicInfo from "../components/profile/BasicInfo";
@@ -81,6 +82,7 @@ function parseSleep(val) {
 }
 
 function ProfilePage() {
+  const { setUser } = useAuth();
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
@@ -98,6 +100,7 @@ function ProfilePage() {
       try {
         const user = await getMyProfile();
         if (isMounted && user) {
+          setUser(user);
           const mapped = mapUserToProfile(user);
           setProfile(mapped);
           setEditProfile(mapped);
@@ -110,7 +113,7 @@ function ProfilePage() {
     }
     loadProfile();
     return () => { isMounted = false; };
-  }, []);
+  }, [setUser]);
 
   const handleStartEditing = () => {
     setEditProfile(profile);
@@ -151,6 +154,7 @@ function ProfilePage() {
       };
 
       const updatedUser = await updateMyProfile(payload);
+      if (updatedUser) setUser(updatedUser);
       const mapped = mapUserToProfile(updatedUser);
       setProfile(mapped);
       setEditProfile(mapped);
@@ -177,6 +181,7 @@ function ProfilePage() {
     try {
       const { url } = await uploadPhoto(file);
       const updatedUser = await updateMyProfile({ avatarUrl: url });
+      if (updatedUser) setUser(updatedUser);
       const mapped = mapUserToProfile(updatedUser);
       setProfile(mapped);
       setEditProfile(mapped);
@@ -203,6 +208,7 @@ function ProfilePage() {
     try {
       const user = await getMyProfile();
       if (user) {
+        setUser(user);
         setProfile(mapUserToProfile(user));
       }
     } catch (err) {

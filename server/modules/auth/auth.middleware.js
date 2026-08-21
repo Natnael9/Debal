@@ -35,7 +35,7 @@ export async function authMiddleware(request, reply) {
 
   // Fast lean user lookup
   const user = await User.findById(payload.sub)
-    .select('_id suspended questionnaireCompleted verificationStatus housingStatus location maxDistance preferences blockedUsers')
+    .select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires')
     .lean();
 
   if (!user) {

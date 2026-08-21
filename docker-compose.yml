@@ -41,9 +41,9 @@ services:
     container_name: debal-server
     restart: always
     ports:
-      - "4000:4000"
+      - "4001:4001"
     environment:
-      - PORT=4000
+      - PORT=4001
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/debal
       - LOCAL_MONGODB_URI=mongodb://mongodb:27017/debal
