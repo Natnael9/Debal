@@ -9,9 +9,9 @@ const FILTERS = [
 ];
 
 const STATUS_STYLES = {
-  open: "bg-amber-100 text-amber-800",
-  resolved: "bg-green-100 text-green-800",
-  dismissed: "bg-gray-100 text-gray-600",
+  open: "bg-amber-50 text-amber-800 border-amber-200/80",
+  resolved: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+  dismissed: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 function formatDate(iso) {
@@ -19,9 +19,6 @@ function formatDate(iso) {
 }
 
 function ReportsTable() {
-  // TODO: replace mockReports with a real fetch (e.g. GET /admin/reports)
-  // once the backend endpoint exists. Everything below reads/writes this
-  // local state, so swapping the data source is isolated to this line.
   const [reports, setReports] = useState(mockReports);
   const [activeFilter, setActiveFilter] = useState("open");
   const [selectedReportId, setSelectedReportId] = useState(null);
@@ -41,7 +38,6 @@ function ReportsTable() {
   const selectedReport = reports.find((r) => r.id === selectedReportId) ?? null;
 
   const applyAction = (id, status, notes) => {
-    // TODO: replace with a real mutation (e.g. PATCH /admin/reports/:id)
     setReports((prev) =>
       prev.map((r) =>
         r.id === id
@@ -50,7 +46,7 @@ function ReportsTable() {
               status,
               adminNotes: notes,
               resolvedAt: new Date().toISOString(),
-              resolvedBy: "admin_you", // TODO: pull from authenticated admin session
+              resolvedBy: "admin_current",
             }
           : r
       )
@@ -62,88 +58,115 @@ function ReportsTable() {
   const handleDismiss = (id, notes) => applyAction(id, "dismissed", notes);
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Reports Queue</h1>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-sky-600" />
+          <h1 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Moderation Desk
+          </h1>
+        </div>
+        <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">
+          Reports Queue
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Review community reports, safety complaints, and policy violations.
+        </p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="mb-4 flex gap-2 border-b border-gray-200">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.key}
-            type="button"
-            onClick={() => setActiveFilter(filter.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeFilter === filter.key
-                ? "border-blue-900 text-blue-900"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {filter.label}
-            <span className="ml-1.5 text-xs text-gray-400">
-              ({counts[filter.key] ?? 0})
-            </span>
-          </button>
-        ))}
+      {/* Filter Tabs */}
+      <div className="mb-4 flex gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-100/60 p-1 w-fit">
+        {FILTERS.map((filter) => {
+          const isActive = activeFilter === filter.key;
+          return (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() => setActiveFilter(filter.key)}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+                isActive
+                  ? "bg-white text-slate-900 shadow-2xs"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <span>{filter.label}</span>
+              <span
+                className={`rounded-md px-1.5 py-0.2 text-[10px] font-extrabold ${
+                  isActive
+                    ? "bg-slate-100 text-slate-800"
+                    : "bg-slate-200/60 text-slate-500"
+                }`}
+              >
+                {counts[filter.key] ?? 0}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Table Card */}
+      <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
         {filteredReports.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-500">
-            No {activeFilter} reports.
+          <div className="py-16 text-center text-xs text-slate-400">
+            No {activeFilter} reports in this queue.
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Reported user</th>
-                <th className="px-4 py-3 font-medium">Reported by</th>
-                <th className="px-4 py-3 font-medium">Reason</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Reported on</th>
-                <th className="px-4 py-3 font-medium text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredReports.map((report) => (
-                <tr
-                  key={report.id}
-                  onClick={() => setSelectedReportId(report.id)}
-                  className="cursor-pointer hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {report.reportedUser.name}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{report.reportedBy.name}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {REPORT_REASONS[report.reason] ?? report.reason}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLES[report.status]}`}
-                    >
-                      {report.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(report.createdAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedReportId(report.id);
-                      }}
-                      className="text-sm font-medium text-blue-900 hover:underline"
-                    >
-                      View
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-5 py-3.5">Reported User</th>
+                  <th className="px-5 py-3.5">Reported By</th>
+                  <th className="px-5 py-3.5">Violation Reason</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5">Submitted Date</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredReports.map((report) => (
+                  <tr
+                    key={report.id}
+                    onClick={() => setSelectedReportId(report.id)}
+                    className="cursor-pointer transition hover:bg-slate-50/50"
+                  >
+                    <td className="whitespace-nowrap px-5 py-3.5 font-bold text-slate-900">
+                      {report.reportedUser.name}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-600">
+                      {report.reportedBy.name}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-700">
+                      {REPORT_REASONS[report.reason] ?? report.reason}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold capitalize ${STATUS_STYLES[report.status]}`}
+                      >
+                        {report.status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
+                      {formatDate(report.createdAt)}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReportId(report.id);
+                        }}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                      >
+                        Inspect
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

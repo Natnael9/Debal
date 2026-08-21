@@ -2,9 +2,9 @@ import { useState } from "react";
 import { REPORT_REASONS } from "../../mocks/reportsMockData";
 
 const STATUS_STYLES = {
-  open: "bg-amber-100 text-amber-800",
-  resolved: "bg-green-100 text-green-800",
-  dismissed: "bg-gray-100 text-gray-600",
+  open: "bg-amber-50 text-amber-800 border-amber-200/80",
+  resolved: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+  dismissed: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 function formatDate(iso) {
@@ -26,114 +26,136 @@ function ReportDetailModal({ report, onClose, onResolve, onDismiss }) {
   const handleDismiss = () => onDismiss(report.id, notes);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex items-start justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
+      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Report {report.id}</h2>
-            <span
-              className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLES[report.status]}`}
-            >
-              {report.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900">
+                Report #{report.id}
+              </h2>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize ${STATUS_STYLES[report.status]}`}
+              >
+                {report.status}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Review filed complaint details and record disciplinary action.
+            </p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Close"
+            className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
           >
             ✕
           </button>
         </div>
 
-        <div className="mt-5 space-y-4 text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                Reported by
+        {/* Modal Body */}
+        <div className="mt-5 space-y-4 text-xs">
+          {/* User pair cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Reported By
               </p>
-              <p className="mt-0.5 font-medium text-gray-900">{report.reportedBy.name}</p>
-              <p className="text-gray-500">{report.reportedBy.email}</p>
+              <p className="mt-1 font-bold text-slate-900">{report.reportedBy.name}</p>
+              <p className="text-[11px] text-slate-500 truncate">{report.reportedBy.email}</p>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                Reported user
+
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Reported User
               </p>
-              <p className="mt-0.5 font-medium text-gray-900">{report.reportedUser.name}</p>
-              <p className="text-gray-500">{report.reportedUser.email}</p>
+              <p className="mt-1 font-bold text-slate-900">{report.reportedUser.name}</p>
+              <p className="text-[11px] text-slate-500 truncate">{report.reportedUser.email}</p>
             </div>
           </div>
 
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Reason</p>
-            <p className="mt-0.5 text-gray-900">{REPORT_REASONS[report.reason] ?? report.reason}</p>
-          </div>
-
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Description
+          {/* Reason */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Reason
             </p>
-            <p className="mt-0.5 whitespace-pre-wrap text-gray-700">{report.description}</p>
+            <p className="mt-0.5 font-bold text-slate-800">
+              {REPORT_REASONS[report.reason] ?? report.reason}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                Reported on
+          {/* Description */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Statement / Evidence
+            </p>
+            <p className="mt-1 whitespace-pre-wrap leading-relaxed text-slate-700">
+              {report.description}
+            </p>
+          </div>
+
+          {/* Metadata timeline */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Submitted At
               </p>
-              <p className="mt-0.5 text-gray-700">{formatDate(report.createdAt)}</p>
+              <p className="mt-0.5 text-slate-700">{formatDate(report.createdAt)}</p>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                {report.status === "open" ? "Status" : "Actioned on"}
+
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {report.status === "open" ? "Status" : "Actioned At"}
               </p>
-              <p className="mt-0.5 text-gray-700">
+              <p className="mt-0.5 text-slate-700">
                 {report.status === "open" ? "Awaiting review" : formatDate(report.resolvedAt)}
               </p>
             </div>
           </div>
 
-          {report.resolvedBy && (
-            <p className="text-xs text-gray-400">Actioned by {report.resolvedBy}</p>
-          )}
-
+          {/* Admin Notes */}
           <div>
-            <label htmlFor="adminNotes" className="block text-xs font-medium uppercase tracking-wide text-gray-400">
-              Admin notes
+            <label
+              htmlFor="adminNotes"
+              className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-500"
+            >
+              Resolution & Audit Notes
             </label>
             <textarea
               id="adminNotes"
-              rows={4}
+              rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes about how this was reviewed or actioned..."
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 sm:text-sm"
+              placeholder="Provide context regarding warnings, dismissals, or suspensions..."
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-xs text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-600 focus:bg-white focus:ring-2 focus:ring-sky-600/10"
             />
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        {/* Footer Actions */}
+        <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 active:scale-98"
           >
-            Close
+            Cancel
           </button>
           <button
             type="button"
             onClick={handleDismiss}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 active:scale-98"
           >
             {isActioned && report.status === "dismissed" ? "Update notes" : "Dismiss"}
           </button>
           <button
             type="button"
             onClick={handleResolve}
-            className="rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="rounded-xl bg-[#071E2D] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-98"
           >
-            {isActioned && report.status === "resolved" ? "Update notes" : "Resolve"}
+            {isActioned && report.status === "resolved" ? "Update notes" : "Resolve Report"}
           </button>
         </div>
       </div>
