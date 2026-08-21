@@ -1,0 +1,85 @@
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:6
+    container_name: debal-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - debal-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: debal-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - debal-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Server API
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: debal-server
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/debal
+      - LOCAL_MONGODB_URI=mongodb://mongodb:27017/debal
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=8f3a1c9e2d7b4f6a0e5c8d2b9f1a3e6c7d0b4f8a2e9c1d5b3f7a0e4c8d2b6f9a1c3e5d7b9f2a4c6e8d0b1f3a5c7e9d2b4f6a8c0e1d3b5f7a9c2e4d6b8f0a1c3e5d
+      - JWT_REFRESH_SECRET=2b4d6f8a0c1e3d5b7f9a1c3e5d7b9f2a4c6e8d0b1f3a5c7e9d2b4f6a8c0e1d3b5f7a9c2e4d6b8f0a1c3e5d7b9f2a4c6e8d0b1f3a5c7e9d2b4f6a8c0e1d3b5f7a9c
+      - IDENTITY_ENCRYPTION_KEY=08b701aed02c6efc0fc8c7eda00c28d03efb250f5da71ea8af89b3c995683605
+      - ID_HASH_PEPPER=dcb5d9a8022cfca5b51c1b37fb5e4a4b
+      - ENABLE_MOCK_OAUTH=true
+      - FRONTEND_URL=http://localhost:5173
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - debal-network
+
+  # Frontend Web Client
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: debal-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    networks:
+      - debal-network
+
+networks:
+  debal-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:

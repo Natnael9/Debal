@@ -21,6 +21,39 @@ The major problems identified are:
 - Manual search for people based on specific preferences and characteristics
 - Chat room for users who have been matched
 
+## Quick Start with Docker (Recommended for Teammates)
+
+To get the entire stack (Frontend, Backend API, MongoDB, Redis) running on any computer with Docker installed:
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository_url>
+   cd Debal
+   ```
+
+2. **Start all services**:
+   ```bash
+   docker compose up --build
+   ```
+
+3. **Access the application**:
+   - **Frontend App**: `http://localhost:5173`
+   - **Backend API**: `http://localhost:4000`
+   - **MongoDB**: `localhost:27017`
+   - **Redis**: `localhost:6379`
+
+4. **Stop all services**:
+   ```bash
+   docker compose down
+   ```
+
+## Seed Admin Account
+
+To seed the initial admin user inside the server container:
+```bash
+docker exec -it debal-server node modules/admin/seed-admin.js
+```
+
 ## Team Information
 
 **Classroom:** 5
