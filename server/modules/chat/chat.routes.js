@@ -6,6 +6,8 @@ import {
   saveMessage,
   markAllMessagesRead,
   getOtherParticipant,
+  deleteChatHistory,
+  deleteMatch,
 } from './chat.service.js';
 import { User } from '../users/users.model.js';
 import { getIO } from './chat.gateway.js';
@@ -131,6 +133,62 @@ export default async function chatRoutes(fastify) {
       } catch (err) {
         if (err.code === 'MATCH_NOT_FOUND') {
           return reply.status(404).send({ success: false, error: err.code });
+        }
+        request.log.error(err);
+        return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });
+      }
+    }
+  );
+
+  // DELETE /api/v1/matches/:matchId/messages -> Delete chat history for a match
+  fastify.delete(
+    '/api/v1/matches/:matchId/messages',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
+      const { matchId } = request.params;
+      try {
+        const result = await deleteChatHistory(matchId, request.user._id);
+
+        try {
+          const io = getIO();
+          io.to(`match:${result.matchId}`).emit('chat:history_cleared', { matchId: result.matchId });
+        } catch (e) {}
+
+        return reply.send({ success: true, data: result });
+      } catch (err) {
+        if (err.code === 'MATCH_NOT_FOUND') {
+          return reply.status(404).send({ success: false, error: err.code });
+        }
+        if (err.code === 'NOT_MATCH_PARTICIPANT') {
+          return reply.status(403).send({ success: false, error: err.code });
+        }
+        request.log.error(err);
+        return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });
+      }
+    }
+  );
+
+  // DELETE /api/v1/matches/:matchId -> Delete match completely
+  fastify.delete(
+    '/api/v1/matches/:matchId',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
+      const { matchId } = request.params;
+      try {
+        const result = await deleteMatch(matchId, request.user._id);
+
+        try {
+          const io = getIO();
+          io.to(`match:${result.matchId}`).emit('chat:match_deleted', { matchId: result.matchId });
+        } catch (e) {}
+
+        return reply.send({ success: true, data: result });
+      } catch (err) {
+        if (err.code === 'MATCH_NOT_FOUND') {
+          return reply.status(404).send({ success: false, error: err.code });
+        }
+        if (err.code === 'NOT_MATCH_PARTICIPANT') {
+          return reply.status(403).send({ success: false, error: err.code });
         }
         request.log.error(err);
         return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });

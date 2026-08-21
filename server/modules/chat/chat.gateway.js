@@ -7,6 +7,8 @@ import {
   saveMessage,
   markMessageRead,
   getOtherParticipant,
+  deleteChatHistory,
+  deleteMatch,
 } from './chat.service.js';
 import { cancelPendingEmailsForUser } from '../notifications/notification.queue.js';
 
@@ -166,6 +168,28 @@ export function initChatGateway(httpServer) {
         callback?.({ success: true });
       } catch (err) {
         callback?.({ success: false, error: err.code || 'MARK_READ_FAILED', message: err.message });
+      }
+    });
+
+    // ---- chat:delete_history ----
+    socket.on('chat:delete_history', async ({ matchId }, callback) => {
+      try {
+        const result = await deleteChatHistory(matchId, userId);
+        io.to(`match:${result.matchId}`).emit('chat:history_cleared', { matchId: result.matchId });
+        callback?.({ success: true });
+      } catch (err) {
+        callback?.({ success: false, error: err.code || 'DELETE_FAILED', message: err.message });
+      }
+    });
+
+    // ---- chat:delete_match ----
+    socket.on('chat:delete_match', async ({ matchId }, callback) => {
+      try {
+        const result = await deleteMatch(matchId, userId);
+        io.to(`match:${result.matchId}`).emit('chat:match_deleted', { matchId: result.matchId });
+        callback?.({ success: true });
+      } catch (err) {
+        callback?.({ success: false, error: err.code || 'DELETE_MATCH_FAILED', message: err.message });
       }
     });
 

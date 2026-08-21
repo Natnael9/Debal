@@ -1,14 +1,15 @@
 import { useState } from "react";
 
-function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
+function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile, onRequestDeleteChat }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const filteredChats = chats.filter((chat) =>
     (chat.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="flex h-full w-full flex-col rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="flex h-full w-full flex-col rounded-3xl border border-gray-100 bg-white p-4 shadow-sm relative">
       
       {/* Header - Matching ChatWindow Header size */}
       <div className="mb-3 flex items-center justify-between px-1">
@@ -72,12 +73,13 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
         ) : (
           filteredChats.map((chat) => {
             const isActive = chat.id === activeChatId;
+            const isMenuOpen = openMenuId === chat.id;
 
             return (
               <div
                 key={chat.id}
                 onClick={() => onSelectChat(chat.id)}
-                className={`group flex cursor-pointer items-center justify-between rounded-2xl p-2.5 transition ${
+                className={`group relative flex cursor-pointer items-center justify-between rounded-2xl p-2.5 transition ${
                   isActive
                     ? "border border-blue-100 bg-blue-50/70 text-[#2274A5]"
                     : "text-gray-700 hover:bg-gray-50"
@@ -103,13 +105,61 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile }) {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
-                  <span className="text-[9px] font-medium text-gray-400">{chat.time}</span>
-                  {chat.unreadCount > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2274A5] text-[9px] font-bold text-white">
-                      {chat.unreadCount}
-                    </span>
-                  )}
+                <div className="flex shrink-0 items-center gap-1 pl-1">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[9px] font-medium text-gray-400">{chat.time}</span>
+                    {chat.unreadCount > 0 && (
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2274A5] text-[9px] font-bold text-white">
+                        {chat.unreadCount}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 3-dots action menu */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(isMenuOpen ? null : chat.id);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 opacity-60 group-hover:opacity-100 hover:bg-gray-200/60 hover:text-gray-700 transition"
+                      title="Options"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
+                    </button>
+
+                    {/* Action Dropdown */}
+                    {isMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(null);
+                          }}
+                        />
+                        <div className="absolute right-0 top-7 z-50 w-32 rounded-xl border border-gray-100 bg-white p-1 shadow-xl text-left">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              onRequestDeleteChat?.(chat);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition"
+                          >
+                            <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Delete Chat</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

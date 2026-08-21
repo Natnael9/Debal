@@ -4,7 +4,7 @@ import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
 import MeetupCard from "../../components/chat/MeetupCard";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import { apiGet, apiPost, apiPatch, getToken } from "../../services/api";
+import { apiGet, apiPost, apiPatch, apiDelete, getToken } from "../../services/api";
 import { connectSocket, getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
 
@@ -31,6 +31,8 @@ function ChatLayout() {
   const [isSidebarOpen,   setIsSidebarOpen]   = useState(false);
   const [isMeetupOpen,    setIsMeetupOpen]    = useState(false);
   const [meetupAction,    setMeetupAction]    = useState(null);
+  const [chatToDelete,    setChatToDelete]    = useState(null);
+  const [isDeletingChat,  setIsDeletingChat]  = useState(false);
 
   const activeChat = activeChatId
     ? chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null
@@ -220,16 +222,54 @@ function ChatLayout() {
       );
     };
 
+    const handleHistoryCleared = (data) => {
+      const matchId = data?.matchId;
+      const isForCurrentChat =
+        matchId === activeChatId ||
+        activeChat?.id === matchId ||
+        activeChat?.matchId === matchId;
+
+      if (isForCurrentChat) {
+        setMessages([]);
+      }
+
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === matchId || c.matchId === matchId
+            ? { ...c, lastMessage: "", time: "" }
+            : c
+        )
+      );
+    };
+
+    const handleMatchDeleted = (data) => {
+      const matchId = data?.matchId;
+      if (!matchId) return;
+
+      setChats((prev) =>
+        prev.filter((c) => c.id !== matchId && c.matchId !== matchId && c.userId !== matchId)
+      );
+
+      if (activeChatId === matchId || activeChat?.id === matchId || activeChat?.matchId === matchId) {
+        setActiveChatId(null);
+        setMessages([]);
+      }
+    };
+
     socket?.on("chat:new_message", handleNewMessage);
     socket?.on("chat:user_typing", handleUserTyping);
     socket?.on("chat:message_read", handleMessageRead);
     socket?.on("user:online_status", handleOnlineStatus);
+    socket?.on("chat:history_cleared", handleHistoryCleared);
+    socket?.on("chat:match_deleted", handleMatchDeleted);
 
     return () => {
       socket?.off("chat:new_message", handleNewMessage);
       socket?.off("chat:user_typing", handleUserTyping);
       socket?.off("chat:message_read", handleMessageRead);
       socket?.off("user:online_status", handleOnlineStatus);
+      socket?.off("chat:history_cleared", handleHistoryCleared);
+      socket?.off("chat:match_deleted", handleMatchDeleted);
     };
   }, [activeChatId, activeChat, user]);
 
@@ -297,6 +337,59 @@ function ChatLayout() {
         .catch(console.error);
     }
   }, [activeChatId, user]);
+
+  // ── Delete chat history ────────────────────────────────────
+  const handleDeleteChatHistory = useCallback(async (matchId) => {
+    const targetMatchId = matchId || activeChatId;
+    if (!targetMatchId) return;
+
+    try {
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit("chat:delete_history", { matchId: targetMatchId });
+      }
+      await apiDelete(`/matches/${targetMatchId}/messages`);
+      setMessages([]);
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === targetMatchId || c.matchId === targetMatchId || c.userId === targetMatchId
+            ? { ...c, lastMessage: "", time: "", unreadCount: 0 }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("[chat] failed to delete chat history:", err.message);
+      throw err;
+    }
+  }, [activeChatId]);
+
+  // ── Delete chat completely from list ───────────────────────
+  const handleDeleteChat = useCallback(async (matchId) => {
+    const targetMatchId = matchId || activeChatId;
+    if (!targetMatchId) return;
+
+    try {
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit("chat:delete_match", { matchId: targetMatchId });
+      }
+      await apiDelete(`/matches/${targetMatchId}`);
+      
+      setChats((prev) =>
+        prev.filter(
+          (c) => c.id !== targetMatchId && c.matchId !== targetMatchId && c.userId !== targetMatchId
+        )
+      );
+
+      if (activeChatId === targetMatchId || activeChat?.id === targetMatchId || activeChat?.matchId === targetMatchId) {
+        setActiveChatId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error("[chat] failed to delete chat:", err.message);
+      throw err;
+    }
+  }, [activeChatId, activeChat]);
 
   // ── Select chat ────────────────────────────────────────────
   const handleSelectChat = useCallback((chatId) => {
@@ -391,6 +484,7 @@ function ChatLayout() {
             activeChatId={activeChatId}
             onSelectChat={handleSelectChat}
             onCloseMobile={() => setIsSidebarOpen(false)}
+            onRequestDeleteChat={(chat) => setChatToDelete(chat)}
           />
         </div>
 
@@ -407,6 +501,7 @@ function ChatLayout() {
             onMeetupSent={handleMeetupSent}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             onOpenMeetups={() => setIsMeetupOpen(true)}
+            onDeleteChatHistory={handleDeleteChatHistory}
           />
         </div>
 
@@ -490,6 +585,50 @@ function ChatLayout() {
                 }`}
               >
                 Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL DELETE CHAT CONFIRMATION MODAL (CENTERED ON WHOLE PAGE) */}
+      {chatToDelete && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-3">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold text-gray-900">Delete Chat?</h3>
+            <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+              Are you sure you want to delete your conversation with <span className="font-semibold text-gray-700">{chatToDelete.name || "this user"}</span>? This chat will be permanently removed from your list.
+            </p>
+            <div className="mt-5 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setChatToDelete(null)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingChat}
+                onClick={async () => {
+                  setIsDeletingChat(true);
+                  try {
+                    await handleDeleteChat(chatToDelete.id || chatToDelete.matchId);
+                  } catch (err) {
+                    console.error("Failed to delete chat:", err);
+                  } finally {
+                    setIsDeletingChat(false);
+                    setChatToDelete(null);
+                  }
+                }}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60 shadow-2xs transition"
+              >
+                {isDeletingChat ? "Deleting..." : "Delete Chat"}
               </button>
             </div>
           </div>

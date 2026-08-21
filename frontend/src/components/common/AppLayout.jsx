@@ -6,6 +6,9 @@ function AppLayout({ children }) {
   const location = useLocation();
   const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
   const isAuthPage = authRoutes.includes(location.pathname);
+  const isMessagesPage = location.pathname.includes("/messages");
+
+  const hideFooter = isAuthPage || isMessagesPage;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -15,7 +18,7 @@ function AppLayout({ children }) {
         {children}
       </main>
 
-      {!isAuthPage && <Footer />}
+      {!hideFooter && <Footer />}
     </div>
   );
 }

@@ -16,12 +16,15 @@ function ChatWindow({
   onMeetupSent,
   onOpenSidebar,
   onOpenMeetups,
+  onDeleteChatHistory,
 }) {
   const [showActions, setShowActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);   
   const [showMeetupRequest, setShowMeetupRequest] = useState(false);
   const [showMeetupSuccess, setShowMeetupSuccess] = useState(false);   
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const actionsRef = useRef(null);
 
@@ -67,6 +70,26 @@ function ChatWindow({
       </div>
     );
   }
+
+  const messagesList = chat.messages || [];
+  const hasMessages = messagesList.length > 0;
+  const hasPartnerReplied = hasMessages && messagesList.some((m) => {
+    const sender = String(m.senderId?._id || m.senderId || m.sender || "");
+    return sender !== String(currentUserId);
+  });
+  const isInputDisabled = hasMessages && !hasPartnerReplied;
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onDeleteChatHistory?.(chat.matchId || chat.id);
+    } catch (err) {
+      console.error("Failed to delete chat history:", err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
@@ -210,6 +233,28 @@ function ChatWindow({
                   type="button"
                   onClick={() => {
                     setShowActions(false);
+                    setShowDeleteModal(true);
+                  }}
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50 text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-700">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M14.8 2.5c.6-.6 1.6-.6 2.2 0l1.5 1.5c.6.6.6 1.6 0 2.2l-3 3-3.7-3.7 3-3z" />
+                      <path d="M9.2 6.8c.4-.4 1.2-.4 1.6 0l6.2 6.2c.4.4.4 1.2 0 1.6l-1.6 1.6-7.8-7.8 1.6-1.6z" />
+                      <path d="M7.2 9.2l7.6 7.6c-.6 2.2-2 4.4-4.8 5.7-1.8.8-3.4.6-4.5.1l1.8-3.6-3.8.7c-.8-1.5-.7-3.2.1-4.8l3.6-5.7z" />
+                    </svg>
+                  </div>
+                  <span>Clear History</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowActions(false);
                     setShowReportModal(true);
                   }}
                   className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-600 transition hover:bg-amber-50 hover:text-amber-700"
@@ -265,7 +310,7 @@ function ChatWindow({
 
       {/* Messages */}
       <MessageList
-        messages={chat.messages || []}
+        messages={messagesList}
         currentUserId={currentUserId}
         partnerAvatarText={chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : 'P')}
         isTyping={isPartnerTyping}
@@ -277,6 +322,8 @@ function ChatWindow({
         onSend={onSendMessage}
         onTyping={onTypingStart}
         onStopTyping={onTypingStop}
+        disabled={isInputDisabled}
+        disabledReason={`Waiting for ${chat.name || 'candidate'} to reply to your request before continuing...`}
       />
 
       {/* Report Modal */}
@@ -346,6 +393,46 @@ function ChatWindow({
             <p className="mt-0.5 text-[10px] text-gray-500 leading-none">
               Your suggestion was sent successfully.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Chat History Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-3">
+              <svg
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M14.8 2.5c.6-.6 1.6-.6 2.2 0l1.5 1.5c.6.6.6 1.6 0 2.2l-3 3-3.7-3.7 3-3z" />
+                <path d="M9.2 6.8c.4-.4 1.2-.4 1.6 0l6.2 6.2c.4.4.4 1.2 0 1.6l-1.6 1.6-7.8-7.8 1.6-1.6z" />
+                <path d="M7.2 9.2l7.6 7.6c-.6 2.2-2 4.4-4.8 5.7-1.8.8-3.4.6-4.5.1l1.8-3.6-3.8.7c-.8-1.5-.7-3.2.1-4.8l3.6-5.7z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold text-gray-900">Clear Chat History?</h3>
+            <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+              This will permanently clear all messages in this conversation. This action cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteConfirm}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60 shadow-2xs transition"
+              >
+                {isDeleting ? "Clearing..." : "Clear History"}
+              </button>
+            </div>
           </div>
         </div>
       )}

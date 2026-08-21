@@ -103,7 +103,7 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     request = await MatchRequest.create({
       fromUser: fromUser._id,
       toUser: toUserId,
-      status: 'accepted',
+      status: 'pending',
       message: message || '',
     });
   }

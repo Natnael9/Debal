@@ -65,8 +65,58 @@ export async function assertUserInMatch(userId, matchId) {
 }
 
 export async function saveMessage(matchId, senderId, content) {
+  const existingCount = await Message.countDocuments({ matchId });
+  if (existingCount > 0) {
+    const partnerMsgCount = await Message.countDocuments({
+      matchId,
+      senderId: { $ne: senderId },
+    });
+    if (partnerMsgCount === 0) {
+      const err = new Error('You must wait for the recipient to reply before sending another message.');
+      err.code = 'WAITING_FOR_REPLY';
+      throw err;
+    }
+  }
+
   const message = await Message.create({ matchId, senderId, content });
   return message;
+}
+
+export async function deleteChatHistory(matchId, userId) {
+  const match = await assertUserInMatch(userId, matchId);
+  const actualMatchId = match._id.toString();
+  
+  const idsToDelete = [match._id, actualMatchId];
+  if (matchId && matchId !== actualMatchId) {
+    idsToDelete.push(matchId);
+  }
+
+  const result = await Message.deleteMany({
+    matchId: { $in: idsToDelete }
+  });
+
+  console.log(`[chat] deleteChatHistory deleted ${result.deletedCount} messages for match ${actualMatchId}`);
+  return { success: true, matchId: actualMatchId, deletedCount: result.deletedCount };
+}
+
+export async function deleteMatch(matchId, userId) {
+  const match = await assertUserInMatch(userId, matchId);
+  const actualMatchId = match._id.toString();
+
+  await Message.deleteMany({
+    matchId: { $in: [match._id, actualMatchId, matchId] }
+  });
+
+  await MatchRequest.deleteMany({
+    $or: [
+      { fromUser: match.userA, toUser: match.userB },
+      { fromUser: match.userB, toUser: match.userA }
+    ]
+  });
+
+  await Match.findByIdAndDelete(match._id);
+  console.log(`[chat] deleteMatch removed match ${actualMatchId}`);
+  return { success: true, matchId: actualMatchId };
 }
 
 export async function getMessages(matchId, { before, limit = 50 } = {}) {
