@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import ProfileCompletionMeter from "../components/profile/ProfileCompletionMeter";
 import LifestyleAttributes from "../components/profile/LifestyleAttributes";
-import GuidedBioPrompts from "../components/profile/GuidedBioPrompts";
 import EditProfileForm from "../components/profile/EditProfileForm";
 import { getMyProfile, updateMyProfile } from "../services/profileService";
 import { uploadPhoto } from "../services/uploadService";
@@ -191,10 +190,6 @@ function ProfilePage() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handlePromptSelectBioMode = (prompt) => {
-    setBioText((current) => `${current || ""}${current ? "\n\n" : ""}${prompt} `);
   };
 
   const handlePhotoChange = async (event) => {
@@ -562,22 +557,16 @@ function ProfilePage() {
                       </label>
                       <textarea
                         id="bioInput"
-                        rows={4}
+                        rows={5}
                         maxLength={500}
                         value={bioText}
                         onChange={(e) => setBioText(e.target.value)}
                         placeholder="Share a bit about yourself, your hobbies, work/study routine, and what you look for in a roommate..."
                         className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 p-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#2274A5] focus:bg-white focus:ring-2 focus:ring-[#2274A5]/10 transition-all"
                       />
-                      <div className="flex justify-between items-center mt-1 text-[11px] text-gray-400 px-1">
-                        <span>Tip: Select prompts below to add to your bio</span>
+                      <div className="flex justify-end items-center mt-1 text-[11px] text-gray-400 px-1">
                         <span>{bioText.length}/500</span>
                       </div>
-                    </div>
-
-                    {/* Guided Prompts helper for Bio Edit */}
-                    <div className="border-t border-gray-100 pt-4">
-                      <GuidedBioPrompts onSelectPrompt={handlePromptSelectBioMode} />
                     </div>
 
                     {/* Action buttons for Bio Save/Cancel */}
@@ -585,7 +574,7 @@ function ProfilePage() {
                       <button
                         type="button"
                         onClick={handleCancelEditingBio}
-                        className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                        className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
                       >
                         Cancel
                       </button>
