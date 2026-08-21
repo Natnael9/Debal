@@ -1,15 +1,14 @@
-import { BrowserRouter } from "react-router-dom";
-
-import Navbar from "./components/common/Navbar";
- import AppRoutes from "./routes/AppRoutes.jsx";
+import AppRoutes from "./routes/AppRoutes";
+import { AuthProvider } from "./context/AuthContext";
+import { AdminAuthProvider } from "./context/AdminAuthProvider";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
-       <AppRoutes />  
-    </BrowserRouter>
-  
+    <AuthProvider>
+      <AdminAuthProvider>
+        <AppRoutes />
+      </AdminAuthProvider>
+    </AuthProvider>
   );
 }
 
