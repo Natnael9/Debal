@@ -1,5 +1,3 @@
-// src/routes/AppRoutes.jsx
-
 import { Routes, Route } from "react-router-dom";
 
 import PublicRoutes from "./PublicRoutes";
@@ -9,33 +7,72 @@ import AdminRoutes from "./AdminRoutes";
 
 import { AdminAuthProvider } from "../context/AdminAuthProvider";
 
+import AppLayout from "../components/common/AppLayout";
+import AdminLayout from "../components/admin/AdminLayout";
+
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/*" element={<PublicRoutes />} />
 
-      {/* Questionnaire */}
+      {/* =====================================
+          PUBLIC PAGES
+          Navbar + Footer
+      ===================================== */}
+
+      <Route
+        path="/*"
+        element={
+          <AppLayout>
+            <PublicRoutes />
+          </AppLayout>
+        }
+      />
+
+      {/* =====================================
+          QUESTIONNAIRE
+          Navbar + Footer
+      ===================================== */}
+
       <Route
         path="/questionnaire/*"
-        element={<QuestionnaireRoutes />}
+        element={
+          <AppLayout>
+            <QuestionnaireRoutes />
+          </AppLayout>
+        }
       />
 
-      {/* Main authenticated application */}
+      {/* =====================================
+          NORMAL USER APPLICATION
+          Navbar + Footer
+      ===================================== */}
+
       <Route
         path="/app/*"
-        element={<ProtectedRoutes />}
+        element={
+          <AppLayout>
+            <ProtectedRoutes />
+          </AppLayout>
+        }
       />
 
-      {/* Admin */}
+      {/* =====================================
+          ADMIN APPLICATION
+          AdminNavbar
+          NO Footer
+      ===================================== */}
+
       <Route
         path="/admin/*"
         element={
           <AdminAuthProvider>
-            <AdminRoutes />
+            <AdminLayout>
+              <AdminRoutes />
+            </AdminLayout>
           </AdminAuthProvider>
         }
       />
+
     </Routes>
   );
 }
