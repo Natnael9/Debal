@@ -24,6 +24,8 @@ import { startNotificationWorker } from './modules/notifications/notification.wo
 import matchmakingRoutes from './modules/matchmaking/matchmaking.routes.js';
 import moderationRoutes from './modules/moderation/moderation.routes.js';
 import googleOauthRoutes from './modules/auth/google-oauth.routes.js';
+import reportRoutes from './modules/reports/reports.routes.js';
+
 
 const PORT = process.env.PORT || 4000;
 
@@ -45,6 +47,7 @@ async function start() {
   await fastify.register(googleOauthRoutes);
   await fastify.register(usersRoutes);
   await fastify.register(verificationRoutes);
+  await fastify.register(reportRoutes, { prefix: '/api/v1/reports' });
   await fastify.register(chatRoutes);
   await fastify.register(meetupsRoutes);
   await fastify.register(adminRoutes);

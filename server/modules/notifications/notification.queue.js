@@ -75,10 +75,16 @@ async function cancelPendingEmailsForUser(userId) {
 async function enqueueVerificationResultEmail({ userId, verified, reason }) {
   await notificationQueue.add('email:verification-result', { userId, verified, reason });
 }
-
+/**
+ * email:report-update — immediate, sent when an admin resolves/dismisses a report.
+ * Toggleable via user.notificationPreferences.reportStatus (architecture doc).
+ */
+async function enqueueReportStatusUpdateEmail({ userId, reportId, status }) {
+  await notificationQueue.add('email:report-update', { userId, reportId, status });
+}
 export {
   enqueueNewMatchEmail,
   enqueueMeetupUpdateEmail,
   cancelPendingEmailsForUser,
-  enqueueVerificationResultEmail,
+  enqueueVerificationResultEmail,enqueueReportStatusUpdateEmail,
 };
