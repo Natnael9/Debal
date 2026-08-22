@@ -8,6 +8,8 @@ import { apiGet, apiPost, apiPatch, apiDelete, getToken } from "../../services/a
 import { connectSocket, getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
 
+import { unblockUser } from "../../services/chatModerationApi";
+
 /* ============================================================
    ChatLayout
    - Fetches user matches from GET /api/v1/matches
@@ -22,17 +24,17 @@ function ChatLayout() {
   const chatFromUrl = searchParams.get("chat");
 
   // ── State ──────────────────────────────────────────────────
-  const [chats,           setChats]           = useState([]);
-  const [activeChatId,    setActiveChatId]    = useState(chatFromUrl || null);
-  const [messages,        setMessages]        = useState([]);
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(chatFromUrl || null);
+  const [messages, setMessages] = useState([]);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
-  const [isLoadingChats,  setIsLoadingChats]  = useState(true);
-  const [isLoadingMsgs,   setIsLoadingMsgs]   = useState(false);
-  const [isSidebarOpen,   setIsSidebarOpen]   = useState(false);
-  const [isMeetupOpen,    setIsMeetupOpen]    = useState(false);
-  const [meetupAction,    setMeetupAction]    = useState(null);
-  const [chatToDelete,    setChatToDelete]    = useState(null);
-  const [isDeletingChat,  setIsDeletingChat]  = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMeetupOpen, setIsMeetupOpen] = useState(false);
+  const [meetupAction, setMeetupAction] = useState(null);
+  const [chatToDelete, setChatToDelete] = useState(null);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
 
   const activeChat = activeChatId
     ? chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null
@@ -102,12 +104,12 @@ function ChatLayout() {
       .then((data) => {
         if (cancelled) return;
         setMessages(data?.data?.messages ?? []);
-        
+
         // Mark messages as read
-        apiPost(`/matches/${activeChatId}/read`).catch(() => {});
+        apiPost(`/matches/${activeChatId}/read`).catch(() => { });
         const socket = getSocket();
         socket?.emit("chat:mark_read", { matchId: activeChatId });
-        
+
         setChats((prev) =>
           prev.map((c) =>
             c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId
@@ -162,7 +164,7 @@ function ChatLayout() {
 
         // Mark read immediately if window active
         socket.emit("chat:mark_read", { matchId: activeChatId, messageId: message._id });
-        apiPost(`/matches/${activeChatId}/read`).catch(() => {});
+        apiPost(`/matches/${activeChatId}/read`).catch(() => { });
       }
 
       setChats((prev) =>
@@ -174,11 +176,11 @@ function ChatLayout() {
             c.userId === senderId;
           return isMatch
             ? {
-                ...c,
-                lastMessage: message.content,
-                time: "Now",
-                unreadCount: isForCurrentChat ? 0 : (c.unreadCount || 0) + 1,
-              }
+              ...c,
+              lastMessage: message.content,
+              time: "Now",
+              unreadCount: isForCurrentChat ? 0 : (c.unreadCount || 0) + 1,
+            }
             : c;
         })
       );
@@ -236,24 +238,81 @@ function ChatLayout() {
       setChats((prev) =>
         prev.map((c) =>
           c.id === matchId || c.matchId === matchId
-            ? { ...c, lastMessage: "", time: "" }
+            ? { ...c, lastMessage: "", time: "", meetup: { status: "none" } }
             : c
         )
       );
     };
 
     const handleMatchDeleted = (data) => {
-      const matchId = data?.matchId;
-      if (!matchId) return;
+      const targetIdStr = String(data?.matchId || "");
+      if (!targetIdStr) return;
 
       setChats((prev) =>
-        prev.filter((c) => c.id !== matchId && c.matchId !== matchId && c.userId !== matchId)
+        prev.filter((c) => {
+          const cId = String(c.id || "");
+          const cMatchId = String(c.matchId || "");
+          const cUserId = String(c.userId || "");
+          return cId !== targetIdStr && cMatchId !== targetIdStr && cUserId !== targetIdStr;
+        })
       );
 
-      if (activeChatId === matchId || activeChat?.id === matchId || activeChat?.matchId === matchId) {
+      if (
+        String(activeChatId || "") === targetIdStr ||
+        String(activeChat?.id || "") === targetIdStr ||
+        String(activeChat?.matchId || "") === targetIdStr ||
+        String(activeChat?.userId || "") === targetIdStr
+      ) {
         setActiveChatId(null);
         setMessages([]);
       }
+    };
+
+    const handleUserBlocked = (data) => {
+      const { blockerId, blockedId } = data || {};
+      const currentId = String(user?._id || user?.id || "");
+      if (blockerId === currentId || blockedId === currentId) {
+        const otherId = blockerId === currentId ? blockedId : blockerId;
+        setChats((prev) =>
+          prev.map((c) =>
+            c.userId === otherId || c.id === otherId || c.matchId === otherId
+              ? {
+                ...c,
+                isBlocked: true,
+                isBlockedByMe: blockerId === currentId,
+                isBlockedByPartner: blockedId === currentId,
+              }
+              : c
+          )
+        );
+      }
+    };
+
+    const handleUserUnblocked = (data) => {
+      const { unblockerId, unblockedId } = data || {};
+      const currentId = String(user?._id || user?.id || "");
+      if (unblockerId === currentId || unblockedId === currentId) {
+        const otherId = unblockerId === currentId ? unblockedId : unblockerId;
+        setChats((prev) =>
+          prev.map((c) =>
+            c.userId === otherId || c.id === otherId || c.matchId === otherId
+              ? { ...c, isBlocked: false, isBlockedByMe: false, isBlockedByPartner: false }
+              : c
+          )
+        );
+      }
+    };
+
+    const handleMeetupUpdate = (data) => {
+      const { matchId, meetup } = data || {};
+      if (!matchId || !meetup) return;
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === matchId || c.matchId === matchId
+            ? { ...c, meetup }
+            : c
+        )
+      );
     };
 
     socket?.on("chat:new_message", handleNewMessage);
@@ -262,6 +321,9 @@ function ChatLayout() {
     socket?.on("user:online_status", handleOnlineStatus);
     socket?.on("chat:history_cleared", handleHistoryCleared);
     socket?.on("chat:match_deleted", handleMatchDeleted);
+    socket?.on("user:blocked", handleUserBlocked);
+    socket?.on("user:unblocked", handleUserUnblocked);
+    socket?.on("chat:meetup_update", handleMeetupUpdate);
 
     return () => {
       socket?.off("chat:new_message", handleNewMessage);
@@ -270,6 +332,9 @@ function ChatLayout() {
       socket?.off("user:online_status", handleOnlineStatus);
       socket?.off("chat:history_cleared", handleHistoryCleared);
       socket?.off("chat:match_deleted", handleMatchDeleted);
+      socket?.off("user:blocked", handleUserBlocked);
+      socket?.off("user:unblocked", handleUserUnblocked);
+      socket?.off("chat:meetup_update", handleMeetupUpdate);
     };
   }, [activeChatId, activeChat, user]);
 
@@ -296,10 +361,10 @@ function ChatLayout() {
     // Optimistic message update
     const currentUserId = user?._id || user?.id;
     const tempMsg = {
-      _id:       `temp-${Date.now()}`,
-      matchId:   activeChatId,
-      senderId:  currentUserId,
-      content:   trimmed,
+      _id: `temp-${Date.now()}`,
+      matchId: activeChatId,
+      senderId: currentUserId,
+      content: trimmed,
       createdAt: new Date().toISOString(),
     };
 
@@ -353,7 +418,7 @@ function ChatLayout() {
       setChats((prev) =>
         prev.map((c) =>
           c.id === targetMatchId || c.matchId === targetMatchId || c.userId === targetMatchId
-            ? { ...c, lastMessage: "", time: "", unreadCount: 0 }
+            ? { ...c, lastMessage: "", time: "", unreadCount: 0, meetup: { status: "none" } }
             : c
         )
       );
@@ -364,32 +429,78 @@ function ChatLayout() {
   }, [activeChatId]);
 
   // ── Delete chat completely from list ───────────────────────
-  const handleDeleteChat = useCallback(async (matchId) => {
-    const targetMatchId = matchId || activeChatId;
-    if (!targetMatchId) return;
+  const handleDeleteChat = useCallback(async (target) => {
+    if (!target) return;
+    const targetId = typeof target === "string" ? target : target.id || target.matchId || target.userId || activeChatId;
+    if (!targetId) return;
 
+    const matchIdStr = String(targetId);
+    const userIdStr = typeof target === "object" ? String(target.userId || "") : "";
+
+    // 1. Optimistically remove from state immediately so UI updates instantly
+    setChats((prev) =>
+      prev.filter((c) => {
+        const cId = String(c.id || "");
+        const cMatchId = String(c.matchId || "");
+        const cUserId = String(c.userId || "");
+
+        if (cId === matchIdStr || cMatchId === matchIdStr || cUserId === matchIdStr) return false;
+        if (userIdStr && (cId === userIdStr || cMatchId === userIdStr || cUserId === userIdStr)) return false;
+        return true;
+      })
+    );
+
+    if (
+      String(activeChatId || "") === matchIdStr ||
+      String(activeChat?.id || "") === matchIdStr ||
+      String(activeChat?.matchId || "") === matchIdStr ||
+      String(activeChat?.userId || "") === matchIdStr ||
+      (userIdStr && (String(activeChat?.userId || "") === userIdStr || String(activeChatId || "") === userIdStr))
+    ) {
+      setActiveChatId(null);
+      setMessages([]);
+    }
+
+    // 2. Perform background socket & API deletion
     try {
       const socket = getSocket();
       if (socket?.connected) {
-        socket.emit("chat:delete_match", { matchId: targetMatchId });
+        socket.emit("chat:delete_match", { matchId: matchIdStr });
       }
-      await apiDelete(`/matches/${targetMatchId}`);
-      
-      setChats((prev) =>
-        prev.filter(
-          (c) => c.id !== targetMatchId && c.matchId !== targetMatchId && c.userId !== targetMatchId
-        )
-      );
-
-      if (activeChatId === targetMatchId || activeChat?.id === targetMatchId || activeChat?.matchId === targetMatchId) {
-        setActiveChatId(null);
-        setMessages([]);
-      }
+      await apiDelete(`/matches/${matchIdStr}`);
     } catch (err) {
-      console.error("[chat] failed to delete chat:", err.message);
-      throw err;
+      console.warn("[chat] delete chat API note:", err.message);
     }
   }, [activeChatId, activeChat]);
+
+  // ── Block / Unblock user ──────────────────────────────────
+  const handleBlockUser = useCallback((targetUserId) => {
+    if (!targetUserId) return;
+    setChats((prev) =>
+      prev.map((c) =>
+        c.userId === targetUserId || c.id === targetUserId || c.matchId === targetUserId
+          ? { ...c, isBlocked: true, isBlockedByMe: true }
+          : c
+      )
+    );
+  }, []);
+
+  const handleUnblockUser = useCallback(async (targetUserId) => {
+    if (!targetUserId) return;
+    try {
+      await unblockUser(targetUserId);
+      setChats((prev) =>
+        prev.map((c) =>
+          c.userId === targetUserId || c.id === targetUserId || c.matchId === targetUserId
+            ? { ...c, isBlocked: false, isBlockedByMe: false, isBlockedByPartner: false }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("[chat] failed to unblock user:", err.message);
+      throw err;
+    }
+  }, []);
 
   // ── Select chat ────────────────────────────────────────────
   const handleSelectChat = useCallback((chatId) => {
@@ -448,6 +559,26 @@ function ChatLayout() {
     setIsMeetupOpen(false);
   };
 
+  const handleRemoveMeetup = async () => {
+    const meetupId = activeChat?.meetup?._id;
+    if (meetupId) {
+      try {
+        await apiDelete(`/meetups/${meetupId}`);
+      } catch (err) {
+        console.error("Remove meetup failed:", err.message);
+      }
+    }
+    setChats((prev) =>
+      prev.map((c) =>
+        c.id === activeChatId || c.matchId === activeChatId
+          ? { ...c, meetup: { status: "none" } }
+          : c
+      )
+    );
+    setMeetupAction(null);
+    setIsMeetupOpen(false);
+  };
+
   const handleCancelMeetupAction = () => setMeetupAction(null);
 
   // ── Loading state ──────────────────────────────────────────
@@ -475,9 +606,8 @@ function ChatLayout() {
 
         {/* 1. CHAT LIST */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 h-full w-[280px] transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[280px] md:shrink-0 md:translate-x-0 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 h-full w-[280px] transform transition-transform duration-300 ease-in-out md:static md:z-auto md:h-full md:w-[280px] md:shrink-0 md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <ChatList
             chats={chats}
@@ -502,6 +632,8 @@ function ChatLayout() {
             onOpenSidebar={() => setIsSidebarOpen(true)}
             onOpenMeetups={() => setIsMeetupOpen(true)}
             onDeleteChatHistory={handleDeleteChatHistory}
+            onBlockUser={handleBlockUser}
+            onUnblockUser={handleUnblockUser}
           />
         </div>
 
@@ -513,11 +645,37 @@ function ChatLayout() {
               Meetup proposals with {activeChat?.name ?? "..."}
             </p>
           </div>
-          <MeetupCard
-            {...(activeChat?.meetup ?? { status: "none" })}
-            onAccept={() => setMeetupAction("accept")}
-            onDecline={() => setMeetupAction("decline")}
-          />
+          {(() => {
+            const currentUserId = String(user?._id || user?.id || "");
+            const activeMeetup = activeChat?.meetup;
+            if (!activeMeetup || activeMeetup.status === "none") {
+              return <MeetupCard status="none" />;
+            }
+            const rawProposer = activeMeetup.proposedBy;
+            const proposerIdStr = typeof rawProposer === "object" ? String(rawProposer?._id || rawProposer?.id || "") : String(rawProposer || "");
+            const isProposer = proposerIdStr === currentUserId;
+
+            let proposedByName = "Roommate Candidate";
+            if (isProposer) {
+              proposedByName = "You";
+            } else if (typeof rawProposer === "object" && rawProposer?.name) {
+              proposedByName = rawProposer.name;
+            } else if (activeChat?.name) {
+              proposedByName = activeChat.name;
+            }
+
+            return (
+              <MeetupCard
+                {...activeMeetup}
+                proposedBy={proposedByName}
+                isProposer={isProposer}
+                onAccept={() => setMeetupAction("accept")}
+                onDecline={() => setMeetupAction("decline")}
+                onRemove={() => setMeetupAction("remove")}
+                onCancel={() => setMeetupAction("remove")}
+              />
+            );
+          })()}
         </aside>
       </div>
 
@@ -544,47 +702,104 @@ function ChatLayout() {
                 ✕
               </button>
             </div>
-            <MeetupCard
-              {...(activeChat?.meetup ?? { status: "none" })}
-              onAccept={() => setMeetupAction("accept")}
-              onDecline={() => setMeetupAction("decline")}
-            />
+            {(() => {
+              const currentUserId = String(user?._id || user?.id || "");
+              const activeMeetup = activeChat?.meetup;
+              if (!activeMeetup || activeMeetup.status === "none") {
+                return <MeetupCard status="none" />;
+              }
+              const rawProposer = activeMeetup.proposedBy;
+              const proposerIdStr = typeof rawProposer === "object" ? String(rawProposer?._id || rawProposer?.id || "") : String(rawProposer || "");
+              const isProposer = proposerIdStr === currentUserId;
+
+              let proposedByName = "Roommate Candidate";
+              if (isProposer) {
+                proposedByName = "You";
+              } else if (typeof rawProposer === "object" && rawProposer?.name) {
+                proposedByName = rawProposer.name;
+              } else if (activeChat?.name) {
+                proposedByName = activeChat.name;
+              }
+
+              return (
+                <MeetupCard
+                  {...activeMeetup}
+                  proposedBy={proposedByName}
+                  isProposer={isProposer}
+                  onAccept={() => setMeetupAction("accept")}
+                  onDecline={() => setMeetupAction("decline")}
+                  onRemove={() => setMeetupAction("remove")}
+                  onCancel={() => setMeetupAction("remove")}
+                />
+              );
+            })()}
           </div>
         </>
       )}
 
-      {/* CONFIRM / DECLINE MEETUP MODAL */}
+      {/* CONFIRM / DECLINE / REMOVE MEETUP MODAL */}
       {meetupAction && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white p-6 shadow-xl text-center">
+            <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full mb-3 ${
+              meetupAction === "accept" ? "bg-blue-100 text-[#2274A5]" : "bg-rose-100 text-rose-600"
+            }`}>
+              {meetupAction === "accept" ? (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+
             <h3 className="text-sm font-bold text-gray-900">
-              {meetupAction === "accept" ? "Accept Meetup Proposal?" : "Decline Meetup Proposal?"}
+              {meetupAction === "accept"
+                ? "Accept Meetup Proposal?"
+                : meetupAction === "remove"
+                ? "Delete Meetup?"
+                : "Cancel Meetup Proposal?"}
             </h3>
+
             <p className="mt-2 text-xs text-gray-500 leading-relaxed">
               {meetupAction === "accept"
                 ? "This will confirm the meetup request and notify your match."
-                : "This will decline the meetup proposal."}
+                : meetupAction === "remove"
+                ? "Are you sure you want to delete this meetup? This will remove it from the panel and history."
+                : "Are you sure you want to cancel this meetup proposal?"}
             </p>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex justify-end gap-2.5">
               <button
                 type="button"
                 onClick={handleCancelMeetupAction}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                {meetupAction === "remove" ? "Cancel" : "No, Keep It"}
               </button>
 
               <button
                 type="button"
-                onClick={meetupAction === "accept" ? handleAcceptMeetup : handleDeclineMeetup}
+                onClick={
+                  meetupAction === "accept"
+                    ? handleAcceptMeetup
+                    : meetupAction === "remove"
+                    ? handleRemoveMeetup
+                    : handleDeclineMeetup
+                }
                 className={`rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-xs transition ${
                   meetupAction === "accept"
                     ? "bg-[#2274A5] hover:bg-[#1b5e87]"
                     : "bg-rose-600 hover:bg-rose-700"
                 }`}
               >
-                Confirm
+                {meetupAction === "accept"
+                  ? "Confirm Accept"
+                  : meetupAction === "remove"
+                  ? "Delete Meetup"
+                  : "Yes, Cancel Proposal"}
               </button>
             </div>
           </div>
@@ -618,7 +833,7 @@ function ChatLayout() {
                 onClick={async () => {
                   setIsDeletingChat(true);
                   try {
-                    await handleDeleteChat(chatToDelete.id || chatToDelete.matchId);
+                    await handleDeleteChat(chatToDelete);
                   } catch (err) {
                     console.error("Failed to delete chat:", err);
                   } finally {

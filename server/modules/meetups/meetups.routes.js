@@ -3,6 +3,7 @@ import {
   proposeMeetupHandler,
   respondToMeetupHandler,
   getCalendarLinkHandler,
+  deleteMeetupHandler,
 } from './meetups.controller.js';
 
 export default async function meetupsRoutes(fastify) {
@@ -22,5 +23,11 @@ export default async function meetupsRoutes(fastify) {
     '/api/v1/meetups/:id/calendar-link',
     { preHandler: authMiddleware },
     getCalendarLinkHandler
+  );
+
+  fastify.delete(
+    '/api/v1/meetups/:id',
+    { preHandler: authMiddleware },
+    deleteMeetupHandler
   );
 }

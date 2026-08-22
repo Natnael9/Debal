@@ -90,17 +90,19 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile, onReq
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-[#2274A5] shadow-xs">
                       {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "?")}
                     </div>
-                    {chat.isOnline && (
+                    {chat.isBlocked ? (
+                      <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-amber-500" title="Blocked" />
+                    ) : chat.isOnline ? (
                       <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-xs font-bold text-gray-800 leading-tight">
                       {chat.name || "User"}
                     </h3>
-                    <p className="truncate text-[10px] text-gray-400 mt-0.5">
-                      {chat.lastMessage || "No messages yet"}
+                    <p className={`truncate text-[10px] mt-0.5 ${chat.isBlocked ? "text-amber-600 font-medium" : "text-gray-400"}`}>
+                      {chat.isBlocked ? "Blocked" : chat.lastMessage || "No messages yet"}
                     </p>
                   </div>
                 </div>
