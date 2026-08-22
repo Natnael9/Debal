@@ -1,7 +1,7 @@
 /**
  * Central API client for Debal.
  *
- * All requests are proxied through Vite's dev-server to `localhost:4001`,
+ * All requests are proxied through Vite's dev-server to `localhost:4000`,
  * so the base URL is always the relative path `/api/v1`.
  *
  * Features:

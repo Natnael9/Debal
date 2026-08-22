@@ -36,6 +36,7 @@ const MatchFeed = () => {
       .then((data) => {
         if (cancelled) return;
         const matches = data?.data?.matches ?? [];
+        console.log(`FETCHED ${matches.length} MATCHES. HERE IS THE FULL ARRAY:`, matches);
         setResults(matches);
       })
       .catch((err) => {
@@ -106,10 +107,25 @@ const MatchFeed = () => {
         if (filters.maxAge && candidate.age) {
           if (candidate.age > Number(filters.maxAge)) return false;
         }
-        // Gender
+        // Gender filter
         if (filters.gender !== "any" && candidate.gender) {
           if (candidate.gender.toLowerCase() !== filters.gender.toLowerCase()) return false;
         }
+        
+        // Pet filter (BULLETPROOF VERSION)
+        if (filters.pet && filters.pet !== "any") {
+          // 1. Check what the user selected (handles "true", true, "yes", "1")
+          const wantsPets = ["true", true, "yes", "1"].includes(filters.pet);
+
+          // 2. Safely check what the candidate's profile says (defaults to false if missing)
+          const candidateAllowsPets = candidate.preferences?.petsOk === true || candidate.preferences?.petsOk === "true";
+
+          // 3. If the candidate's preference doesn't match what the user wants, hide them
+          if (candidateAllowsPets !== wantsPets) {
+            return false;
+          }
+        }
+
         return true;
       })
       .sort((a, b) => {
