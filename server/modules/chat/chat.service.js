@@ -65,10 +65,26 @@ export async function assertUserInMatch(userId, matchId) {
 }
 
 export async function saveMessage(matchId, senderId, content) {
-  const existingCount = await Message.countDocuments({ matchId });
+  const match = await assertUserInMatch(senderId, matchId);
+  const actualMatchId = match._id.toString();
+  const partnerId = match.userA.toString() === senderId.toString() ? match.userB : match.userA;
+
+  const sender = await User.findById(senderId).lean();
+  const partner = await User.findById(partnerId).lean();
+
+  const senderBlockedPartner = (sender?.blockedUsers || []).some(id => id.toString() === partnerId.toString());
+  const partnerBlockedSender = (partner?.blockedUsers || []).some(id => id.toString() === senderId.toString());
+
+  if (senderBlockedPartner || partnerBlockedSender) {
+    const err = new Error('Messaging is disabled because a user is blocked.');
+    err.code = 'USER_BLOCKED';
+    throw err;
+  }
+
+  const existingCount = await Message.countDocuments({ matchId: actualMatchId });
   if (existingCount > 0) {
     const partnerMsgCount = await Message.countDocuments({
-      matchId,
+      matchId: actualMatchId,
       senderId: { $ne: senderId },
     });
     if (partnerMsgCount === 0) {
@@ -78,7 +94,7 @@ export async function saveMessage(matchId, senderId, content) {
     }
   }
 
-  const message = await Message.create({ matchId, senderId, content });
+  const message = await Message.create({ matchId: actualMatchId, senderId, content });
   return message;
 }
 
@@ -95,16 +111,67 @@ export async function deleteChatHistory(matchId, userId) {
     matchId: { $in: idsToDelete }
   });
 
-  console.log(`[chat] deleteChatHistory deleted ${result.deletedCount} messages for match ${actualMatchId}`);
+  await Meetup.deleteMany({
+    matchId: { $in: idsToDelete }
+  });
+
+  console.log(`[chat] deleteChatHistory deleted ${result.deletedCount} messages and meetups for match ${actualMatchId}`);
   return { success: true, matchId: actualMatchId, deletedCount: result.deletedCount };
 }
 
 export async function deleteMatch(matchId, userId) {
-  const match = await assertUserInMatch(userId, matchId);
+  let match = null;
+  try {
+    match = await assertUserInMatch(userId, matchId);
+  } catch (err) {
+    if (err.code === 'MATCH_NOT_FOUND' || err.code === 'INVALID_ID') {
+      const userIdStr = userId.toString();
+      const matchIdStr = matchId.toString();
+
+      await Message.deleteMany({
+        $or: [
+          { matchId: matchIdStr },
+          { senderId: userIdStr, recipientId: matchIdStr },
+          { senderId: matchIdStr, recipientId: userIdStr }
+        ]
+      });
+
+      await Meetup.deleteMany({
+        $or: [
+          { matchId: matchIdStr },
+          { proposedBy: userIdStr },
+          { proposedBy: matchIdStr }
+        ]
+      });
+
+      return { success: true, matchId: matchIdStr };
+    }
+    throw err;
+  }
+
   const actualMatchId = match._id.toString();
+  const idsToDelete = [match._id, actualMatchId];
+  if (matchId && matchId !== actualMatchId) {
+    idsToDelete.push(matchId);
+  }
+
+  const userAStr = match.userA.toString();
+  const userBStr = match.userB.toString();
 
   await Message.deleteMany({
-    matchId: { $in: [match._id, actualMatchId, matchId] }
+    $or: [
+      { matchId: { $in: idsToDelete } },
+      { senderId: userAStr, recipientId: userBStr },
+      { senderId: userBStr, recipientId: userAStr }
+    ]
+  });
+
+  await Meetup.deleteMany({
+    $or: [
+      { matchId: { $in: idsToDelete } },
+      { proposedBy: userAStr },
+      { proposedBy: userBStr }
+    ]
   });
 
   await MatchRequest.deleteMany({
@@ -161,14 +228,7 @@ export async function getUserMatches(userId) {
   const filteredMatches = matches.filter((m) => {
     const userAId = m.userA?._id?.toString();
     const partner = userAId === userId.toString() ? m.userB : m.userA;
-    if (!partner) return false;
-    const partnerId = partner._id.toString();
-    
-    // Check if either user blocked the other
-    const currentUserBlockedPartner = blockedIds.has(partnerId);
-    const partnerBlockedCurrentUser = partner.blockedUsers?.some(id => id.toString() === userId.toString());
-    
-    return !currentUserBlockedPartner && !partnerBlockedCurrentUser;
+    return !!partner;
   });
 
   const results = await Promise.all(
@@ -176,6 +236,10 @@ export async function getUserMatches(userId) {
       const userAId = m.userA?._id?.toString();
       const partner = userAId === userId.toString() ? m.userB : m.userA;
       const partnerId = partner._id.toString();
+
+      const isBlockedByMe = blockedIds.has(partnerId);
+      const isBlockedByPartner = (partner.blockedUsers || []).some(id => id.toString() === userId.toString());
+      const isBlocked = isBlockedByMe || isBlockedByPartner;
 
       const lastMsg = await Message.findOne({ matchId: m._id })
         .sort({ createdAt: -1 })
@@ -189,21 +253,25 @@ export async function getUserMatches(userId) {
 
       const latestMeetup = await Meetup.findOne({ matchId: m._id })
         .sort({ createdAt: -1 })
+        .populate('proposedBy', 'name email')
         .lean();
 
       return {
-        id:            m._id.toString(),
-        matchId:       m._id.toString(),
-        userId:        partnerId,
-        name:          partner?.name || 'Chat Partner',
-        avatarUrl:     partner?.photoUrl || partner?.avatarUrl || '',
-        avatarText:    (partner?.name || 'C')[0].toUpperCase(),
-        isOnline:      onlineSet.has(partnerId),
-        lastMessage:   lastMsg ? lastMsg.content : '',
-        time:          lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-        unreadCount:   unreadCount,
-        user:          partner,
-        meetup:        latestMeetup || { status: 'none' },
+        id:                 m._id.toString(),
+        matchId:            m._id.toString(),
+        userId:             partnerId,
+        name:               partner?.name || 'Chat Partner',
+        avatarUrl:          partner?.photoUrl || partner?.avatarUrl || '',
+        avatarText:         (partner?.name || 'C')[0].toUpperCase(),
+        isOnline:           onlineSet.has(partnerId),
+        isBlocked:          isBlocked,
+        isBlockedByMe:      isBlockedByMe,
+        isBlockedByPartner: isBlockedByPartner,
+        lastMessage:        lastMsg ? lastMsg.content : '',
+        time:               lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        unreadCount:        unreadCount,
+        user:               partner,
+        meetup:             latestMeetup || { status: 'none' },
       };
     })
   );

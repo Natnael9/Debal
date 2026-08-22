@@ -17,6 +17,8 @@ function ChatWindow({
   onOpenSidebar,
   onOpenMeetups,
   onDeleteChatHistory,
+  onBlockUser,
+  onUnblockUser,
 }) {
   const [showActions, setShowActions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -71,13 +73,22 @@ function ChatWindow({
     );
   }
 
+  const isBlockedByMe = !!chat.isBlockedByMe;
+  const isBlockedByPartner = !!chat.isBlockedByPartner;
+  const isBlocked = !!chat.isBlocked || isBlockedByMe || isBlockedByPartner;
+
   const messagesList = chat.messages || [];
   const hasMessages = messagesList.length > 0;
   const hasPartnerReplied = hasMessages && messagesList.some((m) => {
     const sender = String(m.senderId?._id || m.senderId || m.sender || "");
     return sender !== String(currentUserId);
   });
-  const isInputDisabled = hasMessages && !hasPartnerReplied;
+  const isInputDisabled = isBlocked || (hasMessages && !hasPartnerReplied);
+  const disabledReason = isBlockedByMe
+    ? "You have blocked this candidate. Unblock to send messages."
+    : isBlockedByPartner || isBlocked
+    ? "You cannot message this user."
+    : `Waiting for ${chat.name || 'candidate'} to reply to your request before continuing...`;
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -126,9 +137,11 @@ function ChatWindow({
               {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")}
             </div>
 
-            {chat.isOnline && (
-              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
-            )}
+            {isBlocked ? (
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-500 shadow-xs" title="Blocked" />
+            ) : chat.isOnline ? (
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+            ) : null}
           </div>
 
           {/* User Info */}
@@ -137,8 +150,8 @@ function ChatWindow({
               {chat.name || "Chat"}
             </h1>
 
-            <p className="text-[10px] text-gray-400 leading-none">
-              {chat.isOnline ? "Online" : "Offline"}
+            <p className={`text-[10px] leading-none ${isBlocked ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
+              {isBlocked ? "Blocked" : chat.isOnline ? "Online" : "Offline"}
             </p>
           </div>
         </div>
@@ -277,31 +290,53 @@ function ChatWindow({
                   <span>Report</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowActions(false);
-                    setShowBlockModal(true);
-                  }}
-                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50/70 text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-700">
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                      />
-                    </svg>
-                  </div>
-                  <span>Block User</span>
-                </button>
+                {isBlockedByMe ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setShowActions(false);
+                      try {
+                        await onUnblockUser?.(chat.userId || chat.id);
+                      } catch (err) {
+                        console.error("Failed to unblock user:", err);
+                      }
+                    }}
+                    className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <span>Unblock Candidate</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowActions(false);
+                      setShowBlockModal(true);
+                    }}
+                    className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50/70 text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-700">
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                        />
+                      </svg>
+                    </div>
+                    <span>Block Candidate</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -323,7 +358,7 @@ function ChatWindow({
         onTyping={onTypingStart}
         onStopTyping={onTypingStop}
         disabled={isInputDisabled}
-        disabledReason={`Waiting for ${chat.name || 'candidate'} to reply to your request before continuing...`}
+        disabledReason={disabledReason}
       />
 
       {/* Report Modal */}
@@ -345,6 +380,7 @@ function ChatWindow({
             name: chat.name,
           }}
           onClose={() => setShowBlockModal(false)}
+          onBlocked={(userId) => onBlockUser?.(userId)}
         />
       )}
 

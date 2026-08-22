@@ -12,7 +12,7 @@ export default defineConfig({
     host: true,
     proxy: {
       // Forward all /api/* requests to the Fastify backend
-      "/api": {
+      "/api": { 
         target: "http://localhost:4001",
         changeOrigin: true,
       },

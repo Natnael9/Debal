@@ -152,6 +152,7 @@ export default async function chatRoutes(fastify) {
         try {
           const io = getIO();
           io.to(`match:${result.matchId}`).emit('chat:history_cleared', { matchId: result.matchId });
+          io.to(`match:${result.matchId}`).emit('chat:meetup_update', { matchId: result.matchId, meetup: { status: 'none' } });
         } catch (e) {}
 
         return reply.send({ success: true, data: result });
@@ -180,6 +181,7 @@ export default async function chatRoutes(fastify) {
         try {
           const io = getIO();
           io.to(`match:${result.matchId}`).emit('chat:match_deleted', { matchId: result.matchId });
+          io.to(`match:${result.matchId}`).emit('chat:meetup_update', { matchId: result.matchId, meetup: { status: 'none' } });
         } catch (e) {}
 
         return reply.send({ success: true, data: result });
