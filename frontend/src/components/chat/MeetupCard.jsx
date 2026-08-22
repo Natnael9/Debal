@@ -1,21 +1,32 @@
 function MeetupCard({
-  proposedBy = "Sarah",
-  date = "Saturday, August 22",
-  time = "3:00 PM",
-  location = "Bole, Addis Ababa",
-  note = "Let's meet for coffee!",
-  status = "pending",
+  proposedBy = "Roommate Candidate",
+  isProposer = false,
+  date = "Not specified",
+  time = "Not specified",
+  location = "",
+  locationNote = "",
+  note = "",
+  status = "none",
   onAccept,
   onDecline,
+  onRemove,
+  onCancel,
 }) {
+  const displayLocation = location || locationNote || "To be decided";
+  const displayNote = note || (locationNote && location ? locationNote : "");
+
+  const isPending = status === "pending" || status === "proposed";
+  const isConfirmed = status === "confirmed" || status === "accepted";
+  const isDeclined = status === "declined";
+
   const handleAddToCalendar = () => {
     const startDate = new Date(`${date} ${time}`);
 
     const endDate = new Date(startDate);
     endDate.setHours(endDate.getHours() + 1);
 
-    const formatGoogleDate = (date) => {
-      return date
+    const formatGoogleDate = (d) => {
+      return d
         .toISOString()
         .replace(/[-:]/g, "")
         .replace(/\.\d{3}Z$/, "Z");
@@ -28,8 +39,8 @@ function MeetupCard({
       `https://calendar.google.com/calendar/render?action=TEMPLATE` +
       `&text=${encodeURIComponent("Meetup with " + proposedBy)}` +
       `&dates=${start}/${end}` +
-      `&location=${encodeURIComponent(location)}` +
-      `&details=${encodeURIComponent(note || "")}`;
+      `&location=${encodeURIComponent(displayLocation)}` +
+      `&details=${encodeURIComponent(displayNote || "")}`;
 
     window.open(calendarUrl, "_blank", "noopener,noreferrer");
   };
@@ -106,22 +117,39 @@ function MeetupCard({
           </div>
         </div>
 
-        {/* STATUS BADGE */}
-        <span
-          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${
-            status === "confirmed"
-              ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-              : status === "declined"
-              ? "border border-rose-100 bg-rose-50 text-rose-700"
-              : "border border-blue-100/60 bg-blue-50 text-blue-900"
-          }`}
-        >
-          {status === "confirmed"
-            ? "Confirmed"
-            : status === "declined"
-            ? "Declined"
-            : "Pending"}
-        </span>
+        <div className="flex items-center gap-1">
+          {/* STATUS BADGE */}
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${
+              isConfirmed
+                ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                : isDeclined
+                ? "border border-rose-100 bg-rose-50 text-rose-700"
+                : "border border-blue-100/60 bg-blue-50 text-blue-900"
+            }`}
+          >
+            {isConfirmed
+              ? "Confirmed"
+              : isDeclined
+              ? "Declined"
+              : "Pending"}
+          </span>
+
+          {/* REMOVE / DELETE 'X' BUTTON - ONLY VISIBLE TO SENDER (PROPOSER) */}
+          {isProposer && (onRemove || onCancel || onDecline) && (
+            <button
+              type="button"
+              onClick={onRemove || onCancel || onDecline}
+              className="flex h-5 w-5 items-center justify-center rounded-full text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition shrink-0"
+              title="Delete meetup from history and panel"
+              aria-label="Delete meetup from history and panel"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* =====================================================
@@ -214,7 +242,7 @@ function MeetupCard({
             </p>
 
             <p className="truncate text-[10px] font-semibold text-gray-800">
-              {location}
+              {displayLocation}
             </p>
           </div>
         </div>
@@ -223,55 +251,67 @@ function MeetupCard({
       {/* =====================================================
           NOTE
       ====================================================== */}
-      {note && (
+      {displayNote && (
         <div className="mt-2 rounded-lg border border-blue-100/60 bg-blue-50/30 px-2 py-1">
           <p className="text-[7px] font-medium uppercase text-blue-900/60">
             Note
           </p>
 
           <p className="mt-0.5 line-clamp-2 text-[9px] italic leading-tight text-gray-600">
-            "{note}"
+            "{displayNote}"
           </p>
         </div>
       )}
 
       {/* =====================================================
-          PENDING ACTIONS
+          PENDING ACTIONS / STATUS
       ====================================================== */}
-      {status === "pending" && (
-        <div className="mt-2.5 flex gap-1.5">
+      {isPending && (
+        <div className="mt-2.5">
+          {isProposer ? (
+            <div className="flex flex-col gap-1.5 text-center">
+              <span className="rounded-lg border border-blue-100 bg-blue-50/70 py-1 text-[9px] font-medium text-blue-800">
+                ⏳ Waiting for response...
+              </span>
+              <button
+                type="button"
+                onClick={onRemove || onCancel || onDecline}
+                className="w-full rounded-lg border border-rose-200 bg-rose-50/50 py-1 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 active:scale-98"
+              >
+                Cancel Proposal
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-1.5">
+              {/* DECLINE */}
+              <button
+                type="button"
+                onClick={onDecline}
+                className="flex-1 rounded-lg border border-gray-200 bg-white py-1 text-[10px] font-semibold text-gray-600 transition hover:bg-gray-50 active:scale-98"
+              >
+                Decline
+              </button>
 
-          {/* DECLINE */}
-          <button
-            type="button"
-            onClick={onDecline}
-            className="flex-1 rounded-lg border border-gray-200 bg-white py-1 text-[10px] font-semibold text-gray-600 transition hover:bg-gray-50 active:scale-98"
-          >
-            Decline
-          </button>
-
-          {/* ACCEPT */}
-          <button
-            type="button"
-            onClick={onAccept}
-            className="flex-1 rounded-lg bg-blue-900 py-1 text-[10px] font-semibold text-white shadow-xs transition hover:bg-blue-800 active:scale-98"
-          >
-            Accept
-          </button>
+              {/* ACCEPT */}
+              <button
+                type="button"
+                onClick={onAccept}
+                className="flex-1 rounded-lg bg-blue-900 py-1 text-[10px] font-semibold text-white shadow-xs transition hover:bg-blue-800 active:scale-98"
+              >
+                Accept
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* =====================================================
           DECLINED MESSAGE
       ====================================================== */}
-      {status === "declined" && (
+      {isDeclined && (
         <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-2 py-1.5 text-center">
           <p className="text-[9px] font-semibold text-rose-700">
-            Meetup Declined
-          </p>
-
-          <p className="mt-0.5 text-[8px] text-rose-500">
-            This meetup proposal was declined.
+            Meetup Declined / Cancelled
           </p>
         </div>
       )}
@@ -279,7 +319,7 @@ function MeetupCard({
       {/* =====================================================
           CONFIRMED → CALENDAR
       ====================================================== */}
-      {status === "confirmed" && (
+      {isConfirmed && (
         <button
           type="button"
           onClick={handleAddToCalendar}

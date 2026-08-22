@@ -1,15 +1,24 @@
-// We need to import the User model to update the blockedUsers array
 import User from '../users/users.model.js';
+import { getIO } from '../chat/chat.gateway.js';
 
 export const blockUser = async (req, reply) => {
   try {
     const currentUserId = req.user._id;
-    const targetUserId = req.params.userId; // This comes from the URL (/:userId)
+    const targetUserId = req.params.userId;
 
-    // $addToSet is a MongoDB operator that adds an item to an array only if it isn't already there
     await User.findByIdAndUpdate(currentUserId, {
       $addToSet: { blockedUsers: targetUserId }
     });
+
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('user:blocked', {
+          blockerId: currentUserId.toString(),
+          blockedId: targetUserId.toString(),
+        });
+      }
+    } catch (e) {}
 
     return reply.code(200).send({ 
       success: true, 
@@ -29,10 +38,19 @@ export const unblockUser = async (req, reply) => {
     const currentUserId = req.user._id;
     const targetUserId = req.params.userId;
 
-    // $pull is a MongoDB operator that removes an item from an array
     await User.findByIdAndUpdate(currentUserId, {
       $pull: { blockedUsers: targetUserId }
     });
+
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('user:unblocked', {
+          unblockerId: currentUserId.toString(),
+          unblockedId: targetUserId.toString(),
+        });
+      }
+    } catch (e) {}
 
     return reply.code(200).send({ 
       success: true, 

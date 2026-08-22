@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { blockUser } from "../../services/chatModerationApi";
 
-function BlockModal({ user, onClose }) {
+function BlockModal({ user, onClose, onBlocked }) {
   const [isBlocking, setIsBlocking] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -12,8 +12,7 @@ function BlockModal({ user, onClose }) {
 
     try {
       await blockUser(user.id);
-
-      // Any 2xx response reaches here
+      onBlocked?.(user.id);
       setSuccess(true);
     } catch (err) {
       setError(

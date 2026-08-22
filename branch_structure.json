@@ -1,0 +1,33 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feat/block-unblock",
+    "feat/integration",
+    "fix/lag-problem",
+    "fix/profile",
+    "fix/remove-googleauth",
+    "fix/sortFilter",
+    "fix/verificationPending",
+    "main"
+  ],
+  "parent": {
+    "feat/block-unblock": "main",
+    "feat/integration": "main",
+    "fix/lag-problem": "main",
+    "fix/profile": "main",
+    "fix/remove-googleauth": "main",
+    "fix/sortFilter": "main",
+    "fix/verificationPending": "main",
+    "main": null
+  },
+  "order": [
+    "main",
+    "feat/block-unblock",
+    "feat/integration",
+    "fix/lag-problem",
+    "fix/profile",
+    "fix/remove-googleauth",
+    "fix/sortFilter",
+    "fix/verificationPending"
+  ]
+}

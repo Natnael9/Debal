@@ -1,9 +1,9 @@
-import { proposeMeetup, respondToMeetup, getMeetup } from './meetups.service.js';
+import { proposeMeetup, respondToMeetup, getMeetup, deleteMeetup } from './meetups.service.js';
 import { buildCalendarLink } from './calendar-link.util.js';
 import { getIO } from '../chat/chat.gateway.js';
 import { getRedisClient } from '../../config/redis.js';
 
-const VALID_ACTIONS = ['accept', 'decline', 'reschedule'];
+const VALID_ACTIONS = ['accept', 'decline', 'reschedule', 'cancel'];
 
 export async function proposeMeetupHandler(request, reply) {
   const { matchId } = request.params;
@@ -78,6 +78,28 @@ export async function getCalendarLinkHandler(request, reply) {
   } catch (err) {
     if (err.code === 'MEETUP_NOT_FOUND') {
       return reply.status(404).send({ success: false, error: err.code });
+    }
+    request.log.error(err);
+    return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });
+  }
+}
+
+export async function deleteMeetupHandler(request, reply) {
+  const { id } = request.params;
+
+  try {
+    const { matchId, otherUserId } = await deleteMeetup(id, request.user._id);
+
+    const emptyMeetup = { status: 'none' };
+    await pushMeetupUpdate(matchId, request.user._id, emptyMeetup, otherUserId);
+
+    return reply.send({ success: true, data: { meetup: emptyMeetup } });
+  } catch (err) {
+    if (err.code === 'MEETUP_NOT_FOUND') {
+      return reply.status(404).send({ success: false, error: err.code });
+    }
+    if (err.code === 'NOT_MATCH_PARTICIPANT' || err.code === 'ONLY_CREATOR_CAN_REMOVE_MEETUP') {
+      return reply.status(403).send({ success: false, error: err.code, message: err.message });
     }
     request.log.error(err);
     return reply.status(500).send({ success: false, error: 'INTERNAL_ERROR' });
