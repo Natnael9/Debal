@@ -39,7 +39,7 @@ function LoginForm() {
   return (
     <div>
       {/* Google Login */}
-      <a
+      {/* <a
         href="/api/v1/auth/google"
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-98"
       >
@@ -50,17 +50,17 @@ function LoginForm() {
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
         </svg>
         Continue with Google
-      </a>
+      </a> */}
 
       {/* Divider */}
-      <div className="relative my-3">
+      {/* <div className="relative my-3">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-100" />
         </div>
         <div className="relative flex justify-center text-[10px]">
           <span className="bg-white px-2 font-medium text-gray-400">or</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Error message */}
       {error && (
