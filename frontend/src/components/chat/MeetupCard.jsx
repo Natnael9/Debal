@@ -15,6 +15,37 @@ function MeetupCard({
   const displayLocation = location || locationNote || "To be decided";
   const displayNote = note || (locationNote && location ? locationNote : "");
 
+  const formatCardDate = (dStr) => {
+    if (!dStr || dStr === "Not specified") return "Not specified";
+    try {
+      const d = new Date(dStr.includes("T") ? dStr : `${dStr}T00:00:00`);
+      if (isNaN(d.getTime())) return dStr;
+      return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return dStr;
+    }
+  };
+
+  const formatCardTime = (tStr) => {
+    if (!tStr || tStr === "Not specified") return "Not specified";
+    try {
+      if (tStr.includes(":")) {
+        const [h, m] = tStr.split(":");
+        const hours = parseInt(h, 10);
+        if (isNaN(hours)) return tStr;
+        const suffix = hours >= 12 ? "PM" : "AM";
+        const h12 = hours % 12 || 12;
+        return `${h12}:${m} ${suffix}`;
+      }
+      return tStr;
+    } catch {
+      return tStr;
+    }
+  };
+
+  const formattedDate = formatCardDate(date);
+  const formattedTime = formatCardTime(time);
+
   const isPending = status === "pending" || status === "proposed";
   const isConfirmed = status === "confirmed" || status === "accepted";
   const isDeclined = status === "declined";
@@ -85,11 +116,11 @@ function MeetupCard({
           HEADER
       ====================================================== */}
       <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-        <div className="flex min-w-0 items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-2">
 
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-blue-100/80 bg-blue-50 text-blue-900">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-900 shadow-2xs">
             <svg
-              className="h-3 w-3"
+              className="h-4 w-4 text-blue-900"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -98,19 +129,19 @@ function MeetupCard({
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 01-2-2v12a2 2 0 002 2z"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
           </div>
 
           <div className="truncate">
-            <h3 className="truncate text-[10px] font-bold leading-tight text-gray-900">
+            <h3 className="truncate text-[10px] font-bold leading-tight text-slate-900">
               Meetup Proposal
             </h3>
 
-            <p className="truncate text-[8px] text-gray-400">
+            <p className="truncate text-[8px] text-slate-400">
               by{" "}
-              <span className="font-medium text-gray-600">
+              <span className="font-medium text-slate-600">
                 {proposedBy}
               </span>
             </p>
@@ -155,47 +186,49 @@ function MeetupCard({
       {/* =====================================================
           DETAILS BOX
       ====================================================== */}
-      <div className="mt-2 space-y-1.5 rounded-xl border border-slate-100 bg-slate-50/70 p-2">
+      <div className="mt-2 space-y-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2">
 
         {/* DATE */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-gray-100 bg-white text-gray-500 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-700 shadow-2xs">
             <svg
-              className="h-2.5 w-2.5 text-blue-900"
+              className="h-3.5 w-3.5 text-sky-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2v12a2 2 0 002 2z"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
           </div>
 
           <div className="min-w-0">
-            <p className="text-[7px] font-medium uppercase leading-none tracking-wider text-gray-400">
+            <p className="text-[7px] font-bold uppercase leading-none tracking-wider text-slate-400">
               Date
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-gray-800">
-              {date}
+            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
+              {formattedDate}
             </p>
           </div>
         </div>
 
         {/* TIME */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-gray-100 bg-white text-gray-500 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-700 shadow-2xs">
             <svg
-              className="h-2.5 w-2.5 text-blue-900"
+              className="h-3.5 w-3.5 text-indigo-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth="2"
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
@@ -203,33 +236,34 @@ function MeetupCard({
           </div>
 
           <div className="min-w-0">
-            <p className="text-[7px] font-medium uppercase leading-none tracking-wider text-gray-400">
+            <p className="text-[7px] font-bold uppercase leading-none tracking-wider text-slate-400">
               Time
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-gray-800">
-              {time}
+            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
+              {formattedTime}
             </p>
           </div>
         </div>
 
         {/* LOCATION */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-gray-100 bg-white text-gray-500 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-2xs">
             <svg
-              className="h-2.5 w-2.5 text-blue-900"
+              className="h-3.5 w-3.5 text-emerald-700"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth="2"
                 d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
               />
-
               <path
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth="2"
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
@@ -237,11 +271,11 @@ function MeetupCard({
           </div>
 
           <div className="min-w-0">
-            <p className="text-[7px] font-medium uppercase leading-none tracking-wider text-gray-400">
+            <p className="text-[7px] font-bold uppercase leading-none tracking-wider text-slate-400">
               Location
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-gray-800">
+            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
               {displayLocation}
             </p>
           </div>
@@ -257,7 +291,7 @@ function MeetupCard({
             Note
           </p>
 
-          <p className="mt-0.5 line-clamp-2 text-[9px] italic leading-tight text-gray-600">
+          <p className="mt-0.5 line-clamp-2 text-[9px] italic leading-tight text-slate-600">
             "{displayNote}"
           </p>
         </div>
@@ -287,7 +321,7 @@ function MeetupCard({
               <button
                 type="button"
                 onClick={onDecline}
-                className="flex-1 rounded-lg border border-gray-200 bg-white py-1 text-[10px] font-semibold text-gray-600 transition hover:bg-gray-50 active:scale-98"
+                className="flex-1 rounded-lg border border-gray-200 bg-white py-1 text-[10px] font-semibold text-slate-600 transition hover:bg-gray-50 active:scale-98"
               >
                 Decline
               </button>
@@ -323,22 +357,23 @@ function MeetupCard({
         <button
           type="button"
           onClick={handleAddToCalendar}
-          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg border border-blue-100 bg-blue-50 py-1 text-[10px] font-semibold text-blue-900 transition hover:bg-blue-100 active:scale-98"
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 py-1.5 text-[10px] font-bold text-blue-900 transition hover:bg-blue-100 active:scale-98 shadow-2xs"
         >
           <svg
-            className="h-2.5 w-2.5"
+            className="h-3.5 w-3.5 text-blue-900"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path
               strokeLinecap="round"
+              strokeLinejoin="round"
               strokeWidth="2"
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2v12a2 2 0 002 2z"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM12 11v6m-3-3h6"
             />
           </svg>
 
-          Add to Calendar
+          Add to Google Calendar
         </button>
       )}
     </div>

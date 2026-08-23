@@ -25,7 +25,7 @@ const OTPConfirmForm = ({ onSuccess, onCancel }) => {
     try {
       const res = await apiPost('/verification/confirm-otp', { otp: data.otp });
       if (res?.success) {
-        onSuccess('verified');
+        onSuccess('verified', res?.data?.user);
       } else {
         setErrorMessage(res?.message || 'Invalid OTP code.');
       }

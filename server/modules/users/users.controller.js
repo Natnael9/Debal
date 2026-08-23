@@ -16,6 +16,7 @@ async function submitQuestionnaireHandler(request, reply) {
     return reply.status(200).send({
       success: true,
       data: {
+        user,
         questionnaireCompleted: user.questionnaireCompleted,
         profileCompletionPercent: user.profileCompletionPercent,
       },

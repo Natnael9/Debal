@@ -2,23 +2,25 @@ import User from '../users/users.model.js';
 
 /**
  * Pool A: default cross-type candidate query (has_room <-> needs_room).
- * Ultra-fast instant query using indexed fields and in-memory haversine scoring.
+ * Ultra-fast indexed query returning verified candidates with gender and lifestyle preferences.
  */
 async function getCandidatePoolA(user) {
   const oppositeStatus = user.housingStatus === 'has_room' ? 'needs_room' : 'has_room';
-  const alreadyInteracted = [];
+
+  // Exclude only blocked users and the current user
+  const excludeIds = new Set([user._id.toString(), ...(user.blockedUsers || []).map(id => id.toString())]);
 
   const filterQuery = {
-    _id: { $nin: [...(user.blockedUsers || []), ...alreadyInteracted, user._id] },
     housingStatus: oppositeStatus,
     questionnaireCompleted: true,
-    verificationStatus: 'verified',
+    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
+    _id: { $nin: Array.from(excludeIds) },
   };
 
   const projection = 'name age gender bio avatarUrl housingStatus location preferences verificationStatus';
 
-  // Fast indexed MongoDB query (Instant execution <5ms)
+  // Fast indexed MongoDB query
   const candidates = await User.find(filterQuery)
     .select(projection)
     .limit(100)
@@ -34,12 +36,36 @@ function scoreCandidate(user, candidate) {
   const cMin = candidate.preferences?.budgetMin ?? 0;
   const cMax = candidate.preferences?.budgetMax ?? 100000;
 
-  // Budget overlap % (20%)
-  const overlapMin = Math.max(uMin, cMin);
-  const overlapMax = Math.min(uMax, cMax);
-  const overlapSize = Math.max(0, overlapMax - overlapMin);
-  const rangeSize = Math.max(uMax - uMin, 1);
-  const budgetScore = Math.min(1, overlapSize / rangeSize);
+  // Budget overlap calculation (20% of total score)
+  let budgetScore = 0;
+  if (user.housingStatus === 'needs_room' && candidate.housingStatus === 'has_room') {
+    // If seeker's max budget is below candidate's min or max rent, seeker cannot afford it
+    if (cMin > uMax || (cMax > uMax && cMin > uMax)) {
+      budgetScore = 0;
+    } else {
+      const overlapMin = Math.max(uMin, cMin);
+      const overlapMax = Math.min(uMax, cMax);
+      if (overlapMax >= overlapMin) {
+        // Overlap ratio relative to candidate room price
+        const overlapSize = overlapMax - overlapMin;
+        const candidateSpan = Math.max(cMax - cMin, 1);
+        budgetScore = Math.min(1, overlapSize / candidateSpan);
+        // Penalize if candidate rent ceiling exceeds user max budget
+        if (cMax > uMax) {
+          const excess = (cMax - uMax) / uMax;
+          budgetScore = Math.max(0, budgetScore - excess);
+        }
+      }
+    }
+  } else {
+    const overlapMin = Math.max(uMin, cMin);
+    const overlapMax = Math.min(uMax, cMax);
+    if (overlapMax >= overlapMin) {
+      const overlapSize = overlapMax - overlapMin;
+      const rangeSize = Math.max(uMax - uMin, 1);
+      budgetScore = Math.min(1, overlapSize / rangeSize);
+    }
+  }
 
   // Location distance in memory (25%)
   let locationScore = 0.8;
@@ -102,4 +128,34 @@ function haversineDistanceMeters([lng1, lat1], [lng2, lat2]) {
   return R * c;
 }
 
-export { getCandidatePoolA, scoreCandidate };
+/**
+ * Pool B: team-up candidate query (needs_room <-> needs_room).
+ * Returns opted-in needs_room candidates when currentUser is also needs_room and teamUpEnabled.
+ */
+async function getCandidatePoolB(user) {
+  if (user.housingStatus !== 'needs_room' || !user.teamUpEnabled) {
+    return [];
+  }
+
+  const excludeIds = new Set([user._id.toString(), ...(user.blockedUsers || []).map(id => id.toString())]);
+
+  const filterQuery = {
+    housingStatus: 'needs_room',
+    teamUpEnabled: true,
+    questionnaireCompleted: true,
+    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
+    suspended: false,
+    _id: { $nin: Array.from(excludeIds) },
+  };
+
+  const projection = 'name age gender bio avatarUrl housingStatus location preferences verificationStatus teamUpEnabled';
+
+  const candidates = await User.find(filterQuery)
+    .select(projection)
+    .limit(100)
+    .lean();
+
+  return candidates || [];
+}
+
+export { getCandidatePoolA, getCandidatePoolB, scoreCandidate };

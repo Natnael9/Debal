@@ -6,6 +6,7 @@ const ActivityLog = () => {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAdminId, setSelectedAdminId] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -62,6 +63,78 @@ const ActivityLog = () => {
       default:
         return 'bg-sky-50 text-sky-700 border-sky-200/80';
     }
+  };
+
+  /**
+   * Human-friendly formatter for audit notes and metadata.
+   * Converts raw JSON strings like {"status":"pending_review","page":1,"limit":20}
+   * into clean, readable natural text descriptions.
+   */
+  const formatAuditNote = (log) => {
+    // 1. Direct human-written string notes
+    if (log.notes && typeof log.notes === 'string') {
+      const trimmed = log.notes.trim();
+      if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        return trimmed;
+      }
+    }
+
+    // 2. Parse metadata or stringified JSON notes
+    let meta = log.metadata;
+    if (!meta && log.notes) {
+      try {
+        meta = JSON.parse(log.notes);
+      } catch {
+        meta = null;
+      }
+    }
+
+    if (meta && typeof meta === 'object' && Object.keys(meta).length > 0) {
+      const parts = [];
+
+      if (meta.reason) {
+        parts.push(`Reason: ${meta.reason}`);
+      }
+      if (meta.status) {
+        const readableStatus = String(meta.status).replace(/_/g, ' ');
+        parts.push(`Filter: ${readableStatus}`);
+      }
+      if (meta.search) {
+        parts.push(`Search: "${meta.search}"`);
+      }
+      if (meta.page) {
+        parts.push(`Page ${meta.page}`);
+      }
+      if (meta.resultCount !== undefined) {
+        parts.push(`${meta.resultCount} item(s) retrieved`);
+      }
+
+      // Collect any non-standard custom attributes
+      const handledKeys = new Set(['reason', 'status', 'search', 'page', 'limit', 'resultCount', 'targetUserId', 'targetId']);
+      const extraKeys = Object.keys(meta).filter((k) => !handledKeys.has(k));
+      for (const key of extraKeys) {
+        const val = meta[key];
+        if (val !== undefined && val !== null && val !== '') {
+          const keyLabel = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+          parts.push(`${keyLabel}: ${typeof val === 'object' ? JSON.stringify(val) : val}`);
+        }
+      }
+
+      if (parts.length > 0) {
+        return parts.join(' • ');
+      }
+    }
+
+    // 3. Fallback action summary
+    if (log.action) {
+      const readableAction = log.action.replace(/_/g, ' ');
+      if (log.action.startsWith('list_') || log.action.startsWith('view_') || log.action.includes('read')) {
+        return `Queried ${readableAction} records`;
+      }
+      return `Executed ${readableAction}`;
+    }
+
+    return 'System administrative operation';
   };
 
   return (
@@ -134,10 +207,14 @@ const ActivityLog = () => {
                     const adminName = log.adminId?.name || log.adminName || 'Admin User';
                     const adminIdStr = log.adminId?._id || log.adminId || 'admin_id';
                     const targetStr = log.targetUserId || log.targetId || 'N/A';
-                    const noteText = log.notes || (log.metadata ? JSON.stringify(log.metadata) : 'Executed administrative action');
+                    const formattedNote = formatAuditNote(log);
 
                     return (
-                      <tr key={log._id || log.id} className="transition hover:bg-slate-50/50">
+                      <tr 
+                        key={log._id || log.id} 
+                        onClick={() => setSelectedLog(log)}
+                        className="cursor-pointer transition hover:bg-slate-50/80"
+                      >
                         <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
                           {new Date(log.createdAt).toLocaleString(undefined, {
                             dateStyle: 'medium',
@@ -157,8 +234,8 @@ const ActivityLog = () => {
                           <div className="font-semibold capitalize text-slate-800">{log.targetType || 'User'}</div>
                           <div className="font-mono text-[10px] text-slate-400">{targetStr}</div>
                         </td>
-                        <td className="max-w-xs px-5 py-3.5 text-slate-600 truncate" title={noteText}>
-                          {noteText}
+                        <td className="max-w-md px-5 py-3.5 text-slate-700" title={formattedNote}>
+                          <span className="font-medium">{formattedNote}</span>
                         </td>
                       </tr>
                     );
@@ -169,6 +246,95 @@ const ActivityLog = () => {
           </div>
         )}
       </div>
+
+      {/* Log Detail Inspector Modal */}
+      {selectedLog && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs"
+          onClick={() => setSelectedLog(null)}
+        >
+          <div 
+            className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Audit Entry Inspector</h3>
+                  <p className="text-[11px] text-slate-400">Detailed record breakdown</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3.5 text-xs">
+              <div className="flex justify-between items-center rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Administrator</p>
+                  <p className="font-bold text-slate-900">{selectedLog.adminId?.name || selectedLog.adminName || 'Admin User'}</p>
+                  <p className="font-mono text-[10px] text-slate-500">{selectedLog.adminId?._id || selectedLog.adminId}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Timestamp</p>
+                  <p className="font-semibold text-slate-700">
+                    {new Date(selectedLog.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Action Type</p>
+                  <span className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getBadgeColor(selectedLog.action)}`}>
+                    {formatActionName(selectedLog.action)}
+                  </span>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Target Entity</p>
+                  <p className="mt-0.5 font-bold capitalize text-slate-900">{selectedLog.targetType || 'User'}</p>
+                  <p className="font-mono text-[10px] text-slate-500">{selectedLog.targetUserId || selectedLog.targetId || 'N/A'}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Formatted Audit Note</p>
+                <p className="mt-1 font-semibold leading-relaxed text-slate-800">
+                  {formatAuditNote(selectedLog)}
+                </p>
+              </div>
+
+              {selectedLog.metadata && (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Raw Metadata Context</p>
+                  <pre className="mt-1.5 overflow-x-auto rounded-xl bg-slate-900 p-2.5 font-mono text-[10px] text-slate-200">
+                    {JSON.stringify(selectedLog.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              <div className="pt-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(null)}
+                  className="rounded-xl bg-[#071E2D] px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                >
+                  Close Inspector
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

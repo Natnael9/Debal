@@ -2,16 +2,23 @@ import React, { useState } from 'react';
 import IDSubmitForm from '../components/IDSubmitForm';
 import OTPConfirmForm from '../components/OTPConfirmForm';
 import VerificationStatusScreen from '../components/VerificationStatusScreen';
+import { useAuth } from '../context/AuthContext';
 
 const VerificationWizard = () => {
+  const { setUser } = useAuth();
   // Tracks which step the user is on: 1 = ID, 2 = OTP, 3 = Status
   const [step, setStep] = useState(1);
   const [verificationStatus, setVerificationStatus] = useState('pending'); // 'pending', 'verified', or 'rejected'
 
   // Handlers to move between steps
   const handleIDSubmitSuccess = () => setStep(2);
-  const handleOTPSubmitSuccess = (status) => {
+  const handleOTPSubmitSuccess = (status, updatedUser) => {
     setVerificationStatus(status);
+    if (updatedUser) {
+      setUser(updatedUser);
+    } else if (status === 'verified') {
+      setUser((prev) => (prev ? { ...prev, verificationStatus: 'verified' } : null));
+    }
     setStep(3);
   };
   const handleResubmit = () => setStep(1);
@@ -28,7 +35,7 @@ const VerificationWizard = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-sm rounded-2xl border border-gray-100 sm:px-10">
           {step === 1 && <IDSubmitForm onSuccess={handleIDSubmitSuccess} />}
-          {step === 2 && <OTPConfirmForm onSuccess={handleOTPSubmitSuccess} />}
+          {step === 2 && <OTPConfirmForm onSuccess={handleOTPSubmitSuccess} onCancel={() => setStep(1)} />}
           {step === 3 && (
             <VerificationStatusScreen 
               status={verificationStatus} 

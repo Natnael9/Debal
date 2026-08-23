@@ -58,9 +58,10 @@ export async function confirmOtpHandler(request, reply) {
   }
 
   try {
-    await confirmOtp(request.user._id, otp);
+    const user = await confirmOtp(request.user._id, otp);
     return reply.send({
       success: true,
+      data: { user },
       message: 'Identity verified successfully.',
     });
   } catch (err) {
