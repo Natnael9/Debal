@@ -25,7 +25,9 @@ export function connectSocket(token) {
     return _socket;
   }
 
-  _socket = io("/", {
+  const socketHost = import.meta.env.VITE_SOCKET_BASE_URL || import.meta.env.VITE_API_BASE_URL || undefined;
+
+  _socket = io(socketHost, {
     // Vite proxies "/" to localhost:4001 in dev
     path: "/socket.io",
     auth: { token },
