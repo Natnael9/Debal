@@ -7,7 +7,7 @@ export default async function healthRoute(fastify) {
     const redisOk = await isRedisHealthy();
     const allOk = dbOk && redisOk;
 
-    return reply.status(allOk ? 200 : 503).send({
+    return reply.status(dbOk ? 200 : 503).send({
       status: allOk ? 'ok' : 'degraded',
       services: {
         mongodb: dbOk ? 'connected' : 'disconnected',

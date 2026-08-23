@@ -1,4 +1,5 @@
 import { authMiddleware } from '../auth/auth.middleware.js';
+import { requireFullAccess } from '../../shared/middleware/require-full-access.middleware.js';
 import {
   addBookmarkHandler,
   listBookmarksHandler,
@@ -8,19 +9,19 @@ import {
 export default async function bookmarksRoutes(fastify) {
   fastify.post(
     '/api/v1/bookmarks',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     addBookmarkHandler
   );
 
   fastify.get(
     '/api/v1/bookmarks',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     listBookmarksHandler
   );
 
   fastify.delete(
     '/api/v1/bookmarks/:bookmarkedUserId',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     removeBookmarkHandler
   );
 }

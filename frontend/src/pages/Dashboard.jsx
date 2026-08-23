@@ -91,13 +91,17 @@ const MatchFeed = () => {
         ) {
           return false;
         }
-        // Budget min
-        if (filters.minBudget && candidate.preferences?.budgetMax) {
-          if (candidate.preferences.budgetMax < Number(filters.minBudget)) return false;
+        // Candidate budget fields (handles both top-level & preferences)
+        const cMax = candidate.budgetMax ?? candidate.preferences?.budgetMax;
+        const cMin = candidate.budgetMin ?? candidate.preferences?.budgetMin;
+
+        // Budget min filter
+        if (filters.minBudget && cMax !== undefined) {
+          if (cMax < Number(filters.minBudget)) return false;
         }
-        // Budget max
-        if (filters.maxBudget && candidate.preferences?.budgetMax) {
-          if (candidate.preferences.budgetMax > Number(filters.maxBudget)) return false;
+        // Budget max filter
+        if (filters.maxBudget && cMin !== undefined) {
+          if (cMin > Number(filters.maxBudget)) return false;
         }
         // Age min
         if (filters.minAge && candidate.age) {

@@ -4,7 +4,8 @@ import { Message } from '../chat/message.model.js';
 import { User } from '../users/users.model.js';
 import { getIO } from '../chat/chat.gateway.js';
 import { enqueueNewMatchEmail } from '../notifications/notification.queue.js';
-import { getCandidatePoolA, scoreCandidate } from './matchmaking.algorithm.js';
+import { getCandidatePoolA, getCandidatePoolB, scoreCandidate } from './matchmaking.algorithm.js';
+import { getRedisClient, isRedisHealthy } from '../../config/redis.js';
 
 class MatchmakingError extends Error {
   constructor(message, statusCode = 400) {
@@ -14,7 +15,24 @@ class MatchmakingError extends Error {
 }
 
 /**
+ * Invalidate cached feed for a user (SRS FR-4.5, Arch §9.3)
+ */
+export async function invalidateMatchFeedCache(userId) {
+  if (!userId) return;
+  try {
+    const healthy = await isRedisHealthy();
+    if (healthy) {
+      const redis = getRedisClient();
+      await redis.del(`match_feed:${userId.toString()}`);
+    }
+  } catch (err) {
+    // Non-blocking cache error fallback
+  }
+}
+
+/**
  * GET /matches/feed
+ * Dual-pool match feed (Pool A: default cross-type, Pool B: team-up opt-in)
  * Gated behind questionnaireCompleted + verificationStatus === 'verified'.
  */
 async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
@@ -25,32 +43,91 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
     throw new MatchmakingError('Identity verification is required to view matches.', 403);
   }
 
-  const candidates = await getCandidatePoolA(user);
+  const cacheKey = `match_feed:${user._id.toString()}`;
+  let allMatches = null;
 
-  const scored = candidates
-    .map((candidate) => ({ candidate, score: scoreCandidate(user, candidate) }))
-    .sort((a, b) => b.score - a.score);
+  // Try fetching from Redis cache
+  try {
+    const healthy = await isRedisHealthy();
+    if (healthy) {
+      const redis = getRedisClient();
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        allMatches = JSON.parse(cached);
+      }
+    }
+  } catch (err) {
+    // Cache read fallback
+  }
 
-  const start = (page - 1) * pageSize;
-  const pageItems = scored.slice(start, start + pageSize);
+  if (!allMatches) {
+    // Pool A: default cross-type match candidates
+    const poolA = await getCandidatePoolA(user);
+    const poolACandidates = poolA.map(c => ({ candidate: c, matchType: 'has_room' }));
 
-  return {
-    page,
-    pageSize,
-    totalCandidates: scored.length,
-    matches: pageItems.map(({ candidate, score }) => ({
+    // Pool B: team-up match candidates (only if user is needs_room and teamUpEnabled)
+    const poolB = await getCandidatePoolB(user);
+    const poolBCandidates = poolB.map(c => ({ candidate: c, matchType: 'team_up' }));
+
+    // Merge candidates, preventing duplicates
+    const seenIds = new Set();
+    const merged = [];
+
+    for (const item of [...poolACandidates, ...poolBCandidates]) {
+      const cId = item.candidate._id.toString();
+      if (!seenIds.has(cId)) {
+        seenIds.add(cId);
+        merged.push(item);
+      }
+    }
+
+    const scored = merged
+      .map(({ candidate, matchType }) => ({
+        candidate,
+        matchType,
+        score: scoreCandidate(user, candidate),
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    allMatches = scored.map(({ candidate, matchType, score }) => ({
       id: candidate._id,
       name: candidate.name,
       age: candidate.age,
-      bio: candidate.bio,
-      avatarUrl: candidate.avatarUrl,
+      gender: candidate.gender || 'Not specified',
+      bio: candidate.bio || '',
+      avatarUrl: candidate.avatarUrl || '',
       housingStatus: candidate.housingStatus,
-      location: candidate.location?.displayName,
-      matchType: 'has_room',
+      location: candidate.location?.displayName || (typeof candidate.location === 'string' ? candidate.location : 'Addis Ababa'),
+      preferences: candidate.preferences || {},
+      budgetMax: candidate.preferences?.budgetMax,
+      budgetMin: candidate.preferences?.budgetMin,
+      matchType,
       score,
       preferences: candidate.preferences,
       gender: candidate.gender
     })),
+    }));
+
+    // Cache merged matches in Redis for 1 hour (3600 seconds)
+    try {
+      const healthy = await isRedisHealthy();
+      if (healthy) {
+        const redis = getRedisClient();
+        await redis.setex(cacheKey, 3600, JSON.stringify(allMatches));
+      }
+    } catch (err) {
+      // Cache write fallback
+    }
+  }
+
+  const start = (page - 1) * pageSize;
+  const pageItems = allMatches.slice(start, start + pageSize);
+
+  return {
+    page,
+    pageSize,
+    totalCandidates: allMatches.length,
+    matches: pageItems,
   };
 }
 

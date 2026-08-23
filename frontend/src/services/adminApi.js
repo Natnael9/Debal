@@ -20,6 +20,12 @@ async function adminFetch(path, opts = {}) {
     credentials: "include",
   });
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
+    }
     const err = await res.json().catch(() => ({}));
     const e = new Error(err?.message || `Request failed: ${res.status}`);
     e.status = res.status;
@@ -48,8 +54,11 @@ export const getAdminUsers = (params = {}) => {
 export const getAdminUserDetails = (userId) =>
   adminFetch(`/admin/users/${userId}`);
 
-export const suspendUser = (userId) =>
-  adminFetch(`/admin/users/${userId}/suspend`, { method: "PATCH" });
+export const suspendUser = (userId, reason = "") =>
+  adminFetch(`/admin/users/${userId}/suspend`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
 
 export const reinstateUser = (userId) =>
   adminFetch(`/admin/users/${userId}/reinstate`, { method: "PATCH" });

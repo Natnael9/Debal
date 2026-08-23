@@ -12,6 +12,14 @@ import SettingsPage from "../pages/SettingsPage";
 import BookmarksPage from "../pages/BookmarksPage";
 import CandidateProfilePage from "../pages/CandidateProfilePage";
 
+function VerifiedOnlyRoute({ children }) {
+  const { user } = useAuth();
+  if (user?.verificationStatus !== 'verified') {
+    return <Navigate to="/app/verification" replace />;
+  }
+  return children;
+}
+
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
 
@@ -33,51 +41,67 @@ function ProtectedRoutes() {
   }
 
   /*
-   * User is logged in but has not completed
-   * the questionnaire.
-   *
-   * We don't redirect here because the questionnaire
-   * is outside /app.
+   * Dual-Gate Gate 1: Questionnaire Completion
    */
+  if (!user.questionnaireCompleted) {
+    return <Navigate to="/questionnaire" replace />;
+  }
+
   return (
     <Routes>
-      {/* Dashboard */}
+      {/* Dashboard - Gated by Verification */}
       <Route
         path="dashboard"
-        element={<MatchFeed />}
+        element={
+          <VerifiedOnlyRoute>
+            <MatchFeed />
+          </VerifiedOnlyRoute>
+        }
       />
 
-      {/* Messages */}
+      {/* Messages - Gated by Verification */}
       <Route
         path="messages"
-        element={<ChatLayout />}
+        element={
+          <VerifiedOnlyRoute>
+            <ChatLayout />
+          </VerifiedOnlyRoute>
+        }
       />
 
-      {/* Profile */}
+      {/* Profile - Open to all logged-in users */}
       <Route
         path="profile"
         element={<ProfilePage />}
       />
 
-      {/* Settings */}
+      {/* Settings - Open to all logged-in users */}
       <Route
         path="settings"
         element={<SettingsPage />}
       />
 
-      {/* Bookmarks */}
+      {/* Bookmarks - Gated by Verification */}
       <Route
         path="bookmarks"
-        element={<BookmarksPage />}
+        element={
+          <VerifiedOnlyRoute>
+            <BookmarksPage />
+          </VerifiedOnlyRoute>
+        }
       />
 
-      {/* Candidate profile */}
+      {/* Candidate profile - Gated by Verification */}
       <Route
         path="candidate-profile/:userId"
-        element={<CandidateProfilePage />}
+        element={
+          <VerifiedOnlyRoute>
+            <CandidateProfilePage />
+          </VerifiedOnlyRoute>
+        }
       />
 
-      {/* Verification */}
+      {/* Verification Wizard */}
       <Route
         path="verification"
         element={<VerificationWizard />}

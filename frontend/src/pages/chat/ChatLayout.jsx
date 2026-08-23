@@ -52,30 +52,20 @@ function ChatLayout() {
 
         // If chatFromUrl is specified and not present in matches list, initialize it
         if (chatFromUrl) {
-          const found = mapped.some(
+          const matchObj = mapped.find(
             (c) => c.id === chatFromUrl || c.matchId === chatFromUrl || c.userId === chatFromUrl
           );
 
-          if (!found) {
+          if (matchObj) {
+            setActiveChatId(matchObj.id);
+          } else {
             try {
               // Fetching messages triggers auto-creation of Match document on backend if user exists
               const msgRes = await apiGet(`/matches/${chatFromUrl}/messages`);
               const actualMatchId = msgRes?.data?.matchId || chatFromUrl;
-
-              // Re-fetch matches to get the newly created Match object
-              const refreshRes = await apiGet("/matches");
-              mapped = refreshRes?.data?.matches ?? mapped;
-
               setActiveChatId(actualMatchId);
             } catch (e) {
               console.warn("[chat] could not initialize match for chatFromUrl:", e.message);
-            }
-          } else {
-            const matchObj = mapped.find(
-              (c) => c.id === chatFromUrl || c.matchId === chatFromUrl || c.userId === chatFromUrl
-            );
-            if (matchObj) {
-              setActiveChatId(matchObj.id);
             }
           }
         }

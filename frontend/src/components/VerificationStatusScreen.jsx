@@ -54,7 +54,7 @@ const VerificationStatusScreen = ({ status, onResubmit }) => {
         Thank you for helping keep the Debal community safe. You are now ready to find your ideal roommate.
       </p>
       <button
-        onClick={() => navigate('/matches')}
+        onClick={() => navigate('/app/dashboard')}
         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none transition-colors"
       >
         Go to Match Feed

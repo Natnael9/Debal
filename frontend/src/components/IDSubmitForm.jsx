@@ -10,7 +10,7 @@ const idSchema = z.object({
   dob: z.string().nonempty("Date of birth is required"),
 });
 
-const IDSubmitForm = ({ onSubmit, onCancel }) => {
+const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
@@ -29,6 +29,9 @@ const IDSubmitForm = ({ onSubmit, onCancel }) => {
       });
 
       if (res?.success) {
+        if (onSuccess) {
+          onSuccess(data);
+        }
         if (onSubmit) {
           onSubmit(data);
         }

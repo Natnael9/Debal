@@ -7,45 +7,71 @@ const AdminUsersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  
+  // Custom modal state for suspension
+  const [suspendingUser, setSuspendingUser] = useState(null);
+  const [suspensionReason, setSuspensionReason] = useState('');
+  const [isSubmittingSuspension, setIsSubmittingSuspension] = useState(false);
 
   useEffect(() => {
+    let active = true;
     setIsLoading(true);
-    getAdminUsers()
+    getAdminUsers({ search: searchQuery, limit: 200 })
       .then((data) => {
-        const list = data?.data?.users ?? (Array.isArray(data?.data) ? data?.data : []);
+        if (!active) return;
+        const list = Array.isArray(data?.data) ? data.data : (data?.data?.users ?? []);
         setUsers(list);
       })
       .catch((err) => console.error("Failed to load users:", err.message))
-      .finally(() => setIsLoading(false));
-  }, []);
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
 
-  const filteredUsers = users.filter((u) =>
-    (u.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.email ?? "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    return () => {
+      active = false;
+    };
+  }, [searchQuery]);
 
   const handleToggleSuspend = async (user) => {
-    const wasSuspended = user.suspended;
-    if (!wasSuspended) {
-      const reason = prompt('Enter reason for suspension:');
-      if (!reason) return;
-    }
-    try {
-      if (wasSuspended) {
+    if (user.suspended) {
+      // Reinstate immediately
+      try {
         await reinstateUser(user._id);
-      } else {
-        await suspendUser(user._id);
+        setUsers((prev) =>
+          prev.map((u) => (u._id === user._id ? { ...u, suspended: false, suspendedReason: null } : u))
+        );
+        if (selectedUser?._id === user._id) {
+          setSelectedUser((prev) => ({ ...prev, suspended: false, suspendedReason: null }));
+        }
+      } catch (err) {
+        alert(`Action failed: ${err.message}`);
       }
+    } else {
+      // Open custom modal popup for suspension reason
+      setSuspendingUser(user);
+      setSuspensionReason('');
+    }
+  };
+
+  const confirmSuspension = async () => {
+    if (!suspendingUser || !suspensionReason.trim()) return;
+    setIsSubmittingSuspension(true);
+    try {
+      await suspendUser(suspendingUser._id, suspensionReason.trim());
       setUsers((prev) =>
         prev.map((u) =>
-          u._id === user._id ? { ...u, suspended: !wasSuspended } : u
+          u._id === suspendingUser._id ? { ...u, suspended: true, suspendedReason: suspensionReason.trim() } : u
         )
       );
-      if (selectedUser?._id === user._id) {
-        setSelectedUser((prev) => ({ ...prev, suspended: !wasSuspended }));
+      if (selectedUser?._id === suspendingUser._id) {
+        setSelectedUser((prev) => ({ ...prev, suspended: true, suspendedReason: suspensionReason.trim() }));
       }
+      setSuspendingUser(null);
+      setSuspensionReason('');
     } catch (err) {
       alert(`Action failed: ${err.message}`);
+    } finally {
+      setIsSubmittingSuspension(false);
     }
   };
 
@@ -106,7 +132,7 @@ const AdminUsersPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <tr key={user._id} className="transition hover:bg-slate-50/50">
                       <td className="whitespace-nowrap px-5 py-3.5">
                         <div className="font-bold text-slate-900">{user.name || 'User'}</div>
@@ -139,7 +165,7 @@ const AdminUsersPage = () => {
                       </td>
                     </tr>
                   ))}
-                  {filteredUsers.length === 0 && (
+                  {users.length === 0 && (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center text-xs text-slate-400">
                         No users match the search criteria.
@@ -287,6 +313,82 @@ const AdminUsersPage = () => {
                 </button>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Suspension Reason Modal Popup */}
+      {suspendingUser && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+          onClick={() => setSuspendingUser(null)}
+        >
+          <div 
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Suspend User Account</h3>
+                  <p className="text-[11px] text-slate-400">Specify reason for moderation action</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSuspendingUser(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 text-xs">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-900 text-sm font-bold text-white">
+                  {suspendingUser.name?.charAt(0) || 'U'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-900 truncate">{suspendingUser.name}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{suspendingUser.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block font-bold text-slate-700">
+                  Suspension Reason <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={suspensionReason}
+                  onChange={(e) => setSuspensionReason(e.target.value)}
+                  placeholder="e.g. Violation of community guidelines, fake profile information, or reported abusive behavior."
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-900 placeholder-slate-400 outline-none transition focus:border-rose-500 focus:bg-white focus:ring-2 focus:ring-rose-500/10"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSuspendingUser(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!suspensionReason.trim() || isSubmittingSuspension}
+                  onClick={confirmSuspension}
+                  className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-700 active:scale-98 disabled:opacity-50"
+                >
+                  {isSubmittingSuspension ? "Suspending..." : "Confirm Suspension"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

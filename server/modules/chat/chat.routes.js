@@ -1,4 +1,5 @@
 import { authMiddleware } from '../auth/auth.middleware.js';
+import { requireFullAccess } from '../../shared/middleware/require-full-access.middleware.js';
 import {
   assertUserInMatch,
   getMessages,
@@ -16,7 +17,7 @@ export default async function chatRoutes(fastify) {
   // GET /api/v1/matches -> Get active conversations for the logged-in user
   fastify.get(
     '/api/v1/matches',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       try {
         const matches = await getUserMatches(request.user._id);
@@ -31,7 +32,7 @@ export default async function chatRoutes(fastify) {
   // GET /api/v1/matches/:matchId/messages -> Get messages for a match
   fastify.get(
     '/api/v1/matches/:matchId/messages',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       const { matchId } = request.params;
       const { before, limit } = request.query;
@@ -61,7 +62,7 @@ export default async function chatRoutes(fastify) {
   // POST /api/v1/matches/:matchId/messages -> Send message via REST API
   fastify.post(
     '/api/v1/matches/:matchId/messages',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       const { matchId } = request.params;
       const { content } = request.body || {};
@@ -118,7 +119,7 @@ export default async function chatRoutes(fastify) {
   // POST /api/v1/matches/:matchId/read -> Mark messages in a match as read
   fastify.post(
     '/api/v1/matches/:matchId/read',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       const { matchId } = request.params;
       try {
@@ -143,7 +144,7 @@ export default async function chatRoutes(fastify) {
   // DELETE /api/v1/matches/:matchId/messages -> Delete chat history for a match
   fastify.delete(
     '/api/v1/matches/:matchId/messages',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       const { matchId } = request.params;
       try {
@@ -172,7 +173,7 @@ export default async function chatRoutes(fastify) {
   // DELETE /api/v1/matches/:matchId -> Delete match completely
   fastify.delete(
     '/api/v1/matches/:matchId',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     async (request, reply) => {
       const { matchId } = request.params;
       try {

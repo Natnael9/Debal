@@ -13,5 +13,6 @@ const bookmarkSchema = new Schema(
 );
 
 bookmarkSchema.index({ userId: 1, bookmarkedUserId: 1 }, { unique: true });
+bookmarkSchema.index({ userId: 1, createdAt: -1 });
 
 export default mongoose.model('Bookmark', bookmarkSchema);

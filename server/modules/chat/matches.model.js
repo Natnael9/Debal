@@ -35,7 +35,10 @@ matchSchema.index({
 {
     unique: true
 }
-)
+);
+
+matchSchema.index({ userA: 1, status: 1 });
+matchSchema.index({ userB: 1, status: 1 });
 
 export const Match = mongoose.model('Match', matchSchema);
 export default Match;

@@ -40,41 +40,42 @@ const pendingKey = (userId) => `pending-notifications:${userId}`;
  * Toggleable via user.notificationPreferences.requestAccepted.
  */
 async function enqueueNewMatchEmail({ userId, matchId }) {
-  await notificationQueue.add('email:new-match', { userId, matchId });
-}
-
-/**
- * email:meetup-update — debounced by presence, same pattern the doc describes
- * for email:new-message: if the recipient is online right now, skip the
- * email (they'll see it live in-app). If offline, queue a delayed job; if
- * they reconnect within the window, cancelPendingEmailsForUser() removes it.
- * Toggleable via user.notificationPreferences.meetupUpdate.
- */
-async function enqueueMeetupUpdateEmail({ userId, meetupId, summary }) {
-  const redisClient = getRedisClient();
-  const isOnline = await redisClient.sismember('online_users', userId.toString());
-  if (isOnline) {
-    return;
+  try {
+    await Promise.race([
+      notificationQueue.add('email:new-match', { userId, matchId }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Queue timeout')), 300)),
+    ]);
+  } catch (e) {
+    console.warn('[notifications] enqueueNewMatchEmail warning:', e.message);
   }
-
-  const jobId = `meetup-update_${userId}_${meetupId}_${Date.now()}`;
-  await notificationQueue.add(
-    'email:meetup-update',
-    { userId, meetupId, summary },
-    { jobId, delay: PRESENCE_DEBOUNCE_MS }
-  );
-  await redisClient.sadd(pendingKey(userId), jobId);
-  await redisClient.expire(pendingKey(userId), 60 * 10); // safety cleanup
 }
 
-/**
- * Cancels any pending debounced emails for a user — call this when they
- * reconnect (chat.gateway.js). Safe to call even if nothing is pending.
- */
+async function enqueueMeetupUpdateEmail({ userId, meetupId, summary }) {
+  try {
+    const redisClient = getRedisClient();
+    if (!redisClient || redisClient.status !== 'ready') return;
+    const isOnline = await redisClient.sismember('online_users', userId.toString());
+    if (isOnline) {
+      return;
+    }
+
+    const jobId = `meetup-update_${userId}_${meetupId}_${Date.now()}`;
+    await notificationQueue.add(
+      'email:meetup-update',
+      { userId, meetupId, summary },
+      { jobId, delay: PRESENCE_DEBOUNCE_MS }
+    );
+    await redisClient.sadd(pendingKey(userId), jobId);
+    await redisClient.expire(pendingKey(userId), 60 * 10); // safety cleanup
+  } catch (e) {
+    console.warn('[notifications] enqueueMeetupUpdateEmail warning:', e.message);
+  }
+}
+
 async function cancelPendingEmailsForUser(userId) {
   try {
     const redisClient = getRedisClient();
-    if (!redisClient || !['ready', 'connecting', 'connect'].includes(redisClient.status)) return;
+    if (!redisClient || redisClient.status !== 'ready') return;
     const key = pendingKey(userId);
     const jobIds = await redisClient.smembers(key);
 
@@ -93,20 +94,26 @@ async function cancelPendingEmailsForUser(userId) {
   }
 }
 
-/**
- * email:verification-result — immediate, non-toggleable. There's
- * deliberately no notificationPreferences field for this, so it always
- * sends regardless of user settings.
- */
 async function enqueueVerificationResultEmail({ userId, verified, reason }) {
-  await notificationQueue.add('email:verification-result', { userId, verified, reason });
+  try {
+    await Promise.race([
+      notificationQueue.add('email:verification-result', { userId, verified, reason }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Queue timeout')), 300)),
+    ]);
+  } catch (e) {
+    console.warn('[notifications] enqueueVerificationResultEmail warning:', e.message);
+  }
 }
-/**
- * email:report-update — immediate, sent when an admin resolves/dismisses a report.
- * Toggleable via user.notificationPreferences.reportStatus (architecture doc).
- */
+
 async function enqueueReportStatusUpdateEmail({ userId, reportId, status }) {
-  await notificationQueue.add('email:report-update', { userId, reportId, status });
+  try {
+    await Promise.race([
+      notificationQueue.add('email:report-update', { userId, reportId, status }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Queue timeout')), 300)),
+    ]);
+  } catch (e) {
+    console.warn('[notifications] enqueueReportStatusUpdateEmail warning:', e.message);
+  }
 }
 export {
   enqueueNewMatchEmail,

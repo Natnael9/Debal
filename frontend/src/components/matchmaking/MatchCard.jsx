@@ -120,7 +120,7 @@ const MatchCard = ({ matchData, onBookmark }) => {
           <div className="flex items-center gap-3 cursor-pointer" onClick={handleViewProfile}>
             <div className="relative shrink-0">
               <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-100 text-base font-semibold text-gray-700">
-                {avatarImage ? (
+                {avatarImage && matchData.photoModerationStatus !== 'flagged' && matchData.photoModerationStatus !== 'pending' ? (
                   <img
                     src={avatarImage}
                     alt={matchData.name}

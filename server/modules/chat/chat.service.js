@@ -213,13 +213,20 @@ export async function getUserMatches(userId) {
     .sort({ updatedAt: -1 })
     .lean();
 
-  // Fetch online users from Redis
+  if (!matches || matches.length === 0) {
+    return [];
+  }
+
+  // Fetch online users from Redis with a fast timeout
   let onlineSet = new Set();
   try {
     const redis = getRedisClient();
-    if (redis && ['ready', 'connecting', 'connect'].includes(redis.status)) {
-      const onlineList = await redis.smembers('online_users');
-      onlineSet = new Set(onlineList);
+    if (redis && redis.status === 'ready') {
+      const onlineList = await Promise.race([
+        redis.smembers('online_users'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 50)),
+      ]);
+      onlineSet = new Set(onlineList || []);
     }
   } catch (e) {
     console.warn('[chat] Redis online_users query warning:', e.message);
@@ -231,50 +238,97 @@ export async function getUserMatches(userId) {
     return !!partner;
   });
 
-  const results = await Promise.all(
-    filteredMatches.map(async (m) => {
-      const userAId = m.userA?._id?.toString();
-      const partner = userAId === userId.toString() ? m.userB : m.userA;
-      const partnerId = partner._id.toString();
+  if (filteredMatches.length === 0) {
+    return [];
+  }
 
-      const isBlockedByMe = blockedIds.has(partnerId);
-      const isBlockedByPartner = (partner.blockedUsers || []).some(id => id.toString() === userId.toString());
-      const isBlocked = isBlockedByMe || isBlockedByPartner;
+  const matchIds = filteredMatches.map((m) => m._id);
 
-      const lastMsg = await Message.findOne({ matchId: m._id })
-        .sort({ createdAt: -1 })
-        .lean();
+  // 1. Bulk aggregate last message for each match in a single query
+  const lastMessages = await Message.aggregate([
+    { $match: { matchId: { $in: matchIds } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: '$matchId',
+        content: { $first: '$content' },
+        createdAt: { $first: '$createdAt' },
+      },
+    },
+  ]);
+  const lastMsgMap = new Map(lastMessages.map((msg) => [msg._id.toString(), msg]));
 
-      const unreadCount = await Message.countDocuments({
-        matchId: m._id,
-        senderId: partner._id,
+  // 2. Bulk aggregate unread message counts for each match in a single query
+  const unreadCounts = await Message.aggregate([
+    {
+      $match: {
+        matchId: { $in: matchIds },
         readAt: null,
-      });
-
-      const latestMeetup = await Meetup.findOne({ matchId: m._id })
-        .sort({ createdAt: -1 })
-        .populate('proposedBy', 'name email')
-        .lean();
-
-      return {
-        id:                 m._id.toString(),
-        matchId:            m._id.toString(),
-        userId:             partnerId,
-        name:               partner?.name || 'Chat Partner',
-        avatarUrl:          partner?.photoUrl || partner?.avatarUrl || '',
-        avatarText:         (partner?.name || 'C')[0].toUpperCase(),
-        isOnline:           onlineSet.has(partnerId),
-        isBlocked:          isBlocked,
-        isBlockedByMe:      isBlockedByMe,
-        isBlockedByPartner: isBlockedByPartner,
-        lastMessage:        lastMsg ? lastMsg.content : '',
-        time:               lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-        unreadCount:        unreadCount,
-        user:               partner,
-        meetup:             latestMeetup || { status: 'none' },
-      };
-    })
+      },
+    },
+    {
+      $group: {
+        _id: { matchId: '$matchId', senderId: '$senderId' },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  const unreadMap = new Map(
+    unreadCounts.map((u) => [`${u._id.matchId.toString()}_${u._id.senderId.toString()}`, u.count])
   );
+
+  // 3. Bulk aggregate latest meetup for each match in a single query
+  const latestMeetups = await Meetup.aggregate([
+    { $match: { matchId: { $in: matchIds } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: '$matchId',
+        doc: { $first: '$$ROOT' },
+      },
+    },
+  ]);
+  const meetupMap = new Map(latestMeetups.map((m) => [m._id.toString(), m.doc]));
+
+  const results = filteredMatches.map((m) => {
+    const userAId = m.userA?._id?.toString();
+    const partner = userAId === userId.toString() ? m.userB : m.userA;
+    const partnerId = partner._id.toString();
+    const matchIdStr = m._id.toString();
+
+    const isBlockedByMe = blockedIds.has(partnerId);
+    const isBlockedByPartner = (partner.blockedUsers || []).some(
+      (id) => id.toString() === userId.toString()
+    );
+    const isBlocked = isBlockedByMe || isBlockedByPartner;
+
+    const lastMsg = lastMsgMap.get(matchIdStr);
+    const unreadCount = unreadMap.get(`${matchIdStr}_${partnerId}`) || 0;
+    const latestMeetup = meetupMap.get(matchIdStr);
+
+    return {
+      id: matchIdStr,
+      matchId: matchIdStr,
+      userId: partnerId,
+      name: partner?.name || 'Chat Partner',
+      avatarUrl: partner?.photoUrl || partner?.avatarUrl || '',
+      avatarText: (partner?.name || 'C')[0].toUpperCase(),
+      isOnline: onlineSet.has(partnerId),
+      isBlocked: isBlocked,
+      isBlockedByMe: isBlockedByMe,
+      isBlockedByPartner: isBlockedByPartner,
+      lastMessage: lastMsg ? lastMsg.content : '',
+      time: lastMsg
+        ? new Date(lastMsg.createdAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '',
+      unreadCount: unreadCount,
+      user: partner,
+      meetup: latestMeetup || { status: 'none' },
+    };
+  });
 
   return results;
 }

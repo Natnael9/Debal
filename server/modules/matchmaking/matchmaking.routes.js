@@ -1,4 +1,5 @@
 import { authMiddleware } from '../auth/auth.middleware.js';
+import { requireFullAccess } from '../../shared/middleware/require-full-access.middleware.js';
 import {
   getMatchFeedHandler,
   sendMatchRequestHandler,
@@ -8,19 +9,19 @@ import {
 export default async function matchmakingRoutes(fastify) {
   fastify.get(
     '/api/v1/matches/feed',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     getMatchFeedHandler
   );
 
     fastify.post(
     '/api/v1/matches/request/:userId',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     sendMatchRequestHandler
   );
 
   fastify.post(
     '/api/v1/matches/respond/:requestId',
-    { preHandler: authMiddleware },
+    { preHandler: [authMiddleware, requireFullAccess] },
     respondToMatchRequestHandler
   );
 }

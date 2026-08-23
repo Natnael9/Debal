@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QuestionnaireProvider, useQuestionnaire } from "../context/QuestionnaireContext";
+import { useAuth } from "../context/AuthContext";
 import WizardProgress from "../components/questionnaire/WizardProgress";
 import Step1BasicInfo from "../components/questionnaire/Step1BasicInfo";
 import Step2Budget from "../components/questionnaire/Step2Budget";
@@ -8,10 +9,11 @@ import Step3Location from "../components/questionnaire/Step3Location";
 import Step4Lifestyle from "../components/questionnaire/Step4Lifestyle";
 import Step6TeamUp from "../components/questionnaire/Step6TeamUp";
 import Step5Photos from "../components/questionnaire/Step5Photos";
-import { apiPost } from "../services/api";
+import { apiPost, apiPatch } from "../services/api";
 
 function QuestionnaireWizardInner() {
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
@@ -95,19 +97,37 @@ function QuestionnaireWizardInner() {
     };
 
     try {
-      await apiPost("/onboarding/questionnaire", payload);
+      const res = await apiPost("/onboarding/questionnaire", payload);
+      let updatedUser = res?.data?.user;
       
       // Save avatar if photo was uploaded
       if (values?.photo?.url) {
         try {
-          await apiPatch("/users/me", { avatarUrl: values.photo.url });
+          const patchRes = await apiPatch("/users/me", { avatarUrl: values.photo.url });
+          if (patchRes?.data?.user) {
+            updatedUser = patchRes.data.user;
+          }
         } catch (err) {
           console.warn("Failed to update profile avatar:", err);
         }
       }
 
+      // Update AuthContext user state locally so ProtectedRoutes allows entry immediately!
+      if (updatedUser) {
+        setUser(updatedUser);
+      } else {
+        setUser((prev) => (prev ? { ...prev, questionnaireCompleted: true } : null));
+      }
+
       clearDraft();
-      navigate("/app/dashboard");
+
+      // Route based on verification status
+      const targetUser = updatedUser || user;
+      if (targetUser?.verificationStatus !== "verified") {
+        navigate("/app/verification", { replace: true });
+      } else {
+        navigate("/app/dashboard", { replace: true });
+      }
     } catch (err) {
       setSubmitError(err.message || "Something went wrong submitting your answers. Please try again.");
     } finally {

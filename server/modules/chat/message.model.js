@@ -31,5 +31,11 @@ messageSchema.index({
     createdAt: -1 
 }); 
 
+messageSchema.index({
+    matchId: 1,
+    readAt: 1,
+    senderId: 1
+});
+
 export const Message = mongoose.model('Message', messageSchema);
 export default Message;

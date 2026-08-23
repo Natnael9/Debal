@@ -14,13 +14,14 @@ export async function connectRedis() {
   }
 
   redisClient = new Redis(url, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: 1,
     lazyConnect: true,
-    enableOfflineQueue: true,
-    connectTimeout: 20000,
-    keepAlive: 10000,
+    enableOfflineQueue: false,
+    connectTimeout: 2000,
+    keepAlive: 5000,
     retryStrategy: (times) => {
-      return Math.min(times * 500, 3000);
+      if (times > 3) return null; // stop retrying quickly
+      return Math.min(times * 300, 1000);
     },
     ...(isTls && { tls: { servername: hostname, rejectUnauthorized: false } }),
   });
@@ -48,12 +49,12 @@ export function getRedisClient() {
 }
 
 export async function isRedisHealthy() {
-  if (!redisClient) return false;
+  if (!redisClient || redisClient.status !== 'ready') return false;
   try {
-    if (['end', 'close'].includes(redisClient.status)) {
-      await redisClient.connect();
-    }
-    const pong = await redisClient.ping();
+    const pong = await Promise.race([
+      redisClient.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 200)),
+    ]);
     return pong === 'PONG';
   } catch {
     return false;
