@@ -20,7 +20,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 
 # Expose backend API port
-EXPOSE 4001
+EXPOSE 4000
 
 # Start server
 CMD ["node", "index.js"]

@@ -216,7 +216,20 @@ function ProfilePage() {
   };
 
   const handleVerifyClick = () => setVerificationStep("ID_FORM");
-  const handleCancelVerification = () => setVerificationStep(null);
+  
+  // FIX 1: Bulletproof Cancel Function (refetches profile to clear false "pending" states)
+  const handleCancelVerification = async () => {
+    setVerificationStep(null);
+    try {
+      const user = await getMyProfile();
+      if (user) {
+        setUser(user);
+        setProfile(mapUserToProfile(user));
+      }
+    } catch (err) {
+      console.error("Failed to refresh profile on cancel:", err);
+    }
+  };
   
   const handleIDSubmit = () => {
     setProfile((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
@@ -479,12 +492,22 @@ function ProfilePage() {
                   </div>
                 </div>
 
-                {profile.verificationStatus !== "verified" && profile.verificationStatus !== "pending" && (
+                {/* FIX 2: Dynamic Button State Rendering */}
+                {profile.verificationStatus === "unverified" && (
                   <button
                     onClick={handleVerifyClick}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer mt-4"
                   >
                     Verify My Identity Now
+                  </button>
+                )}
+
+                {profile.verificationStatus === "pending" && (
+                  <button
+                    onClick={handleVerifyClick}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer mt-4"
+                  >
+                    Resume Verification
                   </button>
                 )}
               </div>

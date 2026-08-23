@@ -48,6 +48,8 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
       location: candidate.location?.displayName,
       matchType: 'has_room',
       score,
+      preferences: candidate.preferences,
+      gender: candidate.gender
     })),
   };
 }

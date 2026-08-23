@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs';
 import * as nsfwjs from 'nsfwjs';
 import { User } from '../users/users.model.js';
 import { logAdminAction } from '../admin/admin-action.service.js';
