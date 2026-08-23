@@ -20,6 +20,7 @@ async function login(request, reply) {
         .status(err.statusCode)
         .send({ success: false, error: 'ADMIN_AUTH_ERROR', message: err.message });
     }
+    console.error('[ADMIN LOGIN ERROR]:', err);
     request.log.error(err);
     return reply
       .status(500)

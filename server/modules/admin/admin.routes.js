@@ -26,22 +26,28 @@ import { listReports, updateReportStatus } from '../reports/reports.controller.j
  */
 function adminLoginRateLimit({ windowSeconds = 15 * 60, maxRequests = 5 } = {}) {
   return async function rateLimitHook(request, reply) {
-    const redisClient = getRedisClient();
-    const key = `ratelimit:admin-auth:${request.ip}`;
+    try {
+      const redisClient = getRedisClient();
+      if (!redisClient || redisClient.status !== 'ready') return;
 
-    const currentCount = await redisClient.incr(key);
-    if (currentCount === 1) {
-      await redisClient.expire(key, windowSeconds);
-    }
+      const key = `ratelimit:admin-auth:${request.ip}`;
 
-    if (currentCount > maxRequests) {
-      const ttl = await redisClient.ttl(key);
-      reply.header('Retry-After', ttl > 0 ? ttl : windowSeconds);
-      return reply.code(429).send({
-        success: false,
-        error: 'RATE_LIMITED',
-        message: 'Too many admin login attempts. Please try again later.',
-      });
+      const currentCount = await redisClient.incr(key);
+      if (currentCount === 1) {
+        await redisClient.expire(key, windowSeconds);
+      }
+
+      if (currentCount > maxRequests) {
+        const ttl = await redisClient.ttl(key);
+        reply.header('Retry-After', ttl > 0 ? ttl : windowSeconds);
+        return reply.code(429).send({
+          success: false,
+          error: 'RATE_LIMITED',
+          message: 'Too many admin login attempts. Please try again later.',
+        });
+      }
+    } catch (err) {
+      request.log.warn({ err }, '[admin-rate-limit] Redis unavailable, bypassing rate limit check');
     }
   };
 }
