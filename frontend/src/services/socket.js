@@ -26,7 +26,7 @@ export function connectSocket(token) {
   }
 
   _socket = io("/", {
-    // Vite proxies "/" to localhost:4000 in dev
+    // Vite proxies "/" to localhost:4001 in dev
     path: "/socket.io",
     auth: { token },
     transports: ["websocket", "polling"],

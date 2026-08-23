@@ -2,23 +2,29 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, validatePasswordStrength } from "../../context/AuthContext";
 import { registerSchema } from "../../schemas/authSchema";
 
 function RegisterForm() {
-  const { register: registerUser, login } = useAuth();
+  const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
   });
+
+  const passwordValue = watch("password") || "";
+  const pwdStrength = validatePasswordStrength(passwordValue);
 
   const onSubmit = async (data) => {
     setError("");
@@ -114,18 +120,86 @@ function RegisterForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-[11px] font-semibold text-gray-700">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            {...register("password")}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900/20"
-          />
+          <div className="flex items-center justify-between mb-1">
+            <label htmlFor="password" className="block text-[11px] font-semibold text-gray-700">
+              Password
+            </label>
+            {passwordValue.length > 0 && (
+              <span className={`text-[10px] font-bold ${
+                pwdStrength.score <= 1 ? 'text-rose-600' :
+                pwdStrength.score === 2 ? 'text-amber-600' :
+                pwdStrength.score === 3 ? 'text-blue-600' : 'text-emerald-600'
+              }`}>
+                {pwdStrength.strengthLabel}
+              </span>
+            )}
+          </div>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              {...register("password")}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50/60 pl-3 pr-9 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+              title={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.01 10.01 0 014.122-.963c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Strength Bar */}
+          {passwordValue.length > 0 && (
+            <div className="mt-1.5 flex h-1 w-full gap-1 overflow-hidden rounded-full bg-gray-100">
+              <div className={`h-full flex-1 transition-all duration-300 ${pwdStrength.score >= 1 ? (pwdStrength.score === 1 ? 'bg-rose-500' : pwdStrength.score === 2 ? 'bg-amber-500' : pwdStrength.score === 3 ? 'bg-blue-500' : 'bg-emerald-500') : 'bg-transparent'}`} />
+              <div className={`h-full flex-1 transition-all duration-300 ${pwdStrength.score >= 2 ? (pwdStrength.score === 2 ? 'bg-amber-500' : pwdStrength.score === 3 ? 'bg-blue-500' : 'bg-emerald-500') : 'bg-transparent'}`} />
+              <div className={`h-full flex-1 transition-all duration-300 ${pwdStrength.score >= 3 ? (pwdStrength.score === 3 ? 'bg-blue-500' : 'bg-emerald-500') : 'bg-transparent'}`} />
+              <div className={`h-full flex-1 transition-all duration-300 ${pwdStrength.score >= 4 ? 'bg-emerald-500' : 'bg-transparent'}`} />
+            </div>
+          )}
+
+          {/* Interactive Requirement Checklist */}
+          {passwordValue.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 rounded-lg border border-gray-100 bg-gray-50/50 p-2 text-[10px]">
+              <div className={`flex items-center gap-1 ${pwdStrength.checks.hasMinLength ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                <span>{pwdStrength.checks.hasMinLength ? '✓' : '○'}</span>
+                <span>At least 8 chars</span>
+              </div>
+              <div className={`flex items-center gap-1 ${pwdStrength.checks.hasUppercase ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                <span>{pwdStrength.checks.hasUppercase ? '✓' : '○'}</span>
+                <span>Uppercase (A-Z)</span>
+              </div>
+              <div className={`flex items-center gap-1 ${pwdStrength.checks.hasLowercase ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                <span>{pwdStrength.checks.hasLowercase ? '✓' : '○'}</span>
+                <span>Lowercase (a-z)</span>
+              </div>
+              <div className={`flex items-center gap-1 ${pwdStrength.checks.hasNumber ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                <span>{pwdStrength.checks.hasNumber ? '✓' : '○'}</span>
+                <span>Number (0-9)</span>
+              </div>
+              <div className={`col-span-2 flex items-center gap-1 ${pwdStrength.checks.hasSpecialChar ? 'text-emerald-600 font-semibold' : 'text-gray-400'}`}>
+                <span>{pwdStrength.checks.hasSpecialChar ? '✓' : '○'}</span>
+                <span>Special char (!@#$%^&*)</span>
+              </div>
+            </div>
+          )}
+
           {errors.password && (
-            <p className="mt-0.5 text-[10px] font-medium text-rose-600 leading-tight">
+            <p className="mt-1 text-[10px] font-medium text-rose-600 leading-tight">
               {errors.password.message}
             </p>
           )}
@@ -135,13 +209,33 @@ function RegisterForm() {
           <label htmlFor="confirmPassword" className="mb-1 block text-[11px] font-semibold text-gray-700">
             Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="••••••••"
-            {...register("confirmPassword")}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900/20"
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="••••••••"
+              {...register("confirmPassword")}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50/60 pl-3 pr-9 py-1.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition focus:border-blue-900 focus:bg-white focus:ring-1 focus:ring-blue-900/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+              title={showConfirmPassword ? "Hide password" : "Show password"}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.01 10.01 0 014.122-.963c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
           {errors.confirmPassword && (
             <p className="mt-0.5 text-[10px] font-medium text-rose-600 leading-tight">
               {errors.confirmPassword.message}

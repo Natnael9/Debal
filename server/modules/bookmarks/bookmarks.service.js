@@ -45,15 +45,32 @@ async function addBookmark(userId, bookmarkedUserId) {
 async function listBookmarks(userId) {
   const bookmarks = await Bookmark.find({ userId })
     .sort({ createdAt: -1 })
-    .populate('bookmarkedUserId', 'name age bio avatarUrl housingStatus location.displayName');
+    .populate('bookmarkedUserId', 'name age gender bio avatarUrl housingStatus location preferences')
+    .lean();
 
   return bookmarks
     .filter((b) => b.bookmarkedUserId) // guard against a bookmarked user that was later deleted
-    .map((b) => ({
-      bookmarkId: b._id,
-      bookmarkedAt: b.createdAt,
-      user: b.bookmarkedUserId,
-    }));
+    .map((b) => {
+      const u = b.bookmarkedUserId;
+      return {
+        bookmarkId: b._id,
+        bookmarkedAt: b.createdAt,
+        user: {
+          id: u._id,
+          _id: u._id,
+          name: u.name,
+          age: u.age,
+          gender: u.gender || 'Not specified',
+          bio: u.bio || '',
+          avatarUrl: u.avatarUrl || '',
+          housingStatus: u.housingStatus,
+          location: u.location?.displayName || (typeof u.location === 'string' ? u.location : 'Addis Ababa'),
+          preferences: u.preferences || {},
+          budgetMax: u.preferences?.budgetMax,
+          budgetMin: u.preferences?.budgetMin,
+        },
+      };
+    });
 }
 
 /**

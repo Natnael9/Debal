@@ -24,12 +24,17 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
   const oppositeStatus = user.housingStatus === 'has_room' ? 'needs_room' : 'has_room';
 
   const query = {
-    _id: { $nin: [...user.blockedUsers, user._id] },
-    housingStatus: oppositeStatus,
+    _id: { $nin: [...(user.blockedUsers || []), user._id] },
     questionnaireCompleted: true,
-    verificationStatus: 'verified',
+    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
   };
+
+  if (filters.status && filters.status !== 'any') {
+    query.housingStatus = filters.status;
+  } else if (!filters.status) {
+    query.housingStatus = oppositeStatus;
+  }
 
   if (filters.budgetMin != null || filters.budgetMax != null) {
     if (filters.budgetMax != null) {
@@ -64,8 +69,10 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
 
   const total = await User.countDocuments(query);
   const results = await User.find(query)
+    .select('name age gender bio avatarUrl housingStatus location preferences verificationStatus')
     .skip((page - 1) * pageSize)
-    .limit(pageSize);
+    .limit(pageSize)
+    .lean();
 
   return {
     page,
@@ -75,10 +82,14 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
       id: candidate._id,
       name: candidate.name,
       age: candidate.age,
-      bio: candidate.bio,
-      avatarUrl: candidate.avatarUrl,
+      gender: candidate.gender || 'Not specified',
+      bio: candidate.bio || '',
+      avatarUrl: candidate.avatarUrl || '',
       housingStatus: candidate.housingStatus,
-      location: candidate.location?.displayName,
+      location: candidate.location?.displayName || (typeof candidate.location === 'string' ? candidate.location : 'Addis Ababa'),
+      preferences: candidate.preferences || {},
+      budgetMax: candidate.preferences?.budgetMax,
+      budgetMin: candidate.preferences?.budgetMin,
       matchType: 'has_room', // Team-up (Pool B) filtering is a stretch goal, not yet implemented
     })),
   };
