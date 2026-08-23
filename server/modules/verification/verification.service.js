@@ -119,14 +119,18 @@ export async function confirmOtp(userId, otp) {
   verificationRequest.resolvedAt = new Date();
   await verificationRequest.save();
 
-  await User.findByIdAndUpdate(userId, {
-    verificationStatus: 'verified',
-    verifiedAt: new Date(),
-  });
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    {
+      verificationStatus: 'verified',
+      verifiedAt: new Date(),
+    },
+    { new: true }
+  ).select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires');
 
   await sendResultEmail({ userId, verified: true });
 
-  return { verified: true };
+  return updatedUser;
 }
 
 export async function resendOtp(userId) {

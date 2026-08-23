@@ -7,15 +7,27 @@ export async function connectDatabase() {
 
   mongoose.set('strictQuery', true);
 
+  const opts = {
+    serverSelectionTimeoutMS: 3000,
+    connectTimeoutMS: 3000,
+    maxPoolSize: 10,
+    minPoolSize: 2,
+  };
+
   try {
-    await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 10000 });
-    await fixLegacyPendingUsers();
+    await mongoose.connect(primaryUri, opts);
+    // Run background cleanup asynchronously to prevent blocking server readiness
+    fixLegacyPendingUsers().catch((err) =>
+      console.warn('[db] Background legacy user cleanup error:', err.message)
+    );
   } catch (err) {
     console.warn(`[db] Primary MongoDB connection failed (${err.message}). Attempting fallback: ${fallbackUri}`);
     try {
-      await mongoose.connect(fallbackUri, { serverSelectionTimeoutMS: 5000 });
+      await mongoose.connect(fallbackUri, { ...opts, serverSelectionTimeoutMS: 2000 });
       console.log('[db] Connected to fallback local MongoDB');
-      await fixLegacyPendingUsers();
+      fixLegacyPendingUsers().catch((err) =>
+        console.warn('[db] Background legacy user cleanup error:', err.message)
+      );
     } catch (fallbackErr) {
       console.error('[db] Both primary and fallback MongoDB connections failed.');
       throw err;
@@ -32,6 +44,7 @@ export async function connectDatabase() {
 
   return mongoose.connection;
 }
+
 
 async function fixLegacyPendingUsers() {
   try {

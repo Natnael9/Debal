@@ -14,11 +14,14 @@ const VerificationWizard = () => {
   const handleIDSubmitSuccess = () => setStep(2);
   const handleOTPSubmitSuccess = (status, updatedUser) => {
     setVerificationStatus(status);
-    if (updatedUser) {
-      setUser(updatedUser);
-    } else if (status === 'verified') {
-      setUser((prev) => (prev ? { ...prev, verificationStatus: 'verified' } : null));
-    }
+    setUser((prev) => {
+      if (!prev) return updatedUser || null;
+      return {
+        ...prev,
+        ...(typeof updatedUser === 'object' && updatedUser ? updatedUser : {}),
+        verificationStatus: 'verified',
+      };
+    });
     setStep(3);
   };
   const handleResubmit = () => setStep(1);
