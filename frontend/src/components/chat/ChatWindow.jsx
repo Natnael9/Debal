@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ReportModal from "./ReportModal";
 import BlockModal from "./BlockModal";
 import MeetupRequestModal from "./MeetupRequestModal";
 
-function ChatWindow({
+function ChatWindowComponent({
   chat,
   currentUserId,
   isLoadingMessages = false,
@@ -474,6 +474,7 @@ function ChatWindow({
       )}
     </div>
   );
-}
+};
 
+export const ChatWindow = memo(ChatWindowComponent);
 export default ChatWindow;

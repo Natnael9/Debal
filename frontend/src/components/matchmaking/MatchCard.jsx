@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { apiPost, apiDelete } from "../../services/api";
 
 const MatchCardComponent = ({ matchData, onBookmark }) => {
-  const [isBookmarked, setIsBookmarked] = useState(matchData.isBookmarked || false);
+  const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
+  const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
@@ -21,7 +22,7 @@ const MatchCardComponent = ({ matchData, onBookmark }) => {
     e.preventDefault();
     e.stopPropagation();
     const nextState = !isBookmarked;
-    setIsBookmarked(nextState);
+    setLocalIsBookmarked(nextState);
 
     if (onBookmark) {
       onBookmark(candidateId, nextState);

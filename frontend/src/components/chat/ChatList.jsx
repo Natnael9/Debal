@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState, memo } from "react";
 
-function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile, onRequestDeleteChat }) {
+function ChatListComponent({ chats = [], activeChatId, onSelectChat, onCloseMobile, onRequestDeleteChat }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -170,6 +170,7 @@ function ChatList({ chats = [], activeChatId, onSelectChat, onCloseMobile, onReq
       </div>
     </div>
   );
-}
+};
 
+export const ChatList = memo(ChatListComponent);
 export default ChatList;

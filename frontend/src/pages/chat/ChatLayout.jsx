@@ -21,6 +21,7 @@ import { unblockUser } from "../../services/chatModerationApi";
 // Module-level cache for instant tab transitions
 let cachedChats = null;
 let lastChatsFetchTime = 0;
+const cachedMessagesByMatch = new Map();
 
 function ChatLayout() {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ function ChatLayout() {
   // ── State ──────────────────────────────────────────────────
   const [chats, setChats] = useState(cachedChats || []);
   const [activeChatId, setActiveChatId] = useState(chatFromUrl || null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => (chatFromUrl ? cachedMessagesByMatch.get(chatFromUrl) || [] : []));
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [isLoadingChats, setIsLoadingChats] = useState(!cachedChats);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
@@ -108,17 +109,28 @@ function ChatLayout() {
     return () => { cancelled = true; };
   }, [chatFromUrl]);
 
-  // ── Load messages when active chat changes ─────────────────
+  // ── Load messages when active chat changes (with SWR message caching) ──
   useEffect(() => {
-    if (!activeChatId) return;
+    if (!activeChatId) {
+      setMessages([]);
+      return;
+    }
     let cancelled = false;
-    setIsLoadingMsgs(true);
+    const existingCached = cachedMessagesByMatch.get(activeChatId);
+    if (existingCached && existingCached.length > 0) {
+      setMessages(existingCached);
+      setIsLoadingMsgs(false);
+    } else {
+      setIsLoadingMsgs(true);
+    }
     setIsPartnerTyping(false);
 
     apiGet(`/matches/${activeChatId}/messages`)
       .then((data) => {
         if (cancelled) return;
-        setMessages(data?.data?.messages ?? []);
+        const msgList = data?.data?.messages ?? [];
+        cachedMessagesByMatch.set(activeChatId, msgList);
+        setMessages(msgList);
 
         // Mark messages as read
         apiPost(`/matches/${activeChatId}/read`).catch(() => { });
@@ -182,13 +194,20 @@ function ChatLayout() {
           const exists = prev.some((m) => m._id === message._id);
           if (exists) return prev;
           const filteredTemp = prev.filter((m) => !m._id?.toString().startsWith("temp-") || m.content !== message.content);
-          return [...filteredTemp, message];
+          const updated = [...filteredTemp, message];
+          cachedMessagesByMatch.set(matchId, updated);
+          return updated;
         });
 
         // Mark read immediately if window active
         if (currentActiveId) {
           socket.emit("chat:mark_read", { matchId: currentActiveId, messageId: message._id });
           apiPost(`/matches/${currentActiveId}/read`).catch(() => { });
+        }
+      } else {
+        const existing = cachedMessagesByMatch.get(matchId);
+        if (existing) {
+          cachedMessagesByMatch.set(matchId, [...existing, message]);
         }
       }
 
@@ -408,7 +427,12 @@ function ChatLayout() {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, tempMsg]);
+    setMessages((prev) => {
+      const updated = [...prev, tempMsg];
+      cachedMessagesByMatch.set(activeChatId, updated);
+      return updated;
+    });
+
     setChats((prev) =>
       prev.map((c) =>
         (c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId)
@@ -421,9 +445,11 @@ function ChatLayout() {
       socket.emit("chat:send_message", { matchId: activeChatId, content: trimmed }, (res) => {
         if (res?.success && res.data?.message) {
           const realMsg = res.data.message;
-          setMessages((prev) =>
-            prev.map((m) => (m._id === tempMsg._id ? realMsg : m))
-          );
+          setMessages((prev) => {
+            const updated = prev.map((m) => (m._id === tempMsg._id ? realMsg : m));
+            cachedMessagesByMatch.set(activeChatId, updated);
+            return updated;
+          });
         } else if (res?.error) {
           console.error("[chat] send message error:", res.message || res.error);
         }
@@ -434,9 +460,11 @@ function ChatLayout() {
         .then((res) => {
           if (res?.data?.message) {
             const realMsg = res.data.message;
-            setMessages((prev) =>
-              prev.map((m) => (m._id === tempMsg._id ? realMsg : m))
-            );
+            setMessages((prev) => {
+              const updated = prev.map((m) => (m._id === tempMsg._id ? realMsg : m));
+              cachedMessagesByMatch.set(activeChatId, updated);
+              return updated;
+            });
           }
         })
         .catch(console.error);
@@ -454,6 +482,7 @@ function ChatLayout() {
         socket.emit("chat:delete_history", { matchId: targetMatchId });
       }
       await apiDelete(`/matches/${targetMatchId}/messages`);
+      cachedMessagesByMatch.delete(targetMatchId);
       setMessages([]);
       setChats((prev) =>
         prev.map((c) =>
@@ -500,6 +529,7 @@ function ChatLayout() {
       setActiveChatId(null);
       setMessages([]);
     }
+    cachedMessagesByMatch.delete(matchIdStr);
 
     // 2. Perform background socket & API deletion
     try {
@@ -621,6 +651,10 @@ function ChatLayout() {
 
   const handleCancelMeetupAction = () => setMeetupAction(null);
 
+  const chatWindowData = useMemo(() => {
+    return activeChat ? { ...activeChat, messages } : null;
+  }, [activeChat, messages]);
+
   // ── Loading state ──────────────────────────────────────────
   if (isLoadingChats) {
     return (
@@ -661,7 +695,7 @@ function ChatLayout() {
         {/* 2. CHAT WINDOW */}
         <div className="flex h-full min-w-0 flex-1">
           <ChatWindow
-            chat={activeChat ? { ...activeChat, messages } : null}
+            chat={chatWindowData}
             currentUserId={user?._id || user?.id}
             isLoadingMessages={isLoadingMsgs}
             isPartnerTyping={isPartnerTyping}

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import MatchCard from "../components/matchmaking/MatchCard";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import CustomDropdown from "../components/common/CustomDropdown";
-import { apiGet, apiPost } from "../services/api";
+import { apiGet, apiPost, apiDelete } from "../services/api";
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
+import { updateCachedBookmark } from "./BookmarksPage";
 
 // In-memory module cache for instant navigation transitions
 let cachedFeed = null;
@@ -72,26 +73,48 @@ const MatchFeed = () => {
     };
   }, [page]);
 
-  const handleFilterChange = (e) => {
+  const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     if (e) e.preventDefault();
     setPage(1);
-  };
+  }, []);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setFilters(initialFilters);
-  };
+  }, []);
 
-  // Bookmark a candidate
-  const handleBookmark = React.useCallback(async (candidateId) => {
+  // Bookmark a candidate with optimistic cache and state update
+  const handleBookmark = useCallback(async (candidateId, nextState) => {
+    // 1. Optimistically update local results
+    setResults((prev) =>
+      prev.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isBookmarked: nextState } : c
+      )
+    );
+
+    // 2. Update cachedFeed module cache
+    if (cachedFeed) {
+      cachedFeed = cachedFeed.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isBookmarked: nextState } : c
+      );
+    }
+
+    // 3. Update Bookmarks page cache
+    updateCachedBookmark(candidateId, nextState);
+
+    // 4. Background network request
     try {
-      await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
+      if (nextState) {
+        await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
+      } else {
+        await apiDelete(`/bookmarks/${candidateId}`);
+      }
     } catch (err) {
-      console.warn("Bookmark failed:", err.message);
+      console.warn("Bookmark toggle failed:", err.message);
     }
   }, []);
 
@@ -253,7 +276,7 @@ const MatchFeed = () => {
                   <MatchCard
                     key={match._id || match.id}
                     matchData={match}
-                    onBookmark={() => handleBookmark(match._id || match.id)}
+                    onBookmark={handleBookmark}
                   />
                 ))}
               </div>
