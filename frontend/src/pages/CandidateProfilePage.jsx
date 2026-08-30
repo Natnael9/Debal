@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiGet, apiPost } from "../services/api";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import { ProfileSkeleton } from "../components/common/Skeleton";
 
 function CandidateProfilePage() {
   const { userId } = useParams();
@@ -100,14 +100,7 @@ function CandidateProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
-        <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner size="lg" />
-          <p className="text-xs font-semibold text-gray-500">Loading candidate profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error || !candidate) {

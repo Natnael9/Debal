@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 import { useAuth } from "../context/AuthContext";
+import { ProfileSkeleton } from "../components/common/Skeleton";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import ProfileCompletionMeter from "../components/profile/ProfileCompletionMeter";
 import LifestyleAttributes from "../components/profile/LifestyleAttributes";
@@ -264,14 +265,7 @@ function ProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner size="lg" />
-          <p className="text-sm font-medium text-gray-500">Loading your profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!profile) {

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
 import MeetupCard from "../../components/chat/MeetupCard";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { ChatLayoutSkeleton } from "../../components/common/Skeleton";
 import { apiGet, apiPost, apiPatch, apiDelete, getToken } from "../../services/api";
 import { connectSocket, getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
@@ -657,11 +657,7 @@ function ChatLayout() {
 
   // ── Loading state ──────────────────────────────────────────
   if (isLoadingChats) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <ChatLayoutSkeleton />;
   }
 
   return (

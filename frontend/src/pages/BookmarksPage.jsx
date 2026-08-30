@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import { MatchGridSkeleton } from '../components/common/Skeleton';
 import { apiGet, apiDelete } from '../services/api';
 
 // Module-level in-memory cache for instant navigation transitions
@@ -126,10 +126,7 @@ const BookmarksPage = () => {
 
         {/* 1. LOADING STATE */}
         {isLoading ? (
-          <div className="flex flex-col justify-center items-center py-32">
-            <LoadingSpinner size="lg" className="mb-4" />
-            <p className="text-gray-500 text-sm font-medium animate-pulse">Loading your bookmarks...</p>
-          </div>
+          <MatchGridSkeleton count={6} />
         ) : bookmarks.length > 0 ? (
           
           /* BOOKMARKS GRID */

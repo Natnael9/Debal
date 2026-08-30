@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import MatchCard from "../components/matchmaking/MatchCard";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import { MatchGridSkeleton } from "../components/common/Skeleton";
 import CustomDropdown from "../components/common/CustomDropdown";
 import { apiGet, apiPost, apiDelete } from "../services/api";
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
@@ -250,12 +250,7 @@ const MatchFeed = () => {
           {/* Match Feed Cards Grid */}
           <main className="min-w-0 flex-1">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-24">
-                <LoadingSpinner size="lg" />
-                <p className="mt-3 text-xs font-medium text-gray-500">
-                  Calculating compatibility scores & fetching matches...
-                </p>
-              </div>
+              <MatchGridSkeleton count={6} />
             ) : error ? (
               <div className="rounded-3xl border border-rose-100 bg-rose-50/60 p-8 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 font-bold">
