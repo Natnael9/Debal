@@ -365,13 +365,16 @@ function ChatLayout() {
     const handleMeetupUpdate = (data) => {
       const { matchId, meetup } = data || {};
       if (!matchId || !meetup) return;
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === matchId || c.matchId === matchId
+      const mId = String(matchId);
+      setChats((prev) => {
+        const next = prev.map((c) =>
+          String(c.id || "") === mId || String(c.matchId || "") === mId || String(c.userId || "") === mId
             ? { ...c, meetup }
             : c
-        )
-      );
+        );
+        cachedChats = next;
+        return next;
+      });
     };
 
     socket?.on("chat:new_message", handleNewMessage);
@@ -582,55 +585,123 @@ function ChatLayout() {
   }, []);
 
   // ── Meetup updates ────────────────────────────────────────
+  const isTargetChat = useCallback((c) => {
+    const actId = String(activeChatId || "");
+    const actObjId = String(activeChat?.id || "");
+    const actMatchId = String(activeChat?.matchId || "");
+    const actUserId = String(activeChat?.userId || "");
+
+    const cId = String(c.id || "");
+    const cMatchId = String(c.matchId || "");
+    const cUserId = String(c.userId || "");
+
+    return (
+      (actId && (cId === actId || cMatchId === actId || cUserId === actId)) ||
+      (actObjId && (cId === actObjId || cMatchId === actObjId)) ||
+      (actMatchId && (cId === actMatchId || cMatchId === actMatchId)) ||
+      (actUserId && cUserId === actUserId)
+    );
+  }, [activeChatId, activeChat]);
+
   const handleMeetupSent = useCallback((newMeetup) => {
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: newMeetup || { status: "proposed" } }
           : c
-      )
-    );
-  }, [activeChatId]);
+      );
+      cachedChats = next;
+      return next;
+    });
+  }, [isTargetChat]);
 
   // ── Meetup actions ─────────────────────────────────────────
   const handleAcceptMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
-    if (meetupId) {
-      try {
-        await apiPatch(`/meetups/${meetupId}`, { action: "accept" });
-      } catch (err) { console.error("Accept meetup failed:", err.message); }
-    }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
+    // 1. Optimistically update local state & cachedChats immediately
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: { ...c.meetup, status: "confirmed" } }
           : c
-      )
-    );
+      );
+      cachedChats = next;
+      return next;
+    });
     setMeetupAction(null);
     setIsMeetupOpen(false);
+
+    // 2. Perform backend API update
+    if (meetupId) {
+      try {
+        const res = await apiPatch(`/meetups/${meetupId}`, { action: "accept" });
+        if (res?.data?.meetup) {
+          const freshMeetup = res.data.meetup;
+          setChats((prev) => {
+            const next = prev.map((c) =>
+              isTargetChat(c) ? { ...c, meetup: freshMeetup } : c
+            );
+            cachedChats = next;
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("Accept meetup failed:", err.message);
+      }
+    }
   };
 
   const handleDeclineMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
-    if (meetupId) {
-      try {
-        await apiPatch(`/meetups/${meetupId}`, { action: "decline" });
-      } catch (err) { console.error("Decline meetup failed:", err.message); }
-    }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
+    // 1. Optimistically update local state & cachedChats immediately
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: { ...c.meetup, status: "declined" } }
           : c
-      )
-    );
+      );
+      cachedChats = next;
+      return next;
+    });
     setMeetupAction(null);
     setIsMeetupOpen(false);
+
+    // 2. Perform backend API update
+    if (meetupId) {
+      try {
+        const res = await apiPatch(`/meetups/${meetupId}`, { action: "decline" });
+        if (res?.data?.meetup) {
+          const freshMeetup = res.data.meetup;
+          setChats((prev) => {
+            const next = prev.map((c) =>
+              isTargetChat(c) ? { ...c, meetup: freshMeetup } : c
+            );
+            cachedChats = next;
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("Decline meetup failed:", err.message);
+      }
+    }
   };
 
   const handleRemoveMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
+    // 1. Optimistically remove meetup from local state & cache
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
+          ? { ...c, meetup: { status: "none" } }
+          : c
+      );
+      cachedChats = next;
+      return next;
+    });
+    setMeetupAction(null);
+    setIsMeetupOpen(false);
+
+    // 2. Perform backend deletion
     if (meetupId) {
       try {
         await apiDelete(`/meetups/${meetupId}`);
@@ -638,15 +709,6 @@ function ChatLayout() {
         console.error("Remove meetup failed:", err.message);
       }
     }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId || c.matchId === activeChatId
-          ? { ...c, meetup: { status: "none" } }
-          : c
-      )
-    );
-    setMeetupAction(null);
-    setIsMeetupOpen(false);
   };
 
   const handleCancelMeetupAction = () => setMeetupAction(null);
