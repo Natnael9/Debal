@@ -5,9 +5,13 @@ import CustomDropdown from "../components/common/CustomDropdown";
 import { apiGet, apiPost } from "../services/api";
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
 
+// In-memory module cache for instant navigation transitions
+let cachedFeed = null;
+let lastFeedFetchTime = 0;
+
 const MatchFeed = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedFeed);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState("score"); // 'score', 'budget_low', 'budget_high', 'age_asc'
 
@@ -23,25 +27,41 @@ const MatchFeed = () => {
   };
 
   const [filters, setFilters] = useState(initialFilters);
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState(cachedFeed || []);
   const [page, setPage] = useState(1);
 
-  // Load match feed from backend
+  // Load match feed from backend with SWR caching
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+    const now = Date.now();
+    const isStale = now - lastFeedFetchTime > 30000; // 30s cache freshness
+
+    if (!cachedFeed) {
+      setIsLoading(true);
+    }
     setError(null);
 
-    apiGet(`/matches/feed?page=${page}&pageSize=50`)
+    // If cache is fresh and on page 1, avoid redundant network request
+    if (cachedFeed && !isStale && page === 1) {
+      setIsLoading(false);
+      return;
+    }
+
+    apiGet(`/matches/feed?page=${page}&pageSize=24`)
       .then((data) => {
         if (cancelled) return;
         const matches = data?.data?.matches ?? [];
-        console.log(`FETCHED ${matches.length} MATCHES. HERE IS THE FULL ARRAY:`, matches);
+        if (page === 1) {
+          cachedFeed = matches;
+          lastFeedFetchTime = Date.now();
+        }
         setResults(matches);
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err.message || "Failed to load match feed.");
+        if (!cachedFeed) {
+          setError(err.message || "Failed to load match feed.");
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -67,13 +87,13 @@ const MatchFeed = () => {
   };
 
   // Bookmark a candidate
-  const handleBookmark = async (candidateId) => {
+  const handleBookmark = React.useCallback(async (candidateId) => {
     try {
       await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
     } catch (err) {
       console.warn("Bookmark failed:", err.message);
     }
-  };
+  }, []);
 
   // Client-side filtering & sorting for interactive responsiveness
   const filteredAndSortedResults = useMemo(() => {

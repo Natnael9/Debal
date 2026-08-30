@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
@@ -18,17 +18,21 @@ import { unblockUser } from "../../services/chatModerationApi";
    - Accepts/Declines meetups via PATCH /api/v1/meetups/:id
 ============================================================ */
 
+// Module-level cache for instant tab transitions
+let cachedChats = null;
+let lastChatsFetchTime = 0;
+
 function ChatLayout() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const chatFromUrl = searchParams.get("chat");
 
   // ── State ──────────────────────────────────────────────────
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState(cachedChats || []);
   const [activeChatId, setActiveChatId] = useState(chatFromUrl || null);
   const [messages, setMessages] = useState([]);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
-  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingChats, setIsLoadingChats] = useState(!cachedChats);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMeetupOpen, setIsMeetupOpen] = useState(false);
@@ -36,14 +40,33 @@ function ChatLayout() {
   const [chatToDelete, setChatToDelete] = useState(null);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
 
-  const activeChat = activeChatId
-    ? chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null
-    : null;
+  const activeChat = useMemo(() => {
+    if (!activeChatId) return null;
+    return chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null;
+  }, [chats, activeChatId]);
 
-  // ── Load active match list on mount ──────────────────────────
+  // Keep refs updated for event listeners to avoid re-binding socket listeners
+  const activeChatIdRef = useRef(activeChatId);
+  activeChatIdRef.current = activeChatId;
+  const activeChatRef = useRef(activeChat);
+  activeChatRef.current = activeChat;
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // ── Load active match list on mount (with SWR caching) ──────────
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingChats(true);
+    const now = Date.now();
+    const isStale = now - lastChatsFetchTime > 15000; // 15s cache freshness
+
+    if (!cachedChats) {
+      setIsLoadingChats(true);
+    }
+
+    if (cachedChats && !isStale && !chatFromUrl) {
+      setIsLoadingChats(false);
+      return;
+    }
 
     apiGet("/matches")
       .then(async (res) => {
@@ -60,7 +83,6 @@ function ChatLayout() {
             setActiveChatId(matchObj.id);
           } else {
             try {
-              // Fetching messages triggers auto-creation of Match document on backend if user exists
               const msgRes = await apiGet(`/matches/${chatFromUrl}/messages`);
               const actualMatchId = msgRes?.data?.matchId || chatFromUrl;
               setActiveChatId(actualMatchId);
@@ -75,7 +97,10 @@ function ChatLayout() {
           (c) => (c.lastMessage && c.lastMessage.trim() !== "") || (chatFromUrl && (c.id === chatFromUrl || c.userId === chatFromUrl || c.matchId === chatFromUrl))
         );
 
-        setChats(filtered.length > 0 ? filtered : mapped);
+        const finalChats = filtered.length > 0 ? filtered : mapped;
+        cachedChats = finalChats;
+        lastChatsFetchTime = Date.now();
+        setChats(finalChats);
       })
       .catch((err) => console.error("[chat] failed to load matches:", err.message))
       .finally(() => { if (!cancelled) setIsLoadingChats(false); });
@@ -114,21 +139,27 @@ function ChatLayout() {
     return () => { cancelled = true; };
   }, [activeChatId]);
 
-  // ── Socket.IO: Connect + Join Match Room + Listen for Events ────────
+  // ── Join active room on activeChatId change ───────────────────
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
-
+    if (!token || !activeChatId) return;
     const socket = connectSocket(token);
 
-    // Join room for active chat
-    if (activeChatId && socket) {
+    if (socket) {
       socket.emit("chat:join_match", { matchId: activeChatId }, (res) => {
         if (res?.success && res.matchId && res.matchId !== activeChatId) {
           setActiveChatId(res.matchId);
         }
       });
     }
+  }, [activeChatId]);
+
+  // ── Stable Socket.IO Event Handlers (Attached Once per Session) ────
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    const socket = connectSocket(token);
 
     // Listen for new incoming real-time messages
     const handleNewMessage = (payload) => {
@@ -136,13 +167,15 @@ function ChatLayout() {
       const message = payload?.message || payload;
       if (!message) return;
 
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
       const senderId = message.senderId?.toString() || message.sender?.toString();
       const isForCurrentChat =
-        matchId === activeChatId ||
-        activeChat?.id === matchId ||
-        activeChat?.matchId === matchId ||
-        activeChat?.userId === matchId ||
-        activeChat?.userId === senderId;
+        matchId === currentActiveId ||
+        currentActive?.id === matchId ||
+        currentActive?.matchId === matchId ||
+        currentActive?.userId === matchId ||
+        currentActive?.userId === senderId;
 
       if (isForCurrentChat) {
         setMessages((prev) => {
@@ -153,8 +186,10 @@ function ChatLayout() {
         });
 
         // Mark read immediately if window active
-        socket.emit("chat:mark_read", { matchId: activeChatId, messageId: message._id });
-        apiPost(`/matches/${activeChatId}/read`).catch(() => { });
+        if (currentActiveId) {
+          socket.emit("chat:mark_read", { matchId: currentActiveId, messageId: message._id });
+          apiPost(`/matches/${currentActiveId}/read`).catch(() => { });
+        }
       }
 
       setChats((prev) =>
@@ -177,22 +212,29 @@ function ChatLayout() {
     };
 
     const handleUserTyping = (data) => {
-      const isForCurrentChat =
-        data.matchId === activeChatId ||
-        activeChat?.id === data.matchId ||
-        activeChat?.matchId === data.matchId ||
-        activeChat?.userId === data.userId;
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+      const currentUser = userRef.current;
 
-      if (isForCurrentChat && data.userId !== user?._id?.toString()) {
+      const isForCurrentChat =
+        data.matchId === currentActiveId ||
+        currentActive?.id === data.matchId ||
+        currentActive?.matchId === data.matchId ||
+        currentActive?.userId === data.userId;
+
+      if (isForCurrentChat && data.userId !== currentUser?._id?.toString()) {
         setIsPartnerTyping(!!data.typing);
       }
     };
 
     const handleMessageRead = (data) => {
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       const isForCurrentChat =
-        data.matchId === activeChatId ||
-        activeChat?.id === data.matchId ||
-        activeChat?.matchId === data.matchId;
+        data.matchId === currentActiveId ||
+        currentActive?.id === data.matchId ||
+        currentActive?.matchId === data.matchId;
 
       if (isForCurrentChat) {
         setMessages((prev) =>
@@ -216,10 +258,13 @@ function ChatLayout() {
 
     const handleHistoryCleared = (data) => {
       const matchId = data?.matchId;
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       const isForCurrentChat =
-        matchId === activeChatId ||
-        activeChat?.id === matchId ||
-        activeChat?.matchId === matchId;
+        matchId === currentActiveId ||
+        currentActive?.id === matchId ||
+        currentActive?.matchId === matchId;
 
       if (isForCurrentChat) {
         setMessages([]);
@@ -238,6 +283,9 @@ function ChatLayout() {
       const targetIdStr = String(data?.matchId || "");
       if (!targetIdStr) return;
 
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       setChats((prev) =>
         prev.filter((c) => {
           const cId = String(c.id || "");
@@ -248,10 +296,10 @@ function ChatLayout() {
       );
 
       if (
-        String(activeChatId || "") === targetIdStr ||
-        String(activeChat?.id || "") === targetIdStr ||
-        String(activeChat?.matchId || "") === targetIdStr ||
-        String(activeChat?.userId || "") === targetIdStr
+        String(currentActiveId || "") === targetIdStr ||
+        String(currentActive?.id || "") === targetIdStr ||
+        String(currentActive?.matchId || "") === targetIdStr ||
+        String(currentActive?.userId || "") === targetIdStr
       ) {
         setActiveChatId(null);
         setMessages([]);
@@ -260,7 +308,8 @@ function ChatLayout() {
 
     const handleUserBlocked = (data) => {
       const { blockerId, blockedId } = data || {};
-      const currentId = String(user?._id || user?.id || "");
+      const currentUser = userRef.current;
+      const currentId = String(currentUser?._id || currentUser?.id || "");
       if (blockerId === currentId || blockedId === currentId) {
         const otherId = blockerId === currentId ? blockedId : blockerId;
         setChats((prev) =>
@@ -280,7 +329,8 @@ function ChatLayout() {
 
     const handleUserUnblocked = (data) => {
       const { unblockerId, unblockedId } = data || {};
-      const currentId = String(user?._id || user?.id || "");
+      const currentUser = userRef.current;
+      const currentId = String(currentUser?._id || currentUser?.id || "");
       if (unblockerId === currentId || unblockedId === currentId) {
         const otherId = unblockerId === currentId ? unblockedId : unblockerId;
         setChats((prev) =>
@@ -326,7 +376,7 @@ function ChatLayout() {
       socket?.off("user:unblocked", handleUserUnblocked);
       socket?.off("chat:meetup_update", handleMeetupUpdate);
     };
-  }, [activeChatId, activeChat, user]);
+  }, []);
 
   // ── Typing emitters ─────────────────────────────────────────
   const handleTypingStart = useCallback(() => {

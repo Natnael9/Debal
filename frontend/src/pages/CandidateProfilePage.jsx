@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiGet, apiPost } from "../services/api";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
 function CandidateProfilePage() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [candidate, setCandidate] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialCandidate = location.state?.candidate ? {
+    _id: location.state.candidate._id || location.state.candidate.id || userId,
+    name: location.state.candidate.name || "Anonymous User",
+    age: location.state.candidate.age || 22,
+    gender: location.state.candidate.gender || "Not specified",
+    location: location.state.candidate.location?.displayName || (typeof location.state.candidate.location === "string" ? location.state.candidate.location : "Addis Ababa"),
+    avatarUrl: location.state.candidate.avatarUrl || location.state.candidate.photoUrl || "",
+    bio: location.state.candidate.bio || "No bio provided.",
+    preferences: {
+      budgetMax: location.state.candidate.budgetMax || location.state.candidate.preferences?.budgetMax || 0,
+      cleanliness: location.state.candidate.preferences?.cleanliness || 4,
+      sleepSchedule: location.state.candidate.preferences?.sleepSchedule || "flexible",
+      pets: location.state.candidate.preferences?.petsOk ? "Pets allowed" : "No pets",
+      smoking: location.state.candidate.preferences?.smokingOk ? "Smoking allowed" : "No smoking",
+    },
+  } : null;
+
+  const [candidate, setCandidate] = useState(initialCandidate);
+  const [isLoading, setIsLoading] = useState(!initialCandidate);
   const [error, setError] = useState(null);
   const [isSending, setIsSending] = useState(false);
 
@@ -20,7 +38,6 @@ function CandidateProfilePage() {
     }
 
     let cancelled = false;
-    setIsLoading(true);
     setError(null);
 
     apiGet(`/users/${userId}`)
@@ -45,12 +62,18 @@ function CandidateProfilePage() {
             },
           });
         } else {
-          setError("Candidate profile not found.");
+          setCandidate((prev) => {
+            if (!prev) setError("Candidate profile not found.");
+            return prev;
+          });
         }
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err.message || "Failed to load candidate profile.");
+        setCandidate((prev) => {
+          if (!prev) setError(err.message || "Failed to load candidate profile.");
+          return prev;
+        });
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -140,6 +163,8 @@ function CandidateProfilePage() {
                   <img
                     src={candidate.avatarUrl}
                     alt={candidate.name}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover object-center"
                   />
                 ) : (

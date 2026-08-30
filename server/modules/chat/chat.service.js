@@ -195,13 +195,14 @@ export async function getMessages(matchId, { before, limit = 50 } = {}) {
 
   const messages = await Message.find(query)
     .sort({ createdAt: -1 })
-    .limit(Math.min(limit, 100));
+    .limit(Math.min(limit, 100))
+    .lean();
 
   return messages.reverse();
 }
 
 export async function getUserMatches(userId) {
-  const currentUser = await User.findById(userId).lean();
+  const currentUser = await User.findById(userId).select('blockedUsers').lean();
   const blockedIds = new Set((currentUser?.blockedUsers || []).map(id => id.toString()));
 
   const matches = await Match.find({
@@ -217,19 +218,16 @@ export async function getUserMatches(userId) {
     return [];
   }
 
-  // Fetch online users from Redis with a fast timeout
+  // Fetch online users from Redis
   let onlineSet = new Set();
   try {
     const redis = getRedisClient();
     if (redis && redis.status === 'ready') {
-      const onlineList = await Promise.race([
-        redis.smembers('online_users'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 50)),
-      ]);
+      const onlineList = await redis.smembers('online_users');
       onlineSet = new Set(onlineList || []);
     }
   } catch (e) {
-    console.warn('[chat] Redis online_users query warning:', e.message);
+    // Non-blocking cache fallback
   }
 
   const filteredMatches = matches.filter((m) => {
@@ -244,50 +242,54 @@ export async function getUserMatches(userId) {
 
   const matchIds = filteredMatches.map((m) => m._id);
 
-  // 1. Bulk aggregate last message for each match in a single query
-  const lastMessages = await Message.aggregate([
-    { $match: { matchId: { $in: matchIds } } },
-    { $sort: { createdAt: -1 } },
-    {
-      $group: {
-        _id: '$matchId',
-        content: { $first: '$content' },
-        createdAt: { $first: '$createdAt' },
+  // Execute all 3 aggregations in parallel for optimal DB response time
+  const [lastMessages, unreadCounts, latestMeetups] = await Promise.all([
+    // 1. Bulk aggregate last message for each match
+    Message.aggregate([
+      { $match: { matchId: { $in: matchIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$matchId',
+          content: { $first: '$content' },
+          createdAt: { $first: '$createdAt' },
+        },
       },
-    },
-  ]);
-  const lastMsgMap = new Map(lastMessages.map((msg) => [msg._id.toString(), msg]));
+    ]),
 
-  // 2. Bulk aggregate unread message counts for each match in a single query
-  const unreadCounts = await Message.aggregate([
-    {
-      $match: {
-        matchId: { $in: matchIds },
-        readAt: null,
+    // 2. Bulk aggregate unread message counts for each match
+    Message.aggregate([
+      {
+        $match: {
+          matchId: { $in: matchIds },
+          readAt: null,
+        },
       },
-    },
-    {
-      $group: {
-        _id: { matchId: '$matchId', senderId: '$senderId' },
-        count: { $sum: 1 },
+      {
+        $group: {
+          _id: { matchId: '$matchId', senderId: '$senderId' },
+          count: { $sum: 1 },
+        },
       },
-    },
+    ]),
+
+    // 3. Bulk aggregate latest meetup for each match
+    Meetup.aggregate([
+      { $match: { matchId: { $in: matchIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$matchId',
+          doc: { $first: '$$ROOT' },
+        },
+      },
+    ]),
   ]);
+
+  const lastMsgMap = new Map(lastMessages.map((msg) => [msg._id.toString(), msg]));
   const unreadMap = new Map(
     unreadCounts.map((u) => [`${u._id.matchId.toString()}_${u._id.senderId.toString()}`, u.count])
   );
-
-  // 3. Bulk aggregate latest meetup for each match in a single query
-  const latestMeetups = await Meetup.aggregate([
-    { $match: { matchId: { $in: matchIds } } },
-    { $sort: { createdAt: -1 } },
-    {
-      $group: {
-        _id: '$matchId',
-        doc: { $first: '$$ROOT' },
-      },
-    },
-  ]);
   const meetupMap = new Map(latestMeetups.map((m) => [m._id.toString(), m.doc]));
 
   const results = filteredMatches.map((m) => {

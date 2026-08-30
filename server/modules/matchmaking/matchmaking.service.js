@@ -61,12 +61,13 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   }
 
   if (!allMatches) {
-    // Pool A: default cross-type match candidates
-    const poolA = await getCandidatePoolA(user);
-    const poolACandidates = poolA.map(c => ({ candidate: c, matchType: 'has_room' }));
+    // Fetch Pool A and Pool B in parallel for maximum performance
+    const [poolA, poolB] = await Promise.all([
+      getCandidatePoolA(user),
+      getCandidatePoolB(user),
+    ]);
 
-    // Pool B: team-up match candidates (only if user is needs_room and teamUpEnabled)
-    const poolB = await getCandidatePoolB(user);
+    const poolACandidates = poolA.map(c => ({ candidate: c, matchType: 'has_room' }));
     const poolBCandidates = poolB.map(c => ({ candidate: c, matchType: 'team_up' }));
 
     // Merge candidates, preventing duplicates

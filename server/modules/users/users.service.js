@@ -106,9 +106,9 @@ async function updateProfile(userId, data) {
 }
 
 async function getUserProfileById(userId) {
-  const user = await User.findById(userId).select(
-    '-passwordHash -refreshTokenHashes -idNumberHash'
-  );
+  const user = await User.findById(userId)
+    .select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires')
+    .lean();
   if (!user || user.suspended) {
     throw new UsersError('User profile not found.', 404);
   }

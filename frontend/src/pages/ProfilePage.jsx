@@ -75,33 +75,42 @@ function parseSleep(val) {
 }
 
 function ProfilePage() {
-  const { setUser } = useAuth();
+  const { user: authUser, setUser } = useAuth();
   const fileInputRef = useRef(null);
 
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialProfile = mapUserToProfile(authUser);
+  const [profile, setProfile] = useState(initialProfile);
+  const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
-  const [bioText, setBioText] = useState("");
+  const [bioText, setBioText] = useState(initialProfile?.bio || "");
   const [verificationStep, setVerificationStep] = useState(null);
-  const [editProfile, setEditProfile] = useState(null);
+  const [editProfile, setEditProfile] = useState(initialProfile);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
+  const isEditingRef = useRef(isEditing);
+  isEditingRef.current = isEditing;
+  const isEditingBioRef = useRef(isEditingBio);
+  isEditingBioRef.current = isEditingBio;
+
   useEffect(() => {
     let isMounted = true;
     async function loadProfile() {
-      setIsLoading(true);
       try {
         const user = await getMyProfile();
         if (isMounted && user) {
           setUser(user);
           const mapped = mapUserToProfile(user);
           setProfile(mapped);
-          setEditProfile(mapped);
-          setBioText(mapped.bio || "");
+          if (!isEditingRef.current) {
+            setEditProfile(mapped);
+          }
+          if (!isEditingBioRef.current) {
+            setBioText(mapped.bio || "");
+          }
         }
       } catch (err) {
         console.error("Failed to load user profile:", err);
@@ -338,6 +347,8 @@ function ProfilePage() {
                     <img
                       src={profile.photoUrl}
                       alt={`${profile.name}'s profile`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (
