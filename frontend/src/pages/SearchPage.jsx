@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import CustomDropdown from '../components/common/CustomDropdown';
 
 // 1. CLEAN MINIMAL TOP FILTER BAR
-export const TopFilterBar = ({ filters, handleFilterChange, handleSearch, isDrawerOpen, setIsDrawerOpen }) => {
+export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, isDrawerOpen, setIsDrawerOpen }) => {
   return (
     <div className="border-b border-gray-100 bg-white shadow-2xs">
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
@@ -66,10 +66,10 @@ export const TopFilterBar = ({ filters, handleFilterChange, handleSearch, isDraw
       </div>
     </div>
   );
-};
+});
 
 // 2. THE SIDE PANEL FOR ALL ADVANCED FILTERS (RELATIVE CONTAINER WITHOUT CLIPPING)
-export const SideFilterBar = ({ filters, handleFilterChange, onClearAll }) => {
+export const SideFilterBar = memo(({ filters, handleFilterChange, onClearAll }) => {
   return (
     <div className="w-64 shrink-0 rounded-3xl border border-gray-100 bg-white p-5 shadow-xs relative">
       
@@ -194,4 +194,4 @@ export const SideFilterBar = ({ filters, handleFilterChange, onClearAll }) => {
 
     </div>
   );
-};
+});

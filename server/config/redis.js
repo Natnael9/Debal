@@ -48,17 +48,8 @@ export function getRedisClient() {
   return redisClient;
 }
 
-export async function isRedisHealthy() {
-  if (!redisClient || redisClient.status !== 'ready') return false;
-  try {
-    const pong = await Promise.race([
-      redisClient.ping(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 200)),
-    ]);
-    return pong === 'PONG';
-  } catch {
-    return false;
-  }
+export function isRedisHealthy() {
+  return !!redisClient && redisClient.status === 'ready';
 }
 
 export async function disconnectRedis() {

@@ -1,4 +1,6 @@
-function MessageBubble({ message, isOwn, partnerAvatarText = "P" }) {
+import React, { memo } from "react";
+
+function MessageBubbleComponent({ message, isOwn, partnerAvatarText = "P" }) {
   const content = message?.content || message?.text || "";
   const time = message?.createdAt
     ? new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -46,5 +48,16 @@ function MessageBubble({ message, isOwn, partnerAvatarText = "P" }) {
     </div>
   );
 }
+
+export const MessageBubble = memo(MessageBubbleComponent, (prev, next) => {
+  return (
+    prev.isOwn === next.isOwn &&
+    prev.partnerAvatarText === next.partnerAvatarText &&
+    prev.message?._id === next.message?._id &&
+    prev.message?.content === next.message?.content &&
+    prev.message?.readAt === next.message?.readAt &&
+    prev.message?.createdAt === next.message?.createdAt
+  );
+});
 
 export default MessageBubble;

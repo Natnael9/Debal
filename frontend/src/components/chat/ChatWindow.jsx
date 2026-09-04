@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ReportModal from "./ReportModal";
 import BlockModal from "./BlockModal";
 import MeetupRequestModal from "./MeetupRequestModal";
 
-function ChatWindow({
+function ChatWindowComponent({
   chat,
   currentUserId,
   isLoadingMessages = false,
@@ -187,13 +187,14 @@ function ChatWindow({
 
             {showActions && (
               <div className="absolute right-0 top-8 z-50 w-44 origin-top-right rounded-2xl border border-gray-100 bg-white p-1.5 shadow-xl shadow-slate-200/60 ring-1 ring-black/5 focus:outline-none">
+                {/* Show Meetups Button (Mobile only, since desktop already shows meetups panel) */}
                 <button
                   type="button"
                   onClick={() => {
                     setShowActions(false);
                     onOpenMeetups?.();
                   }}
-                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-900"
+                  className="group flex md:hidden w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-900"
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-900 group-hover:bg-white">
                     <svg
@@ -474,6 +475,7 @@ function ChatWindow({
       )}
     </div>
   );
-}
+};
 
+export const ChatWindow = memo(ChatWindowComponent);
 export default ChatWindow;

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost, apiDelete } from "../../services/api";
 
-const MatchCard = ({ matchData, onBookmark }) => {
-  const [isBookmarked, setIsBookmarked] = useState(matchData.isBookmarked || false);
+const MatchCardComponent = ({ matchData, onBookmark }) => {
+  const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
+  const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
@@ -21,7 +22,7 @@ const MatchCard = ({ matchData, onBookmark }) => {
     e.preventDefault();
     e.stopPropagation();
     const nextState = !isBookmarked;
-    setIsBookmarked(nextState);
+    setLocalIsBookmarked(nextState);
 
     if (onBookmark) {
       onBookmark(candidateId, nextState);
@@ -40,7 +41,9 @@ const MatchCard = ({ matchData, onBookmark }) => {
 
   const handleViewProfile = () => {
     if (candidateId) {
-      navigate(`/app/candidate-profile/${candidateId}`);
+      navigate(`/app/candidate-profile/${candidateId}`, {
+        state: { candidate: matchData },
+      });
     }
   };
 
@@ -124,6 +127,8 @@ const MatchCard = ({ matchData, onBookmark }) => {
                   <img
                     src={avatarImage}
                     alt={matchData.name}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -264,4 +269,5 @@ const MatchCard = ({ matchData, onBookmark }) => {
   );
 };
 
+export const MatchCard = memo(MatchCardComponent);
 export default MatchCard;
