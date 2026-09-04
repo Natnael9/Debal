@@ -1,20 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import { MatchGridSkeleton } from '../components/common/Skeleton';
 import { apiGet, apiDelete } from '../services/api';
 
+// Module-level in-memory cache for instant navigation transitions
+let cachedBookmarks = null;
+let lastBookmarksFetchTime = 0;
+
+export function updateCachedBookmark(candidateId, isBookmarked) {
+  if (!cachedBookmarks) return;
+  if (!isBookmarked) {
+    cachedBookmarks = cachedBookmarks.filter((b) => b._id !== candidateId && b.id !== candidateId);
+  }
+}
+
 const BookmarksPage = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [bookmarks, setBookmarks] = useState([]);
+  const [bookmarks, setBookmarks] = useState(cachedBookmarks || []);
+  const [isLoading, setIsLoading] = useState(!cachedBookmarks);
   const [error, setError] = useState(null);
 
-  // Fetch real bookmarks on page load
+  // Fetch real bookmarks on page load with SWR pattern
   useEffect(() => {
     let isMounted = true;
+    const now = Date.now();
+    const isStale = now - lastBookmarksFetchTime > 30000; // 30s freshness
+
+    if (!cachedBookmarks) {
+      setIsLoading(true);
+    }
+    setError(null);
+
+    // If cache is fresh, render immediately without redundant API call
+    if (cachedBookmarks && !isStale) {
+      setIsLoading(false);
+      return;
+    }
 
     async function loadBookmarks() {
-      setIsLoading(true);
-      setError(null);
       try {
         const res = await apiGet('/bookmarks');
         const list = res?.data?.bookmarks || [];
@@ -39,11 +61,13 @@ const BookmarksPage = () => {
           });
 
         if (isMounted) {
+          cachedBookmarks = mapped;
+          lastBookmarksFetchTime = Date.now();
           setBookmarks(mapped);
         }
       } catch (err) {
         console.error('Failed to load bookmarks:', err);
-        if (isMounted) {
+        if (isMounted && !cachedBookmarks) {
           setError(err.message || 'Failed to load saved profiles.');
         }
       } finally {
@@ -61,38 +85,19 @@ const BookmarksPage = () => {
   }, []);
 
   // Handle un-favoriting (removing bookmark) when clicking the favorite heart button
-  const handleRemoveBookmark = async (candidateId) => {
-    // Optimistically remove from state
-    setBookmarks((prev) => prev.filter((b) => b._id !== candidateId));
+  const handleRemoveBookmark = React.useCallback(async (candidateId) => {
+    // Optimistically remove from state and cache
+    if (cachedBookmarks) {
+      cachedBookmarks = cachedBookmarks.filter((b) => b._id !== candidateId && b.id !== candidateId);
+    }
+    setBookmarks((prev) => prev.filter((b) => b._id !== candidateId && b.id !== candidateId));
 
     try {
       await apiDelete(`/bookmarks/${candidateId}`);
     } catch (err) {
       console.error(`Failed to remove bookmark ${candidateId}:`, err);
-      // Reload bookmarks to sync with server state if API call failed
-      try {
-        const res = await apiGet('/bookmarks');
-        const list = res?.data?.bookmarks || [];
-        const mapped = list
-          .filter((item) => item?.user)
-          .map((item) => ({
-            _id: item.user._id || item.user.id,
-            name: item.user.name,
-            age: item.user.age,
-            gender: item.user.gender,
-            bio: item.user.bio,
-            avatarUrl: item.user.avatarUrl,
-            housingStatus: item.user.housingStatus,
-            location: item.user.location?.displayName || item.user.location || 'Addis Ababa',
-            preferences: item.user.preferences || {},
-            isBookmarked: true,
-          }));
-        setBookmarks(mapped);
-      } catch {
-        /* ignore */
-      }
     }
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
@@ -121,10 +126,7 @@ const BookmarksPage = () => {
 
         {/* 1. LOADING STATE */}
         {isLoading ? (
-          <div className="flex flex-col justify-center items-center py-32">
-            <LoadingSpinner size="lg" className="mb-4" />
-            <p className="text-gray-500 text-sm font-medium animate-pulse">Loading your bookmarks...</p>
-          </div>
+          <MatchGridSkeleton count={6} />
         ) : bookmarks.length > 0 ? (
           
           /* BOOKMARKS GRID */

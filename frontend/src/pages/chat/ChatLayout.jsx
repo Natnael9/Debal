@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import ChatList from "../../components/chat/ChatList";
 import ChatWindow from "../../components/chat/ChatWindow";
 import MeetupCard from "../../components/chat/MeetupCard";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { ChatLayoutSkeleton } from "../../components/common/Skeleton";
 import { apiGet, apiPost, apiPatch, apiDelete, getToken } from "../../services/api";
 import { connectSocket, getSocket } from "../../services/socket";
 import { useAuth } from "../../context/AuthContext";
@@ -18,17 +18,22 @@ import { unblockUser } from "../../services/chatModerationApi";
    - Accepts/Declines meetups via PATCH /api/v1/meetups/:id
 ============================================================ */
 
+// Module-level cache for instant tab transitions
+let cachedChats = null;
+let lastChatsFetchTime = 0;
+const cachedMessagesByMatch = new Map();
+
 function ChatLayout() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const chatFromUrl = searchParams.get("chat");
 
   // ── State ──────────────────────────────────────────────────
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState(cachedChats || []);
   const [activeChatId, setActiveChatId] = useState(chatFromUrl || null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => (chatFromUrl ? cachedMessagesByMatch.get(chatFromUrl) || [] : []));
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
-  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [isLoadingChats, setIsLoadingChats] = useState(!cachedChats);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMeetupOpen, setIsMeetupOpen] = useState(false);
@@ -36,14 +41,33 @@ function ChatLayout() {
   const [chatToDelete, setChatToDelete] = useState(null);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
 
-  const activeChat = activeChatId
-    ? chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null
-    : null;
+  const activeChat = useMemo(() => {
+    if (!activeChatId) return null;
+    return chats.find((c) => c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId) || null;
+  }, [chats, activeChatId]);
 
-  // ── Load active match list on mount ──────────────────────────
+  // Keep refs updated for event listeners to avoid re-binding socket listeners
+  const activeChatIdRef = useRef(activeChatId);
+  activeChatIdRef.current = activeChatId;
+  const activeChatRef = useRef(activeChat);
+  activeChatRef.current = activeChat;
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // ── Load active match list on mount (with SWR caching) ──────────
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingChats(true);
+    const now = Date.now();
+    const isStale = now - lastChatsFetchTime > 15000; // 15s cache freshness
+
+    if (!cachedChats) {
+      setIsLoadingChats(true);
+    }
+
+    if (cachedChats && !isStale && !chatFromUrl) {
+      setIsLoadingChats(false);
+      return;
+    }
 
     apiGet("/matches")
       .then(async (res) => {
@@ -60,7 +84,6 @@ function ChatLayout() {
             setActiveChatId(matchObj.id);
           } else {
             try {
-              // Fetching messages triggers auto-creation of Match document on backend if user exists
               const msgRes = await apiGet(`/matches/${chatFromUrl}/messages`);
               const actualMatchId = msgRes?.data?.matchId || chatFromUrl;
               setActiveChatId(actualMatchId);
@@ -75,7 +98,10 @@ function ChatLayout() {
           (c) => (c.lastMessage && c.lastMessage.trim() !== "") || (chatFromUrl && (c.id === chatFromUrl || c.userId === chatFromUrl || c.matchId === chatFromUrl))
         );
 
-        setChats(filtered.length > 0 ? filtered : mapped);
+        const finalChats = filtered.length > 0 ? filtered : mapped;
+        cachedChats = finalChats;
+        lastChatsFetchTime = Date.now();
+        setChats(finalChats);
       })
       .catch((err) => console.error("[chat] failed to load matches:", err.message))
       .finally(() => { if (!cancelled) setIsLoadingChats(false); });
@@ -83,17 +109,28 @@ function ChatLayout() {
     return () => { cancelled = true; };
   }, [chatFromUrl]);
 
-  // ── Load messages when active chat changes ─────────────────
+  // ── Load messages when active chat changes (with SWR message caching) ──
   useEffect(() => {
-    if (!activeChatId) return;
+    if (!activeChatId) {
+      setMessages([]);
+      return;
+    }
     let cancelled = false;
-    setIsLoadingMsgs(true);
+    const existingCached = cachedMessagesByMatch.get(activeChatId);
+    if (existingCached && existingCached.length > 0) {
+      setMessages(existingCached);
+      setIsLoadingMsgs(false);
+    } else {
+      setIsLoadingMsgs(true);
+    }
     setIsPartnerTyping(false);
 
     apiGet(`/matches/${activeChatId}/messages`)
       .then((data) => {
         if (cancelled) return;
-        setMessages(data?.data?.messages ?? []);
+        const msgList = data?.data?.messages ?? [];
+        cachedMessagesByMatch.set(activeChatId, msgList);
+        setMessages(msgList);
 
         // Mark messages as read
         apiPost(`/matches/${activeChatId}/read`).catch(() => { });
@@ -114,21 +151,27 @@ function ChatLayout() {
     return () => { cancelled = true; };
   }, [activeChatId]);
 
-  // ── Socket.IO: Connect + Join Match Room + Listen for Events ────────
+  // ── Join active room on activeChatId change ───────────────────
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
-
+    if (!token || !activeChatId) return;
     const socket = connectSocket(token);
 
-    // Join room for active chat
-    if (activeChatId && socket) {
+    if (socket) {
       socket.emit("chat:join_match", { matchId: activeChatId }, (res) => {
         if (res?.success && res.matchId && res.matchId !== activeChatId) {
           setActiveChatId(res.matchId);
         }
       });
     }
+  }, [activeChatId]);
+
+  // ── Stable Socket.IO Event Handlers (Attached Once per Session) ────
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+
+    const socket = connectSocket(token);
 
     // Listen for new incoming real-time messages
     const handleNewMessage = (payload) => {
@@ -136,25 +179,36 @@ function ChatLayout() {
       const message = payload?.message || payload;
       if (!message) return;
 
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
       const senderId = message.senderId?.toString() || message.sender?.toString();
       const isForCurrentChat =
-        matchId === activeChatId ||
-        activeChat?.id === matchId ||
-        activeChat?.matchId === matchId ||
-        activeChat?.userId === matchId ||
-        activeChat?.userId === senderId;
+        matchId === currentActiveId ||
+        currentActive?.id === matchId ||
+        currentActive?.matchId === matchId ||
+        currentActive?.userId === matchId ||
+        currentActive?.userId === senderId;
 
       if (isForCurrentChat) {
         setMessages((prev) => {
           const exists = prev.some((m) => m._id === message._id);
           if (exists) return prev;
           const filteredTemp = prev.filter((m) => !m._id?.toString().startsWith("temp-") || m.content !== message.content);
-          return [...filteredTemp, message];
+          const updated = [...filteredTemp, message];
+          cachedMessagesByMatch.set(matchId, updated);
+          return updated;
         });
 
         // Mark read immediately if window active
-        socket.emit("chat:mark_read", { matchId: activeChatId, messageId: message._id });
-        apiPost(`/matches/${activeChatId}/read`).catch(() => { });
+        if (currentActiveId) {
+          socket.emit("chat:mark_read", { matchId: currentActiveId, messageId: message._id });
+          apiPost(`/matches/${currentActiveId}/read`).catch(() => { });
+        }
+      } else {
+        const existing = cachedMessagesByMatch.get(matchId);
+        if (existing) {
+          cachedMessagesByMatch.set(matchId, [...existing, message]);
+        }
       }
 
       setChats((prev) =>
@@ -177,22 +231,29 @@ function ChatLayout() {
     };
 
     const handleUserTyping = (data) => {
-      const isForCurrentChat =
-        data.matchId === activeChatId ||
-        activeChat?.id === data.matchId ||
-        activeChat?.matchId === data.matchId ||
-        activeChat?.userId === data.userId;
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+      const currentUser = userRef.current;
 
-      if (isForCurrentChat && data.userId !== user?._id?.toString()) {
+      const isForCurrentChat =
+        data.matchId === currentActiveId ||
+        currentActive?.id === data.matchId ||
+        currentActive?.matchId === data.matchId ||
+        currentActive?.userId === data.userId;
+
+      if (isForCurrentChat && data.userId !== currentUser?._id?.toString()) {
         setIsPartnerTyping(!!data.typing);
       }
     };
 
     const handleMessageRead = (data) => {
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       const isForCurrentChat =
-        data.matchId === activeChatId ||
-        activeChat?.id === data.matchId ||
-        activeChat?.matchId === data.matchId;
+        data.matchId === currentActiveId ||
+        currentActive?.id === data.matchId ||
+        currentActive?.matchId === data.matchId;
 
       if (isForCurrentChat) {
         setMessages((prev) =>
@@ -216,10 +277,13 @@ function ChatLayout() {
 
     const handleHistoryCleared = (data) => {
       const matchId = data?.matchId;
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       const isForCurrentChat =
-        matchId === activeChatId ||
-        activeChat?.id === matchId ||
-        activeChat?.matchId === matchId;
+        matchId === currentActiveId ||
+        currentActive?.id === matchId ||
+        currentActive?.matchId === matchId;
 
       if (isForCurrentChat) {
         setMessages([]);
@@ -238,6 +302,9 @@ function ChatLayout() {
       const targetIdStr = String(data?.matchId || "");
       if (!targetIdStr) return;
 
+      const currentActiveId = activeChatIdRef.current;
+      const currentActive = activeChatRef.current;
+
       setChats((prev) =>
         prev.filter((c) => {
           const cId = String(c.id || "");
@@ -248,10 +315,10 @@ function ChatLayout() {
       );
 
       if (
-        String(activeChatId || "") === targetIdStr ||
-        String(activeChat?.id || "") === targetIdStr ||
-        String(activeChat?.matchId || "") === targetIdStr ||
-        String(activeChat?.userId || "") === targetIdStr
+        String(currentActiveId || "") === targetIdStr ||
+        String(currentActive?.id || "") === targetIdStr ||
+        String(currentActive?.matchId || "") === targetIdStr ||
+        String(currentActive?.userId || "") === targetIdStr
       ) {
         setActiveChatId(null);
         setMessages([]);
@@ -260,7 +327,8 @@ function ChatLayout() {
 
     const handleUserBlocked = (data) => {
       const { blockerId, blockedId } = data || {};
-      const currentId = String(user?._id || user?.id || "");
+      const currentUser = userRef.current;
+      const currentId = String(currentUser?._id || currentUser?.id || "");
       if (blockerId === currentId || blockedId === currentId) {
         const otherId = blockerId === currentId ? blockedId : blockerId;
         setChats((prev) =>
@@ -280,7 +348,8 @@ function ChatLayout() {
 
     const handleUserUnblocked = (data) => {
       const { unblockerId, unblockedId } = data || {};
-      const currentId = String(user?._id || user?.id || "");
+      const currentUser = userRef.current;
+      const currentId = String(currentUser?._id || currentUser?.id || "");
       if (unblockerId === currentId || unblockedId === currentId) {
         const otherId = unblockerId === currentId ? unblockedId : unblockerId;
         setChats((prev) =>
@@ -296,13 +365,16 @@ function ChatLayout() {
     const handleMeetupUpdate = (data) => {
       const { matchId, meetup } = data || {};
       if (!matchId || !meetup) return;
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === matchId || c.matchId === matchId
+      const mId = String(matchId);
+      setChats((prev) => {
+        const next = prev.map((c) =>
+          String(c.id || "") === mId || String(c.matchId || "") === mId || String(c.userId || "") === mId
             ? { ...c, meetup }
             : c
-        )
-      );
+        );
+        cachedChats = next;
+        return next;
+      });
     };
 
     socket?.on("chat:new_message", handleNewMessage);
@@ -326,7 +398,7 @@ function ChatLayout() {
       socket?.off("user:unblocked", handleUserUnblocked);
       socket?.off("chat:meetup_update", handleMeetupUpdate);
     };
-  }, [activeChatId, activeChat, user]);
+  }, []);
 
   // ── Typing emitters ─────────────────────────────────────────
   const handleTypingStart = useCallback(() => {
@@ -358,7 +430,12 @@ function ChatLayout() {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, tempMsg]);
+    setMessages((prev) => {
+      const updated = [...prev, tempMsg];
+      cachedMessagesByMatch.set(activeChatId, updated);
+      return updated;
+    });
+
     setChats((prev) =>
       prev.map((c) =>
         (c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId)
@@ -371,9 +448,11 @@ function ChatLayout() {
       socket.emit("chat:send_message", { matchId: activeChatId, content: trimmed }, (res) => {
         if (res?.success && res.data?.message) {
           const realMsg = res.data.message;
-          setMessages((prev) =>
-            prev.map((m) => (m._id === tempMsg._id ? realMsg : m))
-          );
+          setMessages((prev) => {
+            const updated = prev.map((m) => (m._id === tempMsg._id ? realMsg : m));
+            cachedMessagesByMatch.set(activeChatId, updated);
+            return updated;
+          });
         } else if (res?.error) {
           console.error("[chat] send message error:", res.message || res.error);
         }
@@ -384,9 +463,11 @@ function ChatLayout() {
         .then((res) => {
           if (res?.data?.message) {
             const realMsg = res.data.message;
-            setMessages((prev) =>
-              prev.map((m) => (m._id === tempMsg._id ? realMsg : m))
-            );
+            setMessages((prev) => {
+              const updated = prev.map((m) => (m._id === tempMsg._id ? realMsg : m));
+              cachedMessagesByMatch.set(activeChatId, updated);
+              return updated;
+            });
           }
         })
         .catch(console.error);
@@ -404,6 +485,7 @@ function ChatLayout() {
         socket.emit("chat:delete_history", { matchId: targetMatchId });
       }
       await apiDelete(`/matches/${targetMatchId}/messages`);
+      cachedMessagesByMatch.delete(targetMatchId);
       setMessages([]);
       setChats((prev) =>
         prev.map((c) =>
@@ -450,6 +532,7 @@ function ChatLayout() {
       setActiveChatId(null);
       setMessages([]);
     }
+    cachedMessagesByMatch.delete(matchIdStr);
 
     // 2. Perform background socket & API deletion
     try {
@@ -502,55 +585,123 @@ function ChatLayout() {
   }, []);
 
   // ── Meetup updates ────────────────────────────────────────
+  const isTargetChat = useCallback((c) => {
+    const actId = String(activeChatId || "");
+    const actObjId = String(activeChat?.id || "");
+    const actMatchId = String(activeChat?.matchId || "");
+    const actUserId = String(activeChat?.userId || "");
+
+    const cId = String(c.id || "");
+    const cMatchId = String(c.matchId || "");
+    const cUserId = String(c.userId || "");
+
+    return (
+      (actId && (cId === actId || cMatchId === actId || cUserId === actId)) ||
+      (actObjId && (cId === actObjId || cMatchId === actObjId)) ||
+      (actMatchId && (cId === actMatchId || cMatchId === actMatchId)) ||
+      (actUserId && cUserId === actUserId)
+    );
+  }, [activeChatId, activeChat]);
+
   const handleMeetupSent = useCallback((newMeetup) => {
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: newMeetup || { status: "proposed" } }
           : c
-      )
-    );
-  }, [activeChatId]);
+      );
+      cachedChats = next;
+      return next;
+    });
+  }, [isTargetChat]);
 
   // ── Meetup actions ─────────────────────────────────────────
   const handleAcceptMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
-    if (meetupId) {
-      try {
-        await apiPatch(`/meetups/${meetupId}`, { action: "accept" });
-      } catch (err) { console.error("Accept meetup failed:", err.message); }
-    }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
+    // 1. Optimistically update local state & cachedChats immediately
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: { ...c.meetup, status: "confirmed" } }
           : c
-      )
-    );
+      );
+      cachedChats = next;
+      return next;
+    });
     setMeetupAction(null);
     setIsMeetupOpen(false);
+
+    // 2. Perform backend API update
+    if (meetupId) {
+      try {
+        const res = await apiPatch(`/meetups/${meetupId}`, { action: "accept" });
+        if (res?.data?.meetup) {
+          const freshMeetup = res.data.meetup;
+          setChats((prev) => {
+            const next = prev.map((c) =>
+              isTargetChat(c) ? { ...c, meetup: freshMeetup } : c
+            );
+            cachedChats = next;
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("Accept meetup failed:", err.message);
+      }
+    }
   };
 
   const handleDeclineMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
-    if (meetupId) {
-      try {
-        await apiPatch(`/meetups/${meetupId}`, { action: "decline" });
-      } catch (err) { console.error("Decline meetup failed:", err.message); }
-    }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
+    // 1. Optimistically update local state & cachedChats immediately
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
           ? { ...c, meetup: { ...c.meetup, status: "declined" } }
           : c
-      )
-    );
+      );
+      cachedChats = next;
+      return next;
+    });
     setMeetupAction(null);
     setIsMeetupOpen(false);
+
+    // 2. Perform backend API update
+    if (meetupId) {
+      try {
+        const res = await apiPatch(`/meetups/${meetupId}`, { action: "decline" });
+        if (res?.data?.meetup) {
+          const freshMeetup = res.data.meetup;
+          setChats((prev) => {
+            const next = prev.map((c) =>
+              isTargetChat(c) ? { ...c, meetup: freshMeetup } : c
+            );
+            cachedChats = next;
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("Decline meetup failed:", err.message);
+      }
+    }
   };
 
   const handleRemoveMeetup = async () => {
     const meetupId = activeChat?.meetup?._id;
+    // 1. Optimistically remove meetup from local state & cache
+    setChats((prev) => {
+      const next = prev.map((c) =>
+        isTargetChat(c)
+          ? { ...c, meetup: { status: "none" } }
+          : c
+      );
+      cachedChats = next;
+      return next;
+    });
+    setMeetupAction(null);
+    setIsMeetupOpen(false);
+
+    // 2. Perform backend deletion
     if (meetupId) {
       try {
         await apiDelete(`/meetups/${meetupId}`);
@@ -558,26 +709,17 @@ function ChatLayout() {
         console.error("Remove meetup failed:", err.message);
       }
     }
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId || c.matchId === activeChatId
-          ? { ...c, meetup: { status: "none" } }
-          : c
-      )
-    );
-    setMeetupAction(null);
-    setIsMeetupOpen(false);
   };
 
   const handleCancelMeetupAction = () => setMeetupAction(null);
 
+  const chatWindowData = useMemo(() => {
+    return activeChat ? { ...activeChat, messages } : null;
+  }, [activeChat, messages]);
+
   // ── Loading state ──────────────────────────────────────────
   if (isLoadingChats) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <ChatLayoutSkeleton />;
   }
 
   return (
@@ -611,7 +753,7 @@ function ChatLayout() {
         {/* 2. CHAT WINDOW */}
         <div className="flex h-full min-w-0 flex-1">
           <ChatWindow
-            chat={activeChat ? { ...activeChat, messages } : null}
+            chat={chatWindowData}
             currentUserId={user?._id || user?.id}
             isLoadingMessages={isLoadingMsgs}
             isPartnerTyping={isPartnerTyping}

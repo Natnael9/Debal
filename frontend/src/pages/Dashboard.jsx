@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import MatchCard from "../components/matchmaking/MatchCard";
-import LoadingSpinner from "../components/common/LoadingSpinner";
+import { MatchGridSkeleton } from "../components/common/Skeleton";
 import CustomDropdown from "../components/common/CustomDropdown";
-import { apiGet, apiPost } from "../services/api";
+import { apiGet, apiPost, apiDelete } from "../services/api";
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
+import { updateCachedBookmark } from "./BookmarksPage";
+
+// In-memory module cache for instant navigation transitions
+let cachedFeed = null;
+let lastFeedFetchTime = 0;
 
 const MatchFeed = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedFeed);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState("score"); // 'score', 'budget_low', 'budget_high', 'age_asc'
 
@@ -23,25 +28,41 @@ const MatchFeed = () => {
   };
 
   const [filters, setFilters] = useState(initialFilters);
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState(cachedFeed || []);
   const [page, setPage] = useState(1);
 
-  // Load match feed from backend
+  // Load match feed from backend with SWR caching
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+    const now = Date.now();
+    const isStale = now - lastFeedFetchTime > 30000; // 30s cache freshness
+
+    if (!cachedFeed) {
+      setIsLoading(true);
+    }
     setError(null);
 
-    apiGet(`/matches/feed?page=${page}&pageSize=50`)
+    // If cache is fresh and on page 1, avoid redundant network request
+    if (cachedFeed && !isStale && page === 1) {
+      setIsLoading(false);
+      return;
+    }
+
+    apiGet(`/matches/feed?page=${page}&pageSize=24`)
       .then((data) => {
         if (cancelled) return;
         const matches = data?.data?.matches ?? [];
-        console.log(`FETCHED ${matches.length} MATCHES. HERE IS THE FULL ARRAY:`, matches);
+        if (page === 1) {
+          cachedFeed = matches;
+          lastFeedFetchTime = Date.now();
+        }
         setResults(matches);
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err.message || "Failed to load match feed.");
+        if (!cachedFeed) {
+          setError(err.message || "Failed to load match feed.");
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -52,28 +73,50 @@ const MatchFeed = () => {
     };
   }, [page]);
 
-  const handleFilterChange = (e) => {
+  const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     if (e) e.preventDefault();
     setPage(1);
-  };
+  }, []);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setFilters(initialFilters);
-  };
+  }, []);
 
-  // Bookmark a candidate
-  const handleBookmark = async (candidateId) => {
-    try {
-      await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
-    } catch (err) {
-      console.warn("Bookmark failed:", err.message);
+  // Bookmark a candidate with optimistic cache and state update
+  const handleBookmark = useCallback(async (candidateId, nextState) => {
+    // 1. Optimistically update local results
+    setResults((prev) =>
+      prev.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isBookmarked: nextState } : c
+      )
+    );
+
+    // 2. Update cachedFeed module cache
+    if (cachedFeed) {
+      cachedFeed = cachedFeed.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isBookmarked: nextState } : c
+      );
     }
-  };
+
+    // 3. Update Bookmarks page cache
+    updateCachedBookmark(candidateId, nextState);
+
+    // 4. Background network request
+    try {
+      if (nextState) {
+        await apiPost("/bookmarks", { bookmarkedUserId: candidateId });
+      } else {
+        await apiDelete(`/bookmarks/${candidateId}`);
+      }
+    } catch (err) {
+      console.warn("Bookmark toggle failed:", err.message);
+    }
+  }, []);
 
   // Client-side filtering & sorting for interactive responsiveness
   const filteredAndSortedResults = useMemo(() => {
@@ -207,12 +250,7 @@ const MatchFeed = () => {
           {/* Match Feed Cards Grid */}
           <main className="min-w-0 flex-1">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-24">
-                <LoadingSpinner size="lg" />
-                <p className="mt-3 text-xs font-medium text-gray-500">
-                  Calculating compatibility scores & fetching matches...
-                </p>
-              </div>
+              <MatchGridSkeleton count={6} />
             ) : error ? (
               <div className="rounded-3xl border border-rose-100 bg-rose-50/60 p-8 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 font-bold">
@@ -233,7 +271,7 @@ const MatchFeed = () => {
                   <MatchCard
                     key={match._id || match.id}
                     matchData={match}
-                    onBookmark={() => handleBookmark(match._id || match.id)}
+                    onBookmark={handleBookmark}
                   />
                 ))}
               </div>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 import { useAuth } from "../context/AuthContext";
+import { ProfileSkeleton } from "../components/common/Skeleton";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import ProfileCompletionMeter from "../components/profile/ProfileCompletionMeter";
 import LifestyleAttributes from "../components/profile/LifestyleAttributes";
@@ -75,33 +76,42 @@ function parseSleep(val) {
 }
 
 function ProfilePage() {
-  const { setUser } = useAuth();
+  const { user: authUser, setUser } = useAuth();
   const fileInputRef = useRef(null);
 
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialProfile = mapUserToProfile(authUser);
+  const [profile, setProfile] = useState(initialProfile);
+  const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
-  const [bioText, setBioText] = useState("");
+  const [bioText, setBioText] = useState(initialProfile?.bio || "");
   const [verificationStep, setVerificationStep] = useState(null);
-  const [editProfile, setEditProfile] = useState(null);
+  const [editProfile, setEditProfile] = useState(initialProfile);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
+  const isEditingRef = useRef(isEditing);
+  isEditingRef.current = isEditing;
+  const isEditingBioRef = useRef(isEditingBio);
+  isEditingBioRef.current = isEditingBio;
+
   useEffect(() => {
     let isMounted = true;
     async function loadProfile() {
-      setIsLoading(true);
       try {
         const user = await getMyProfile();
         if (isMounted && user) {
           setUser(user);
           const mapped = mapUserToProfile(user);
           setProfile(mapped);
-          setEditProfile(mapped);
-          setBioText(mapped.bio || "");
+          if (!isEditingRef.current) {
+            setEditProfile(mapped);
+          }
+          if (!isEditingBioRef.current) {
+            setBioText(mapped.bio || "");
+          }
         }
       } catch (err) {
         console.error("Failed to load user profile:", err);
@@ -255,14 +265,7 @@ function ProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <LoadingSpinner size="lg" />
-          <p className="text-sm font-medium text-gray-500">Loading your profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!profile) {
@@ -338,6 +341,8 @@ function ProfilePage() {
                     <img
                       src={profile.photoUrl}
                       alt={`${profile.name}'s profile`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (
