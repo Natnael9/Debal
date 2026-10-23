@@ -105,8 +105,8 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
       score,
       preferences: candidate.preferences,
       gender: candidate.gender
-    })),
     }));
+   
 
     // Cache merged matches in Redis for 1 hour (3600 seconds)
     try {
