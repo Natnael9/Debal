@@ -202,49 +202,50 @@ export async function getMessages(matchId, { before, limit = 50 } = {}) {
 }
 
 export async function getUserMatches(userId) {
-  const currentUser = await User.findById(userId).select('blockedUsers').lean();
-  const blockedIds = new Set((currentUser?.blockedUsers || []).map(id => id.toString()));
+  const userIdStr = userId.toString();
 
-  const matches = await Match.find({
-    $or: [{ userA: userId }, { userB: userId }],
-    status: 'active',
-  })
-    .populate('userA', 'name email photoUrl avatarUrl blockedUsers')
-    .populate('userB', 'name email photoUrl avatarUrl blockedUsers')
-    .sort({ updatedAt: -1 })
-    .lean();
+  // Step 1: Run Match query and currentUser lookup in parallel
+  const [currentUser, rawMatches] = await Promise.all([
+    User.findById(userId).select('blockedUsers').lean(),
+    Match.find({
+      $or: [{ userA: userId }, { userB: userId }],
+      status: 'active',
+    })
+      .select('userA userB status updatedAt')
+      .sort({ updatedAt: -1 })
+      .lean(),
+  ]);
 
-  if (!matches || matches.length === 0) {
+  if (!rawMatches || rawMatches.length === 0) {
     return [];
   }
 
-  // Fetch online users from Redis
-  let onlineSet = new Set();
-  try {
-    const redis = getRedisClient();
-    if (redis && redis.status === 'ready') {
-      const onlineList = await redis.smembers('online_users');
-      onlineSet = new Set(onlineList || []);
+  const blockedIds = new Set((currentUser?.blockedUsers || []).map((id) => id.toString()));
+
+  // Extract all partner IDs to fetch in a single parallel batch
+  const partnerIdMap = new Map();
+  for (const m of rawMatches) {
+    const userAStr = m.userA?.toString();
+    const userBStr = m.userB?.toString();
+    const partnerId = userAStr === userIdStr ? userBStr : userAStr;
+    if (partnerId) {
+      partnerIdMap.set(m._id.toString(), partnerId);
     }
-  } catch (e) {
-    // Non-blocking cache fallback
   }
 
-  const filteredMatches = matches.filter((m) => {
-    const userAId = m.userA?._id?.toString();
-    const partner = userAId === userId.toString() ? m.userB : m.userA;
-    return !!partner;
-  });
-
-  if (filteredMatches.length === 0) {
+  const uniquePartnerIds = Array.from(new Set(partnerIdMap.values()));
+  if (uniquePartnerIds.length === 0) {
     return [];
   }
 
-  const matchIds = filteredMatches.map((m) => m._id);
+  const matchIds = rawMatches.map((m) => m._id);
 
-  // Execute all 3 aggregations in parallel for optimal DB response time
-  const [lastMessages, unreadCounts, latestMeetups] = await Promise.all([
-    // 1. Bulk aggregate last message for each match
+  // Step 2: Execute partner lookups, all 3 message aggregations, and online check concurrently
+  const [partnerUsers, lastMessages, unreadCounts, latestMeetups, onlineList] = await Promise.all([
+    User.find({ _id: { $in: uniquePartnerIds } })
+      .select('name email photoUrl avatarUrl blockedUsers')
+      .lean(),
+
     Message.aggregate([
       { $match: { matchId: { $in: matchIds } } },
       { $sort: { createdAt: -1 } },
@@ -257,7 +258,6 @@ export async function getUserMatches(userId) {
       },
     ]),
 
-    // 2. Bulk aggregate unread message counts for each match
     Message.aggregate([
       {
         $match: {
@@ -273,7 +273,6 @@ export async function getUserMatches(userId) {
       },
     ]),
 
-    // 3. Bulk aggregate latest meetup for each match
     Meetup.aggregate([
       { $match: { matchId: { $in: matchIds } } },
       { $sort: { createdAt: -1 } },
@@ -284,23 +283,38 @@ export async function getUserMatches(userId) {
         },
       },
     ]),
+
+    (async () => {
+      try {
+        const redis = getRedisClient();
+        if (redis && redis.status === 'ready') {
+          return await redis.smembers('online_users');
+        }
+      } catch {
+        // Fallback gracefully
+      }
+      return [];
+    })(),
   ]);
 
+  const userMap = new Map(partnerUsers.map((u) => [u._id.toString(), u]));
+  const onlineSet = new Set(onlineList || []);
   const lastMsgMap = new Map(lastMessages.map((msg) => [msg._id.toString(), msg]));
   const unreadMap = new Map(
     unreadCounts.map((u) => [`${u._id.matchId.toString()}_${u._id.senderId.toString()}`, u.count])
   );
   const meetupMap = new Map(latestMeetups.map((m) => [m._id.toString(), m.doc]));
 
-  const results = filteredMatches.map((m) => {
-    const userAId = m.userA?._id?.toString();
-    const partner = userAId === userId.toString() ? m.userB : m.userA;
-    const partnerId = partner._id.toString();
+  const results = [];
+  for (const m of rawMatches) {
     const matchIdStr = m._id.toString();
+    const partnerId = partnerIdMap.get(matchIdStr);
+    const partner = partnerId ? userMap.get(partnerId) : null;
+    if (!partner) continue;
 
     const isBlockedByMe = blockedIds.has(partnerId);
     const isBlockedByPartner = (partner.blockedUsers || []).some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userIdStr
     );
     const isBlocked = isBlockedByMe || isBlockedByPartner;
 
@@ -308,13 +322,13 @@ export async function getUserMatches(userId) {
     const unreadCount = unreadMap.get(`${matchIdStr}_${partnerId}`) || 0;
     const latestMeetup = meetupMap.get(matchIdStr);
 
-    return {
+    results.push({
       id: matchIdStr,
       matchId: matchIdStr,
       userId: partnerId,
-      name: partner?.name || 'Chat Partner',
-      avatarUrl: partner?.photoUrl || partner?.avatarUrl || '',
-      avatarText: (partner?.name || 'C')[0].toUpperCase(),
+      name: partner.name || 'Chat Partner',
+      avatarUrl: partner.photoUrl || partner.avatarUrl || '',
+      avatarText: (partner.name || 'C')[0].toUpperCase(),
       isOnline: onlineSet.has(partnerId),
       isBlocked: isBlocked,
       isBlockedByMe: isBlockedByMe,
@@ -329,8 +343,8 @@ export async function getUserMatches(userId) {
       unreadCount: unreadCount,
       user: partner,
       meetup: latestMeetup || { status: 'none' },
-    };
-  });
+    });
+  }
 
   return results;
 }

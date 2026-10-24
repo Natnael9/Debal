@@ -8,8 +8,8 @@ export async function connectDatabase() {
   mongoose.set('strictQuery', true);
 
   const opts = {
-    serverSelectionTimeoutMS: 3000,
-    connectTimeoutMS: 3000,
+    serverSelectionTimeoutMS: 12000,
+    connectTimeoutMS: 12000,
     maxPoolSize: 10,
     minPoolSize: 2,
   };
