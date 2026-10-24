@@ -1,5 +1,6 @@
 import { verifyAccessToken } from '../../shared/utils/jwt.util.js';
 import User from '../users/users.model.js';
+import { getRedisClient } from '../../config/redis.js';
 
 export async function authMiddleware(request, reply) {
   const authHeader = request.headers.authorization;
@@ -33,10 +34,38 @@ export async function authMiddleware(request, reply) {
     });
   }
 
-  // Fast lean user lookup
-  const user = await User.findById(payload.sub)
-    .select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires')
-    .lean();
+  const cacheKey = `user_session:${payload.sub}`;
+  let user = null;
+
+  try {
+    const redis = getRedisClient();
+    if (redis && redis.status === 'ready') {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        user = JSON.parse(cached);
+      }
+    }
+  } catch {
+    // Non-blocking cache fallback
+  }
+
+  if (!user) {
+    // Fast lean user lookup
+    user = await User.findById(payload.sub)
+      .select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires')
+      .lean();
+
+    if (user && !user.suspended) {
+      try {
+        const redis = getRedisClient();
+        if (redis && redis.status === 'ready') {
+          await redis.setex(cacheKey, 120, JSON.stringify(user)); // 2-min TTL
+        }
+      } catch {
+        // Cache write fallback
+      }
+    }
+  }
 
   if (!user) {
     return reply.status(401).send({

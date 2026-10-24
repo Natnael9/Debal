@@ -20,10 +20,10 @@ async function getCandidatePoolA(user) {
 
   const projection = 'name age gender bio avatarUrl housingStatus location preferences verificationStatus';
 
-  // Fast indexed MongoDB query
+  // Fast indexed MongoDB query (limit to top 40 candidates for optimal network transfer)
   const candidates = await User.find(filterQuery)
     .select(projection)
-    .limit(100)
+    .limit(40)
     .lean();
 
   return candidates || [];
@@ -152,7 +152,7 @@ async function getCandidatePoolB(user) {
 
   const candidates = await User.find(filterQuery)
     .select(projection)
-    .limit(100)
+    .limit(40)
     .lean();
 
   return candidates || [];

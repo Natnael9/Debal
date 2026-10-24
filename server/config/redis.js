@@ -17,7 +17,8 @@ export async function connectRedis() {
     maxRetriesPerRequest: 1,
     lazyConnect: true,
     enableOfflineQueue: false,
-    connectTimeout: 2000,
+    connectTimeout: 1500,
+    commandTimeout: 800,
     keepAlive: 5000,
     retryStrategy: (times) => {
       if (times > 3) return null; // stop retrying quickly
