@@ -12,15 +12,18 @@ const VerificationWizard = () => {
 
   // Handlers to move between steps
   const handleIDSubmitSuccess = () => setStep(2);
+  
   const handleOTPSubmitSuccess = (status, updatedUser) => {
     setVerificationStatus(status);
-    if (updatedUser) {
-      setUser(updatedUser);
-    } else if (status === 'verified') {
-      setUser((prev) => (prev ? { ...prev, verificationStatus: 'verified' } : null));
-    }
+    // Safely merge user state instead of overwriting questionnaireCompleted
+    setUser((prev) => ({
+      ...(prev || {}),
+      ...(updatedUser || {}),
+      verificationStatus: status === 'verified' ? 'verified' : (updatedUser?.verificationStatus || prev?.verificationStatus),
+    }));
     setStep(3);
   };
+
   const handleResubmit = () => setStep(1);
 
   return (

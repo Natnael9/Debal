@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from './common/LoadingSpinner';
 
-const VerificationStatusScreen = ({ status, onResubmit }) => {
+const VerificationStatusScreen = ({ status, onResubmit, onClose }) => {
   const navigate = useNavigate();
 
   // If the status is pending (e.g., waiting on manual review or a slow API)
@@ -54,7 +54,13 @@ const VerificationStatusScreen = ({ status, onResubmit }) => {
         Thank you for helping keep the Debal community safe. You are now ready to find your ideal roommate.
       </p>
       <button
-        onClick={() => navigate('/app/dashboard')}
+        onClick={() => {
+          if (onClose) {
+            onClose();
+          } else {
+            navigate('/app/dashboard', { replace: true });
+          }
+        }}
         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none transition-colors"
       >
         Go to Match Feed
