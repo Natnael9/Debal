@@ -23,6 +23,8 @@ const SettingsPage = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [generalMessage, setGeneralMessage] = useState({ type: "", text: "" });
+  //delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -275,6 +277,35 @@ const SettingsPage = () => {
         </div>
 
       </div>
+      {/* Danger Zone Card */}
+  <div className="rounded-3xl border border-rose-100 bg-rose-50/30 p-5 shadow-sm sm:p-7 space-y-4">
+    <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+        <h2 className="text-xs font-bold uppercase tracking-wider text-rose-800">Danger Zone</h2>
+      </div>
+    </div>
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h3 className="text-xs font-bold sm:text-sm text-gray-900">Delete Account</h3>
+        <p className="mt-0.5 text-[11px] leading-relaxed sm:text-xs text-gray-500">
+          Permanently delete your account and all associated data.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setIsDeleteModalOpen(true)}
+        className="rounded-xl bg-white border border-rose-200 hover:bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-600 shadow-2xs transition shrink-0 cursor-pointer"
+      >
+        Delete Account
+      </button>
+    </div>
+  </div>
+
+  <DeleteAccountModal
+    isOpen={isDeleteModalOpen}
+    onClose={() => setIsDeleteModalOpen(false)}
+  />
     </div>
   );
 };
