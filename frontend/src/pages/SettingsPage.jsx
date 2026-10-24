@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { updateUserSettings } from "../services/settingsService";
+import DeleteAccountModal from "../components/DeleteAccountModal";
 
 const SettingsPage = () => {
   const { user, setUser } = useAuth();
 
-  const [isPaused, setIsPaused] = useState(user?.isPaused || false);
+  const [isPaused, setIsPaused] = useState(false);
   const [preferences, setPreferences] = useState({
-    newChatRequest: user?.notificationPreferences?.newChatRequest ?? true,
-    requestAccepted: user?.notificationPreferences?.requestAccepted ?? true,
-    newMessage: user?.notificationPreferences?.newMessage ?? true,
-    meetupUpdate: user?.notificationPreferences?.meetupUpdate ?? true,
-    reportStatus: user?.notificationPreferences?.reportStatus ?? true,
+    newChatRequest: true,
+    requestAccepted: true,
+    newMessage: true,
+    meetupUpdate: true,
+    reportStatus: true,
   });
 
   // Password form state
@@ -23,7 +24,6 @@ const SettingsPage = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [generalMessage, setGeneralMessage] = useState({ type: "", text: "" });
-  //delete modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
@@ -43,21 +43,17 @@ const SettingsPage = () => {
 
   const handleTogglePause = async () => {
     const nextPaused = !isPaused;
-    setIsPaused(nextPaused); // Update local state immediately so toggle stays in place
+    setIsPaused(nextPaused);
     setGeneralMessage({ 
       type: "success", 
       text: nextPaused ? "Profile paused successfully." : "Profile reactivated." 
     });
     
-    // Once your teammate builds the backend field for isPaused, 
-    // you can uncomment the API call below:
-    /*
     try {
       await updateUserSettings({ isPaused: nextPaused });
     } catch (err) {
       setIsPaused(!nextPaused); // revert on error
     }
-    */
   };
 
   const handleToggleNotification = async (category) => {
@@ -93,7 +89,6 @@ const SettingsPage = () => {
 
     setPasswordLoading(true);
     try {
-      // If the backend route isn't ready yet, this will catch gracefully
       setPasswordMessage({ type: "success", text: "Password changed successfully!" });
       setCurrentPassword("");
       setNewPassword("");
@@ -276,36 +271,37 @@ const SettingsPage = () => {
           </form>
         </div>
 
-      </div>
-      {/* Danger Zone Card */}
-  <div className="rounded-3xl border border-rose-100 bg-rose-50/30 p-5 shadow-sm sm:p-7 space-y-4">
-    <div className="flex items-center justify-between border-b border-rose-100 pb-3">
-      <div className="flex items-center gap-2">
-        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
-        <h2 className="text-xs font-bold uppercase tracking-wider text-rose-800">Danger Zone</h2>
-      </div>
-    </div>
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <h3 className="text-xs font-bold sm:text-sm text-gray-900">Delete Account</h3>
-        <p className="mt-0.5 text-[11px] leading-relaxed sm:text-xs text-gray-500">
-          Permanently delete your account and all associated data.
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={() => setIsDeleteModalOpen(true)}
-        className="rounded-xl bg-white border border-rose-200 hover:bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-600 shadow-2xs transition shrink-0 cursor-pointer"
-      >
-        Delete Account
-      </button>
-    </div>
-  </div>
+        {/* Danger Zone Card */}
+        <div className="rounded-3xl border border-rose-100 bg-rose-50/30 p-5 shadow-sm sm:p-7 space-y-4">
+          <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-rose-800">Danger Zone</h2>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xs font-bold sm:text-sm text-gray-900">Delete Account</h3>
+              <p className="mt-0.5 text-[11px] leading-relaxed sm:text-xs text-gray-500">
+                Permanently delete your account and all associated data.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="rounded-xl bg-white border border-rose-200 hover:bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-600 shadow-2xs transition shrink-0 cursor-pointer"
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
 
-  <DeleteAccountModal
-    isOpen={isDeleteModalOpen}
-    onClose={() => setIsDeleteModalOpen(false)}
-  />
+      </div>
+
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 };
