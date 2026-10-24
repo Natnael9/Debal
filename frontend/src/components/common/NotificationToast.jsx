@@ -7,6 +7,7 @@ const NotificationToast = () => {
   const [toast, setToast] = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  
 
   useEffect(() => {
     const socket = getSocket();
