@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import NotificationToast from "./NotificationToast"; // Import the toast
 
 function AppLayout({ children }) {
   const location = useLocation();
@@ -19,6 +20,9 @@ function AppLayout({ children }) {
       </main>
 
       {!hideFooter && <Footer />}
+
+      {/* Global Real-Time Socket Toast */}
+      <NotificationToast />
     </div>
   );
 }
