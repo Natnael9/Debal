@@ -16,7 +16,7 @@ export default defineConfig({
     proxy: {
       // Forward all /api/* requests to the Fastify backend
       "/api": { 
-        target: "http://localhost:4000",
+        target: "http://localhost:4001",
         changeOrigin: true,
       },
       // Proxy Socket.IO WebSocket connections
