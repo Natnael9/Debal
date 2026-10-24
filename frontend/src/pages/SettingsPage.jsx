@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { updateUserSettings } from "../services/settingsService";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 
+
 const SettingsPage = () => {
   const { user, setUser } = useAuth();
 
