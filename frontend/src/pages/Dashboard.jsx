@@ -122,6 +122,20 @@ const MatchFeed = () => {
     }
   }, []);
 
+  // Track sent connection requests across optimistic cache & local results
+  const handleConnect = useCallback((candidateId) => {
+    setResults((prev) =>
+      prev.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+      )
+    );
+    if (cachedFeed) {
+      cachedFeed = cachedFeed.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+      );
+    }
+  }, []);
+
   const handleUnfreeze = async () => {
     setIsUnfreezing(true);
     try {
@@ -317,6 +331,7 @@ const MatchFeed = () => {
                     key={match._id || match.id}
                     matchData={match}
                     onBookmark={handleBookmark}
+                    onConnect={handleConnect}
                   />
                 ))}
               </div>

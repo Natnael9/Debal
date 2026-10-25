@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import Bookmark from './bookmarks.model.js';
 import User from '../users/users.model.js';
+import { MatchRequest } from '../matchmaking/matchrequest.model.js';
+import { Match } from '../chat/matches.model.js';
 
 class BookmarksError extends Error {
   constructor(message, statusCode = 400) {
@@ -43,15 +45,32 @@ async function addBookmark(userId, bookmarkedUserId) {
  * info rather than bare ids.
  */
 async function listBookmarks(userId) {
-  const bookmarks = await Bookmark.find({ userId })
-    .sort({ createdAt: -1 })
-    .populate('bookmarkedUserId', 'name age gender bio avatarUrl housingStatus location preferences')
-    .lean();
+  const [bookmarks, sentRequests, activeMatches] = await Promise.all([
+    Bookmark.find({ userId })
+      .sort({ createdAt: -1 })
+      .populate('bookmarkedUserId', 'name age gender bio avatarUrl housingStatus location preferences')
+      .lean(),
+    MatchRequest.find({
+      fromUser: userId,
+      status: { $in: ['pending', 'accepted'] },
+    }).select('toUser').lean(),
+    Match.find({
+      $or: [{ userA: userId }, { userB: userId }],
+      status: 'active',
+    }).select('userA userB').lean(),
+  ]);
+
+  const sentTargetIds = new Set(sentRequests.map((r) => r.toUser.toString()));
+  for (const m of activeMatches) {
+    const otherId = m.userA.toString() === userId.toString() ? m.userB.toString() : m.userA.toString();
+    sentTargetIds.add(otherId);
+  }
 
   return bookmarks
     .filter((b) => b.bookmarkedUserId) // guard against a bookmarked user that was later deleted
     .map((b) => {
       const u = b.bookmarkedUserId;
+      const uIdStr = u._id.toString();
       return {
         bookmarkId: b._id,
         bookmarkedAt: b.createdAt,
@@ -68,6 +87,7 @@ async function listBookmarks(userId) {
           preferences: u.preferences || {},
           budgetMax: u.preferences?.budgetMax,
           budgetMin: u.preferences?.budgetMin,
+          isRequestSent: sentTargetIds.has(uIdStr),
         },
       };
     });
