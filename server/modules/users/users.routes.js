@@ -6,6 +6,7 @@ import {
   freezeAccountHandler,
   unfreezeAccountHandler,
   deleteAccountHandler,
+  changePasswordHandler,
 } from './users.controller.js';
 
 export default async function usersRoutes(fastify) {
@@ -33,6 +34,24 @@ export default async function usersRoutes(fastify) {
     '/api/v1/users/me',
     { preHandler: authMiddleware },
     updateProfileHandler
+  );
+
+  fastify.patch(
+    '/api/v1/users/settings',
+    { preHandler: authMiddleware },
+    updateProfileHandler
+  );
+
+  fastify.post(
+    '/api/v1/users/me/password',
+    { preHandler: authMiddleware },
+    changePasswordHandler
+  );
+
+  fastify.post(
+    '/api/v1/users/change-password',
+    { preHandler: authMiddleware },
+    changePasswordHandler
   );
 
   fastify.post(

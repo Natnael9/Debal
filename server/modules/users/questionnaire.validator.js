@@ -66,14 +66,25 @@ export const profileUpdateSchema = z.object({
       petsOk: z.boolean().optional(),
     })
     .optional(),
+  phone: z.string().trim().max(35).optional(),
   isFrozen: z.boolean().optional(),
   isPaused: z.boolean().optional(),
+  pauseProfile: z.boolean().optional(),
   notificationPreferences: z
     .object({
       newChatRequest: z.boolean().optional(),
       requestAccepted: z.boolean().optional(),
       newMessage: z.boolean().optional(),
       meetupUpdate: z.boolean().optional(),
+      reportStatus: z.boolean().optional(),
+    })
+    .optional(),
+  notificationSettings: z
+    .object({
+      chatRequests: z.boolean().optional(),
+      acceptedRequests: z.boolean().optional(),
+      messages: z.boolean().optional(),
+      meetupUpdates: z.boolean().optional(),
       reportStatus: z.boolean().optional(),
     })
     .optional(),
