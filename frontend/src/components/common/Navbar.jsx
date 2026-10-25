@@ -54,18 +54,42 @@ function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
 
-        {/* Logo - click navigates to Dashboard if signed in, or Landing Page if guest */}
-        <NavLink
-          to={isAuthenticated ? "/app/dashboard" : "/"}
-          className="flex items-center gap-2"
-          onClick={closeMenu}
-        >
-          <img
-            src={logo}
-            alt="Debal"
-            className="h-8 w-auto object-contain"
-          />
-        </NavLink>
+        {/* ================================
+            MOBILE HAMBURGER BUTTON (LEFT on mobile)
+        ================================= */}
+        <div className="flex md:hidden items-center justify-start w-9">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="rounded-xl border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 focus:outline-none"
+            aria-label="Toggle navigation menu"
+          >
+            {isMenuOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Logo - Centered on mobile, Left on desktop */}
+        <div className="flex-1 md:flex-initial flex items-center justify-center md:justify-start">
+          <NavLink
+            to={isAuthenticated ? "/app/dashboard" : "/"}
+            className="flex items-center gap-2"
+            onClick={closeMenu}
+          >
+            <img
+              src={logo}
+              alt="Debal"
+              className="h-8 w-auto object-contain"
+            />
+          </NavLink>
+        </div>
 
         {/* ================================
             DESKTOP NAVIGATION
@@ -250,25 +274,10 @@ function Navbar() {
         </div>
 
         {/* ================================
-            MOBILE HAMBURGER BUTTON
+            MOBILE THEME TOGGLE (RIGHT on mobile)
         ================================= */}
-        <div className="flex md:hidden items-center gap-1">
+        <div className="flex md:hidden items-center justify-end w-9">
           <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="rounded-xl border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 focus:outline-none"
-          >
-            {isMenuOpen ? (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
         </div>
       </div>
 
