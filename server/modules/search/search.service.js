@@ -28,6 +28,7 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
     questionnaireCompleted: true,
     verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
+    isFrozen: { $ne: true },
   };
 
   if (filters.status && filters.status !== 'any') {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { updateUserSettings } from "../services/settingsService";
+import { updateUserSettings, freezeAccount, unfreezeAccount } from "../services/settingsService";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 
 
@@ -29,7 +29,7 @@ const SettingsPage = () => {
 
   useEffect(() => {
     if (user) {
-      setIsPaused(Boolean(user.isPaused));
+      setIsPaused(Boolean(user.isFrozen ?? user.isPaused));
       if (user.notificationPreferences) {
         setPreferences({
           newChatRequest: user.notificationPreferences.newChatRequest ?? true,
@@ -45,15 +45,30 @@ const SettingsPage = () => {
   const handleTogglePause = async () => {
     const nextPaused = !isPaused;
     setIsPaused(nextPaused);
-    setGeneralMessage({ 
-      type: "success", 
-      text: nextPaused ? "Profile paused successfully." : "Profile reactivated." 
-    });
-    
+    setIsSaving(true);
+    setGeneralMessage({ type: "", text: "" });
+
     try {
-      await updateUserSettings({ isPaused: nextPaused });
+      const updatedUser = nextPaused ? await freezeAccount() : await unfreezeAccount();
+      if (updatedUser) {
+        setUser(updatedUser);
+      } else {
+        setUser((prev) => (prev ? { ...prev, isFrozen: nextPaused, isPaused: nextPaused } : prev));
+      }
+      setGeneralMessage({
+        type: "success",
+        text: nextPaused
+          ? "Account frozen successfully. Your profile is now hidden from the feed until manually unfrozen."
+          : "Account reactivated successfully. Your profile is visible in the feed again.",
+      });
     } catch (err) {
       setIsPaused(!nextPaused); // revert on error
+      setGeneralMessage({
+        type: "error",
+        text: err.message || "Failed to update account freeze status.",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -160,19 +175,27 @@ const SettingsPage = () => {
           </div>
         )}
 
-        {/* Profile Visibility Card */}
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7">
-          <div className="mb-4 border-b border-gray-100 pb-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-700">Profile Visibility</h2>
+        {/* Account Status & Visibility Card */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-700">Account Status & Visibility</h2>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+              isPaused 
+                ? 'bg-amber-50 text-amber-800 border border-amber-200' 
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+            }`}>
+              <span className={`h-2 w-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              {isPaused ? 'Frozen / Paused' : 'Active on Feed'}
+            </span>
           </div>
           <SettingRow
-            title="Pause My Profile"
-            description="Temporarily hide your profile from the match feed without deleting your account."
+            title="Freeze / Pause Account"
+            description="Temporarily remove your profile from the match feed and search. Your matches, chats, and data will remain safe until you manually unfreeze."
             checked={isPaused}
             onChange={handleTogglePause}
             icon={
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             }
           />

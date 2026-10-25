@@ -54,6 +54,7 @@ function mapUserToProfile(user) {
 
     photoUrl: user.avatarUrl || "",
     verificationStatus: user.verificationStatus || "unverified",
+    isFrozen: Boolean(user.isFrozen || user.isPaused),
     teamUpEnabled: Boolean(user.teamUpEnabled),
     profileCompletion: user.profileCompletionPercent || 50,
   };
@@ -243,10 +244,21 @@ function ProfilePage() {
   
   const handleIDSubmit = () => {
     setProfile((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
+    setUser((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
     setVerificationStep("OTP_FORM");
   };
   
-  const handleOTPSuccess = () => {
+  const handleOTPSuccess = (status = "verified", updatedUser = null) => {
+    const freshUser = updatedUser || { verificationStatus: "verified" };
+    setUser((prev) => ({
+      ...(prev || {}),
+      ...freshUser,
+      verificationStatus: "verified",
+    }));
+    setProfile((prev) => ({
+      ...(prev || {}),
+      verificationStatus: "verified",
+    }));
     setVerificationStep("STATUS_SCREEN");
   };
   

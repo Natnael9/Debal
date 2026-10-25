@@ -66,4 +66,15 @@ export const profileUpdateSchema = z.object({
       petsOk: z.boolean().optional(),
     })
     .optional(),
+  isFrozen: z.boolean().optional(),
+  isPaused: z.boolean().optional(),
+  notificationPreferences: z
+    .object({
+      newChatRequest: z.boolean().optional(),
+      requestAccepted: z.boolean().optional(),
+      newMessage: z.boolean().optional(),
+      meetupUpdate: z.boolean().optional(),
+      reportStatus: z.boolean().optional(),
+    })
+    .optional(),
 });

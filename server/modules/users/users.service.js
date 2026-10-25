@@ -1,6 +1,27 @@
 import User from './users.model.js';
+import Bookmark from '../bookmarks/bookmarks.model.js';
+import Match from '../chat/matches.model.js';
+import Message from '../chat/message.model.js';
+import MatchRequest from '../matchmaking/matchrequest.model.js';
+import Meetup from '../meetups/meetups.model.js';
+import Report from '../reports/reports.model.js';
+import { VerificationRequest } from '../verification/verification.model.js';
 import { calculateProfileCompletion } from './completion.util.js';
 import { enqueuePhotoModerationJob } from '../moderation/moderation.queue.js';
+import { getRedisClient, isRedisHealthy } from '../../config/redis.js';
+
+async function invalidateUserCaches(userId) {
+  if (!userId) return;
+  try {
+    if (isRedisHealthy()) {
+      const redis = getRedisClient();
+      const uid = userId.toString();
+      await redis.del(`user_session:${uid}`, `match_feed:${uid}`);
+    }
+  } catch (err) {
+    console.warn('[users] Failed to invalidate Redis user cache:', err.message);
+  }
+}
 
 class UsersError extends Error {
   constructor(message, statusCode = 400) {
@@ -47,6 +68,7 @@ async function submitQuestionnaire(userId, data) {
   user.profileCompletionPercent = calculateProfileCompletion(user);
 
   await user.save();
+  await invalidateUserCaches(userId);
   return user;
 }
 
@@ -100,9 +122,111 @@ async function updateProfile(userId, data) {
 
   if (maxDistance !== undefined) user.maxDistance = maxDistance;
 
+  if (data.isFrozen !== undefined || data.isPaused !== undefined) {
+    const nextVal = Boolean(data.isFrozen !== undefined ? data.isFrozen : data.isPaused);
+    user.isFrozen = nextVal;
+    user.frozenAt = nextVal ? (user.frozenAt || new Date()) : null;
+  }
+
+  if (data.notificationPreferences) {
+    user.notificationPreferences = {
+      ...(user.notificationPreferences?.toObject?.() || user.notificationPreferences || {}),
+      ...data.notificationPreferences,
+    };
+  }
+
   user.profileCompletionPercent = calculateProfileCompletion(user);
   await user.save();
+  await invalidateUserCaches(userId);
   return user;
+}
+
+async function freezeAccount(userId) {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      isFrozen: true,
+      frozenAt: new Date(),
+    },
+    { new: true }
+  ).select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires');
+
+  if (!user) {
+    throw new UsersError('User not found.', 404);
+  }
+
+  await invalidateUserCaches(userId);
+  return user;
+}
+
+async function unfreezeAccount(userId) {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      isFrozen: false,
+      frozenAt: null,
+    },
+    { new: true }
+  ).select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires');
+
+  if (!user) {
+    throw new UsersError('User not found.', 404);
+  }
+
+  await invalidateUserCaches(userId);
+  return user;
+}
+
+/**
+ * Permanently delete user account and cascade purge all associated data across the entire database.
+ */
+async function deleteAccount(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new UsersError('User not found.', 404);
+  }
+
+  // 1. Delete all bookmarks created by or targeting this user
+  await Bookmark.deleteMany({
+    $or: [{ userId }, { bookmarkedUserId: userId }],
+  });
+
+  // 2. Delete all match requests sent by or sent to this user
+  await MatchRequest.deleteMany({
+    $or: [{ fromUser: userId }, { toUser: userId }],
+  });
+
+  // 3. Find and delete all matches involving this user, plus associated messages and meetups
+  const matches = await Match.find({
+    $or: [{ userA: userId }, { userB: userId }],
+  }).select('_id');
+
+  const matchIds = matches.map((m) => m._id);
+  if (matchIds.length > 0) {
+    await Message.deleteMany({ matchId: { $in: matchIds } });
+    await Meetup.deleteMany({ matchId: { $in: matchIds } });
+    await Match.deleteMany({ _id: { $in: matchIds } });
+  }
+
+  // Also clean up any orphan messages or meetups directly attributed to this user
+  await Message.deleteMany({ senderId: userId });
+  await Meetup.deleteMany({ proposedBy: userId });
+
+  // 4. Delete verification requests
+  await VerificationRequest.deleteMany({ userId });
+
+  // 5. Delete safety reports involving this user
+  await Report.deleteMany({
+    $or: [{ reporterId: userId }, { reportedUserId: userId }],
+  });
+
+  // 6. Delete the user document completely
+  await User.findByIdAndDelete(userId);
+
+  // 7. Invalidate caches
+  await invalidateUserCaches(userId);
+
+  return { success: true };
 }
 
 async function getUserProfileById(userId) {
@@ -115,4 +239,12 @@ async function getUserProfileById(userId) {
   return user;
 }
 
-export { submitQuestionnaire, updateProfile, getUserProfileById, UsersError };
+export {
+  submitQuestionnaire,
+  updateProfile,
+  freezeAccount,
+  unfreezeAccount,
+  deleteAccount,
+  getUserProfileById,
+  UsersError,
+};
