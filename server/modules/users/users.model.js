@@ -41,6 +41,7 @@ const userSchema = new Schema(
     gender: { type: String, enum: ['male', 'female'] },
     bio: { type: String, maxlength: 500 },
     avatarUrl: String,
+    phone: { type: String, trim: true },
 
     // ---- Housing status & team-up (FR-3.2, FR-3.7) ----
     housingStatus: {
@@ -104,11 +105,19 @@ const userSchema = new Schema(
       meetupUpdate: { type: Boolean, default: true },
       reportStatus: { type: Boolean, default: true },
     },
+    notificationSettings: {
+      chatRequests: { type: Boolean, default: true },
+      acceptedRequests: { type: Boolean, default: true },
+      messages: { type: Boolean, default: true },
+      meetupUpdates: { type: Boolean, default: true },
+      reportStatus: { type: Boolean, default: true },
+    },
 
     // ---- Social ----
     blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 
     // ---- Account freeze / pause state ----
+    pauseProfile: { type: Boolean, default: false },
     isFrozen: { type: Boolean, default: false },
     frozenAt: Date,
   },
@@ -117,14 +126,38 @@ const userSchema = new Schema(
     toJSON: {
       virtuals: true,
       transform: (doc, ret) => {
-        ret.isPaused = Boolean(ret.isFrozen);
+        const isPausedVal = Boolean(ret.pauseProfile ?? ret.isFrozen);
+        ret.isPaused = isPausedVal;
+        ret.pauseProfile = isPausedVal;
+        ret.isFrozen = isPausedVal;
+        if (!ret.notificationSettings && ret.notificationPreferences) {
+          ret.notificationSettings = {
+            chatRequests: ret.notificationPreferences.newChatRequest ?? true,
+            acceptedRequests: ret.notificationPreferences.requestAccepted ?? true,
+            messages: ret.notificationPreferences.newMessage ?? true,
+            meetupUpdates: ret.notificationPreferences.meetupUpdate ?? true,
+            reportStatus: ret.notificationPreferences.reportStatus ?? true,
+          };
+        }
         return ret;
       },
     },
     toObject: {
       virtuals: true,
       transform: (doc, ret) => {
-        ret.isPaused = Boolean(ret.isFrozen);
+        const isPausedVal = Boolean(ret.pauseProfile ?? ret.isFrozen);
+        ret.isPaused = isPausedVal;
+        ret.pauseProfile = isPausedVal;
+        ret.isFrozen = isPausedVal;
+        if (!ret.notificationSettings && ret.notificationPreferences) {
+          ret.notificationSettings = {
+            chatRequests: ret.notificationPreferences.newChatRequest ?? true,
+            acceptedRequests: ret.notificationPreferences.requestAccepted ?? true,
+            messages: ret.notificationPreferences.newMessage ?? true,
+            meetupUpdates: ret.notificationPreferences.meetupUpdate ?? true,
+            reportStatus: ret.notificationPreferences.reportStatus ?? true,
+          };
+        }
         return ret;
       },
     },
@@ -132,13 +165,14 @@ const userSchema = new Schema(
 );
 
 userSchema.virtual('isPaused').get(function () {
-  return Boolean(this.isFrozen);
+  return Boolean(this.pauseProfile ?? this.isFrozen);
 });
 
 // ---- Compound & Special Indexes for Fast Lookups ----
 userSchema.index({ location: '2dsphere' }, { sparse: true });
-userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1, isFrozen: 1 });
+userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1, isFrozen: 1, pauseProfile: 1 });
 userSchema.index({ isFrozen: 1 });
+userSchema.index({ pauseProfile: 1 });
 
 export const User = mongoose.model('User', userSchema);
 export default User;
