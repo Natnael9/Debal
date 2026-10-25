@@ -488,10 +488,10 @@ function ProfilePage() {
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-gray-900 capitalize">
+                      <h4 className="text-sm font-bold text-black capitalize">
                         {profile.verificationStatus === 'verified' ? 'Verified Account' : 'Verification Needed'}
                       </h4>
-                      <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      <p className="text-xs text-black mt-0.5 leading-relaxed font-medium">
                         {profile.verificationStatus === 'verified'
                           ? 'Your National ID record is verified. Verified profiles receive 3x more match responses!'
                           : 'Verify your ID to increase trust and unlock all chat & roommate matching features.'}
@@ -628,7 +628,7 @@ function ProfilePage() {
                 ) : (
                   /* ── READ BIO VIEW ─────────────────────────────────────── */
                   <div className="rounded-2xl border border-blue-50 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 p-5">
-                    <p className="text-sm leading-relaxed text-gray-800 whitespace-pre-line font-normal">
+                    <p className="text-sm leading-relaxed text-black whitespace-pre-line font-medium">
                       {profile.bio ? (
                         profile.bio
                       ) : (

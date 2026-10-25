@@ -21,12 +21,12 @@ function ProfileCompletionMeter({ percentage = 0 }) {
               />
             </svg>
           </div>
-          <span className="text-xs font-bold text-gray-800">
+          <span className="text-xs font-bold text-black">
             Profile Completion
           </span>
         </div>
 
-        <span className="rounded-full border border-blue-100 bg-white px-2 py-0.5 text-[10px] font-bold text-blue-900 shadow-2xs">
+        <span className="rounded-full border border-blue-100 bg-white px-2 py-0.5 text-[10px] font-bold text-black shadow-2xs">
           {safePercentage}%
         </span>
       </div>
