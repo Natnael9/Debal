@@ -57,6 +57,7 @@ const BookmarksPage = () => {
               location: u.location?.displayName || (typeof u.location === 'string' ? u.location : 'Addis Ababa'),
               preferences: u.preferences || {},
               isBookmarked: true,
+              isRequestSent: Boolean(u.isRequestSent),
             };
           });
 
@@ -99,6 +100,19 @@ const BookmarksPage = () => {
     }
   }, []);
 
+  const handleConnect = React.useCallback((candidateId) => {
+    setBookmarks((prev) =>
+      prev.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+      )
+    );
+    if (cachedBookmarks) {
+      cachedBookmarks = cachedBookmarks.map((c) =>
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+      );
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -136,6 +150,7 @@ const BookmarksPage = () => {
                 key={match._id}
                 matchData={match}
                 onBookmark={handleRemoveBookmark}
+                onConnect={handleConnect}
               />
             ))}
           </div>
