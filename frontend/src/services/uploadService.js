@@ -23,7 +23,8 @@
  * { url, key }.
  */
 
-const UPLOAD_ENDPOINT = "/api/v1/uploads/photo";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "";
+const UPLOAD_ENDPOINT = `${API_URL}/api/v1/uploads/photo`;
 
 export async function uploadPhoto(file, { signal } = {}) {
   const formData = new FormData();

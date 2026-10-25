@@ -111,21 +111,27 @@ export function AuthProvider({ children }) {
       return { success: false, error: strength.errors[0] || "Password does not meet strength requirements" };
     }
 
+    setLoading(true);
     try {
       await apiPost("/auth/register", { name, email, password });
       // Auto-login after successful registration
       return await _doLogin(email, password);
     } catch (error) {
       return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   // ─── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async ({ email, password, rememberMe }) => {
+    setLoading(true);
     try {
       return await _doLogin(email, password, rememberMe);
     } catch (error) {
       return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
     }
   }, []);
 

@@ -69,6 +69,10 @@ async function fetchImageBuffer(imageUrl) {
     const arrayBuffer = await res.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
+  if (imageUrl.startsWith('data:')) {
+    const base64Data = imageUrl.split(',')[1] || '';
+    return Buffer.from(base64Data, 'base64');
+  }
   const fs = await import('fs/promises');
   return fs.readFile(imageUrl);
 }

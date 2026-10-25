@@ -65,9 +65,9 @@ function LoginForm() {
 
       {/* Error message */}
       {error && (
-        <div className="mb-3 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs font-semibold text-rose-700 dark:text-rose-200 shadow-2xs">
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
           {error}
-        </div>
+        </p>
       )}
 
       {/* Form */}
