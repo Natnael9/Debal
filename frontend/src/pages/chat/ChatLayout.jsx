@@ -723,7 +723,7 @@ function ChatLayout() {
   }
 
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/80 p-3 sm:p-6 lg:p-8">
+    <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/80 dark:bg-[#0b1017] p-3 sm:p-6 lg:p-8">
 
       {/* MOBILE SIDEBAR OVERLAY */}
       {isSidebarOpen && (
