@@ -51,9 +51,9 @@ function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
 
-        {/* Logo - click navigates to Landing Page */}
+        {/* Logo - click navigates to Dashboard if signed in, or Landing Page if guest */}
         <NavLink
-          to="/"
+          to={isAuthenticated ? "/app/dashboard" : "/"}
           className="flex items-center gap-2"
           onClick={closeMenu}
         >
@@ -70,10 +70,6 @@ function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           {isAuthenticated && (
             <>
-              <NavLink to="/" className={navLinkStyle}>
-                Home
-              </NavLink>
-
               <NavLink to="/app/dashboard" className={navLinkStyle}>
                 Find Matches
               </NavLink>
@@ -249,10 +245,6 @@ function Navbar() {
             
             {isAuthenticated && (
               <>
-                <NavLink to="/" className={mobileNavLinkStyle} onClick={closeMenu}>
-                  Home
-                </NavLink>
-
                 <NavLink to="/app/dashboard" className={mobileNavLinkStyle} onClick={closeMenu}>
                   Find Matches
                 </NavLink>

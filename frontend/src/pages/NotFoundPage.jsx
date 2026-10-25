@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function NotFoundPage() {
+    const { isAuthenticated } = useAuth();
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#2274A5] px-6 py-12">
             <div className="w-full max-w-3xl text-center text-white">
@@ -31,10 +33,10 @@ function NotFoundPage() {
                 {/* Home button */}
                 <div className="mt-8">
                     <Link
-                        to="/"
+                        to={isAuthenticated ? "/app/dashboard" : "/"}
                         className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-blue-600 shadow-lg transition duration-200 hover:-translate-y-1 hover:bg-blue-50 hover:shadow-xl"
                     >
-                        <span>Go Back Home</span>
+                        <span>{isAuthenticated ? "Go to Dashboard" : "Go Back Home"}</span>
                     </Link>
                 </div>
 

@@ -1,7 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/Debal(LOGO).png";
+import { useAuth } from "../../context/AuthContext";
 
 function Footer() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <footer className="border-t border-gray-200 bg-white">
       {/* Main Footer */}
@@ -11,7 +14,7 @@ function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <NavLink
-              to="/"
+              to={isAuthenticated ? "/app/dashboard" : "/"}
               className="text-2xl font-bold tracking-tight text-blue-600"
             >
               <img

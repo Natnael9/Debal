@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import bgImage from '../assets/Background.jpg';
 
@@ -43,7 +43,14 @@ const FadeInSection = ({ children, delay = 0 }) => {
 };
 
 const LandingPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (!loading && isAuthenticated) {
+    if (user && !user.questionnaireCompleted) {
+      return <Navigate to="/questionnaire" replace />;
+    }
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
   return (
     <div className="font-sans selection:bg-[#2274A5] selection:text-white scroll-smooth">
