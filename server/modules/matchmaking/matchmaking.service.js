@@ -2,6 +2,7 @@ import { MatchRequest } from './matchrequest.model.js';
 import { Match } from '../chat/matches.model.js';
 import { Message } from '../chat/message.model.js';
 import { User } from '../users/users.model.js';
+import Bookmark from '../bookmarks/bookmarks.model.js';
 import { getIO } from '../chat/chat.gateway.js';
 import { enqueueNewMatchEmail } from '../notifications/notification.queue.js';
 import { getCandidatePoolA, getCandidatePoolB, scoreCandidate } from './matchmaking.algorithm.js';
@@ -121,7 +122,37 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   }
 
   const start = (page - 1) * pageSize;
-  const pageItems = allMatches.slice(start, start + pageSize);
+  const rawPageItems = allMatches.slice(start, start + pageSize);
+
+  // Dynamically decorate candidates with real-time match request and bookmark status
+  const [sentRequests, activeMatches, userBookmarks] = await Promise.all([
+    MatchRequest.find({
+      fromUser: user._id,
+      status: { $in: ['pending', 'accepted'] },
+    }).select('toUser').lean(),
+    Match.find({
+      $or: [{ userA: user._id }, { userB: user._id }],
+      status: 'active',
+    }).select('userA userB').lean(),
+    Bookmark.find({ userId: user._id }).select('bookmarkedUserId').lean(),
+  ]);
+
+  const sentTargetIds = new Set(sentRequests.map((r) => r.toUser.toString()));
+  for (const m of activeMatches) {
+    const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
+    sentTargetIds.add(otherId);
+  }
+
+  const bookmarkedIds = new Set(userBookmarks.map((b) => b.bookmarkedUserId.toString()));
+
+  const pageItems = rawPageItems.map((item) => {
+    const itemIdStr = (item.id || item._id).toString();
+    return {
+      ...item,
+      isRequestSent: sentTargetIds.has(itemIdStr),
+      isBookmarked: bookmarkedIds.has(itemIdStr),
+    };
+  });
 
   return {
     page,
@@ -158,7 +189,28 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     throw new MatchmakingError('Target candidate not found.', 404);
   }
 
-  // 1. Find or create active Match connection between users
+  // 1. Prevent duplicate requests: check if request already exists
+  const existingRequest = await MatchRequest.findOne({
+    fromUser: fromUser._id,
+    toUser: toUserId,
+    status: { $in: ['pending', 'accepted'] },
+  });
+
+  if (existingRequest) {
+    throw new MatchmakingError('You have already sent a connection request to this candidate.', 400);
+  }
+
+  const incomingRequest = await MatchRequest.findOne({
+    fromUser: toUserId,
+    toUser: fromUser._id,
+    status: { $in: ['pending', 'accepted'] },
+  });
+
+  if (incomingRequest) {
+    throw new MatchmakingError('This candidate has already sent you a connection request. Check your messages!', 400);
+  }
+
+  // 2. Find or create active Match connection between users
   let match = await Match.findOne({
     $or: [
       { userA: fromUser._id, userB: toUserId },
@@ -166,26 +218,25 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     ],
   });
 
+  if (match && match.status === 'blocked') {
+    throw new MatchmakingError('You cannot send a request to this user.', 403);
+  }
+
   if (!match) {
     match = await Match.create({
       userA: fromUser._id,
       userB: toUserId,
       status: 'active',
     });
-  } else if (match.status === 'blocked') {
-    throw new MatchmakingError('You cannot send a request to this user.', 403);
   }
 
-  // 2. Track or update MatchRequest record
-  let request = await MatchRequest.findOne({ fromUser: fromUser._id, toUser: toUserId });
-  if (!request) {
-    request = await MatchRequest.create({
-      fromUser: fromUser._id,
-      toUser: toUserId,
-      status: 'pending',
-      message: message || '',
-    });
-  }
+  // 3. Create MatchRequest record
+  const request = await MatchRequest.create({
+    fromUser: fromUser._id,
+    toUser: toUserId,
+    status: 'pending',
+    message: message || '',
+  });
 
   // 3. Save initial message into conversation so recipient immediately receives it in Chat
   const initialContent = (message && message.trim())
@@ -236,6 +287,12 @@ async function sendMatchRequest(fromUser, toUserId, message) {
   } catch (e) {
     // Socket.IO may be offline or initializing
   }
+
+  // Invalidate feed cache for both users
+  await Promise.all([
+    invalidateMatchFeedCache(fromUser._id),
+    invalidateMatchFeedCache(toUserId),
+  ]);
 
   return { request, match, message: savedMessage };
 }
@@ -315,6 +372,12 @@ async function respondToMatchRequest(currentUser, requestId, accept) {
   } catch (e) {
     // Socket.IO may be offline or initializing
   }
+
+  // Invalidate feed cache for both users
+  await Promise.all([
+    invalidateMatchFeedCache(request.fromUser),
+    invalidateMatchFeedCache(request.toUser),
+  ]);
 
   return { request, match };
 }
