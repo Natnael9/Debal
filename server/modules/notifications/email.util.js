@@ -9,25 +9,15 @@ const SMTP_FROM = process.env.SMTP_FROM || `"Debal App" <${SMTP_USER || 'noreply
 function createEmailTransporter() {
   if (!SMTP_USER || !SMTP_PASS) return null;
 
-  const isGmail = SMTP_HOST.includes('gmail');
-  if (isGmail) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    });
-  }
-
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
+    host: SMTP_HOST || 'smtp.gmail.com',
+    port: SMTP_PORT || 465,
     secure: SMTP_PORT === 465,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    family: 4, // Force IPv4 to prevent ENETUNREACH in IPv6-unsupported cloud containers (Render)
     tls: {
       rejectUnauthorized: false,
     },
