@@ -26,9 +26,66 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL || "";
 const UPLOAD_ENDPOINT = `${API_URL}/api/v1/uploads/photo`;
 
+/**
+ * Optimizes/compresses high-resolution photos in-browser before upload.
+ * Reduces 5MB-10MB camera uploads to ~60KB-100KB, preventing network drops and timeouts.
+ */
+async function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
+  if (!file || !file.type || !file.type.startsWith("image/") || file.type === "image/svg+xml") {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const compressedFile = new File(
+              [blob],
+              file.name.replace(/\.[^/.]+$/, ".jpg"),
+              { type: "image/jpeg", lastModified: Date.now() }
+            );
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = event.target?.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function uploadPhoto(file, { signal } = {}) {
+  // Compress before upload to guarantee fast transfer and prevent payload/connection dropouts
+  const optimizedFile = await compressImage(file);
+
   const formData = new FormData();
-  formData.append("photo", file);
+  formData.append("photo", optimizedFile);
 
   const token = localStorage.getItem("accessToken");
   const headers = {};
@@ -36,18 +93,25 @@ export async function uploadPhoto(file, { signal } = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(UPLOAD_ENDPOINT, {
-    method: "POST",
-    body: formData,
-    headers,
-    signal,
-  });
+  try {
+    const response = await fetch(UPLOAD_ENDPOINT, {
+      method: "POST",
+      body: formData,
+      headers,
+      credentials: "include",
+      signal,
+    });
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    throw new Error(errJson.message || `Upload failed with status ${response.status}`);
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.message || `Upload failed with status ${response.status}`);
+    }
+
+    const json = await response.json();
+    return json.data || json;
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    if (err.message && err.message.startsWith("Upload failed")) throw err;
+    throw new Error("Unable to connect to the upload server. Please try again.");
   }
-
-  const json = await response.json();
-  return json.data || json;
 }
