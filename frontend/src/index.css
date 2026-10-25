@@ -356,3 +356,22 @@ html.dark ::-webkit-calendar-picker-indicator {
 .border-brand {
   border-color: var(--color-brand) !important;
 }
+
+/* Amber / Warning Contrast in Dark Mode */
+html.dark .text-amber-950,
+html.dark .text-amber-900,
+html.dark .text-amber-800 {
+  color: #fde68a !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(120, 53, 15, 0.25) !important;
+}
+
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.45) !important;
+}

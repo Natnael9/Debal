@@ -21,18 +21,18 @@ function ProfileCompletionMeter({ percentage = 0 }) {
               />
             </svg>
           </div>
-          <span className="text-xs font-bold text-black">
+          <span className="text-xs font-bold text-gray-900 dark:text-white">
             Profile Completion
           </span>
         </div>
 
-        <span className="rounded-full border border-blue-100 bg-white px-2 py-0.5 text-[10px] font-bold text-black shadow-2xs">
+        <span className="rounded-full border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-[#242f3d] px-2.5 py-0.5 text-[11px] font-extrabold text-[#0B3954] dark:text-[#3a8ecc] shadow-2xs">
           {safePercentage}%
         </span>
       </div>
 
       {/* Progress Track */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200/80 p-0.5">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-700/80 p-0.5">
         <div
           className="h-full rounded-full bg-blue-900 transition-all duration-500 ease-out"
           style={{ width: `${safePercentage}%` }}
@@ -41,7 +41,7 @@ function ProfileCompletionMeter({ percentage = 0 }) {
 
       {/* Helper text */}
       {safePercentage < 100 && (
-        <p className="mt-2 text-[10px] text-gray-400">
+        <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400">
           Complete your profile to get more accurate roommate matches.
         </p>
       )}
