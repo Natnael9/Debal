@@ -78,15 +78,8 @@ export async function login(request, reply) {
     '+passwordHash'
   );
 
-  if (user && !user.passwordHash && user.googleId) {
-    return reply.status(400).send({
-      success: false,
-      error: 'GOOGLE_ACCOUNT',
-      message: 'This account was registered using Google Sign-In. Please sign in with Google.',
-    });
-  }
-
-  if (!user || !user.passwordHash) {
+  if (!user) {
+    request.log.warn({ email }, '[auth] Login failed: user not found');
     return reply.status(401).send({
       success: false,
       error: 'INVALID_CREDENTIALS',
@@ -94,8 +87,20 @@ export async function login(request, reply) {
     });
   }
 
+  if (!user.passwordHash) {
+    request.log.warn({ email, googleId: user.googleId }, '[auth] Login failed: account has no passwordHash (Google OAuth account)');
+    return reply.status(401).send({
+      success: false,
+      error: 'INVALID_CREDENTIALS',
+      message: user.googleId
+        ? 'This account was created with Google. Please use Google Sign In.'
+        : 'Invalid email or password',
+    });
+  }
+
   const valid = await comparePassword(password, user.passwordHash);
   if (!valid) {
+    request.log.warn({ email }, '[auth] Login failed: password mismatch');
     return reply.status(401).send({
       success: false,
       error: 'INVALID_CREDENTIALS',
