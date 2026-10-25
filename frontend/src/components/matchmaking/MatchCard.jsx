@@ -1,16 +1,30 @@
-import React, { useState, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost, apiDelete } from "../../services/api";
 
-const MatchCardComponent = ({ matchData, onBookmark }) => {
+const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
   const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
   const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
-  const [isRequestSent, setIsRequestSent] = useState(false);
+  const [isRequestSent, setIsRequestSent] = useState(
+    Boolean(matchData.isRequestSent || matchData.hasPendingRequest)
+  );
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [requestError, setRequestError] = useState("");
   const [requestSuccess, setRequestSuccess] = useState(false);
+
+  useEffect(() => {
+    if (matchData.isRequestSent !== undefined) {
+      setIsRequestSent(Boolean(matchData.isRequestSent));
+    }
+  }, [matchData.isRequestSent]);
+
+  useEffect(() => {
+    if (matchData.isBookmarked !== undefined) {
+      setLocalIsBookmarked(Boolean(matchData.isBookmarked));
+    }
+  }, [matchData.isBookmarked]);
 
   const navigate = useNavigate();
 
@@ -56,13 +70,31 @@ const MatchCardComponent = ({ matchData, onBookmark }) => {
       await apiPost(`/matches/request/${candidateId}`, { message: requestMessage });
       setRequestSuccess(true);
       setIsRequestSent(true);
+      matchData.isRequestSent = true;
+      if (onConnect) {
+        onConnect(candidateId);
+      }
       setTimeout(() => {
         setShowRequestModal(false);
         setRequestSuccess(false);
         setRequestMessage("");
-      }, 1800);
+      }, 1500);
     } catch (err) {
-      setRequestError(err.message || "Failed to send match request.");
+      if (err.message && err.message.toLowerCase().includes("already sent")) {
+        setIsRequestSent(true);
+        matchData.isRequestSent = true;
+        if (onConnect) {
+          onConnect(candidateId);
+        }
+        setRequestSuccess(true);
+        setTimeout(() => {
+          setShowRequestModal(false);
+          setRequestSuccess(false);
+          setRequestMessage("");
+        }, 1500);
+      } else {
+        setRequestError(err.message || "Failed to send match request.");
+      }
     } finally {
       setIsSending(false);
     }
@@ -189,14 +221,25 @@ const MatchCardComponent = ({ matchData, onBookmark }) => {
           <button
             type="button"
             disabled={isRequestSent}
-            onClick={() => setShowRequestModal(true)}
-            className={`flex-1 flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold text-white transition active:scale-98 ${
+            onClick={() => {
+              if (!isRequestSent) setShowRequestModal(true);
+            }}
+            className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white transition active:scale-98 ${
               isRequestSent
-                ? "bg-emerald-600 cursor-default"
-                : "bg-[#2274A5] hover:bg-[#1b5e87]"
+                ? "bg-emerald-600 cursor-default opacity-95"
+                : "bg-[#2274A5] hover:bg-[#1b5e87] cursor-pointer"
             }`}
           >
-            {isRequestSent ? "Request Sent" : "Connect"}
+            {isRequestSent ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Request Sent</span>
+              </>
+            ) : (
+              "Connect"
+            )}
           </button>
         </div>
       </div>
