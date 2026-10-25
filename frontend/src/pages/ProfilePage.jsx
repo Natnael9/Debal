@@ -305,9 +305,9 @@ function ProfilePage() {
               <button
                 type="button"
                 onClick={handleStartEditing}
-                className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 hover:bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#0B3954] shadow-md transition-all active:scale-95 cursor-pointer"
+                className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 hover:bg-white px-4 py-2 text-xs sm:text-sm font-bold text-[#2274A5] hover:text-[#0B3954] dark:text-[#3a8ecc] dark:hover:text-[#64b5f6] shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                <svg className="w-4 h-4 text-[#2274A5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[#2274A5] dark:text-[#3a8ecc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
                 Edit Full Profile
@@ -488,10 +488,10 @@ function ProfilePage() {
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-gray-900 capitalize">
+                      <h4 className="text-sm font-bold text-black dark:text-white capitalize">
                         {profile.verificationStatus === 'verified' ? 'Verified Account' : 'Verification Needed'}
                       </h4>
-                      <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      <p className="text-xs text-black dark:text-gray-100 mt-0.5 leading-relaxed font-medium">
                         {profile.verificationStatus === 'verified'
                           ? 'Your National ID record is verified. Verified profiles receive 3x more match responses!'
                           : 'Verify your ID to increase trust and unlock all chat & roommate matching features.'}
@@ -575,7 +575,7 @@ function ProfilePage() {
                     <button
                       type="button"
                       onClick={handleStartEditingBio}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#2274A5] hover:text-[#0B3954] transition cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#2274A5] hover:text-[#0B3954] dark:text-[#3a8ecc] dark:hover:text-[#64b5f6] transition cursor-pointer"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -627,8 +627,8 @@ function ProfilePage() {
                   </div>
                 ) : (
                   /* ── READ BIO VIEW ─────────────────────────────────────── */
-                  <div className="rounded-2xl border border-blue-50 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 p-5">
-                    <p className="text-sm leading-relaxed text-gray-800 whitespace-pre-line font-normal">
+                  <div className="rounded-2xl border border-blue-50 dark:border-blue-900/30 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 dark:from-blue-950/20 dark:to-indigo-950/20 p-5">
+                    <p className="text-sm leading-relaxed text-black dark:text-white whitespace-pre-line font-medium">
                       {profile.bio ? (
                         profile.bio
                       ) : (

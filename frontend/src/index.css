@@ -1,32 +1,292 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   CSS Variables Architecture: Light & Dark (Telegram Night Mode Inspired)
+   ========================================================================== */
+:root {
+  /* Brand / Primary Palette */
+  --color-brand: #2274A5;
+  --color-brand-hover: #1b5e87;
+  --color-brand-active: #154b6d;
+  --color-brand-deep: #0B3954;
+  --color-brand-subtle: #f0f7fc;
+  --color-brand-border: #e0eff8;
+  --color-brand-ring: rgba(34, 116, 165, 0.15);
+
+  /* Surfaces & Backgrounds */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-subtle-hover: #e2e8f0;
+  --bg-banner: linear-gradient(to right, #0B3954, #1A5B7A, #2274A5);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --text-inverse: #ffffff;
+  --text-on-brand: #ffffff;
+
+  /* Borders & Dividers */
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-strong: #cbd5e1;
+
+  /* Form Inputs */
+  --input-bg: #ffffff;
+  --input-bg-subtle: rgba(248, 250, 252, 0.7);
+  --input-border: #e2e8f0;
+  --input-text: #0f172a;
+  --input-placeholder: #94a3b8;
+
+  /* Status Colors */
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-text: #065f46;
+  --success-border: #a7f3d0;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --warning-text: #92400e;
+  --warning-border: #fde68a;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-text: #991b1b;
+  --danger-border: #fecaca;
+  --danger-deep: #be123c;
+}
+
+/* ==========================================================================
+   Dark Theme (Telegram Desktop Night Mode Palette)
+   ========================================================================== */
+html.dark,
+[data-theme="dark"] {
+  /* Brand / Primary in Dark */
+  --color-brand: #3a8ecc;
+  --color-brand-hover: #4ea1dd;
+  --color-brand-active: #2b7bb9;
+  --color-brand-deep: #1e2c3a;
+  --color-brand-subtle: rgba(58, 142, 204, 0.15);
+  --color-brand-border: rgba(58, 142, 204, 0.3);
+  --color-brand-ring: rgba(58, 142, 204, 0.25);
+
+  /* Telegram Dark Surfaces */
+  --bg-app: #0b1017;
+  --bg-surface: #17212b;
+  --bg-surface-elevated: #242f3d;
+  --bg-subtle: #1c2733;
+  --bg-subtle-hover: #232e3c;
+  --bg-banner: linear-gradient(to right, #111a24, #172433, #1e3347);
+  --bg-overlay: rgba(0, 0, 0, 0.78);
+
+  /* Typography */
+  --text-primary: #f5f5f5;
+  --text-secondary: #c5d1de;
+  --text-muted: #7f91a4;
+  --text-subtle: #566778;
+  --text-inverse: #0e1621;
+  --text-on-brand: #ffffff;
+
+  /* Borders & Dividers */
+  --border-default: #232e3c;
+  --border-subtle: #1a2530;
+  --border-strong: #2f3e50;
+
+  /* Form Inputs */
+  --input-bg: #242f3d;
+  --input-bg-subtle: #1c2733;
+  --input-border: #2f3e50;
+  --input-text: #f5f5f5;
+  --input-placeholder: #7f91a4;
+
+  /* Status Colors in Dark */
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.16);
+  --success-text: #6ee7b7;
+  --success-border: rgba(16, 185, 129, 0.3);
+  --warning: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.16);
+  --warning-text: #fde68a;
+  --warning-border: rgba(245, 158, 11, 0.3);
+  --danger: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.16);
+  --danger-text: #fca5a5;
+  --danger-border: rgba(239, 68, 68, 0.3);
+  --danger-deep: #fda4af;
+}
+
 @theme {
-  --color-primary-50: #f0f7fc;
-  --color-primary-100: #e0eff8;
+  --color-primary-50: var(--color-brand-subtle);
+  --color-primary-100: var(--color-brand-border);
   --color-primary-200: #b9dff2;
   --color-primary-300: #7cc4e8;
   --color-primary-400: #36a4da;
-  --color-primary-500: #2274a5;
-  --color-primary-600: #1b5e87;
-  --color-primary-700: #164a6c;
-  --color-primary-800: #143f5b;
+  --color-primary-500: var(--color-brand);
+  --color-primary-600: var(--color-brand-hover);
+  --color-primary-700: var(--color-brand-active);
+  --color-primary-800: var(--color-brand-deep);
   --color-primary-900: #15364d;
+}
+
+/* ==========================================================================
+   Automatic Night Mode Application without altering component structures
+   ========================================================================== */
+html.dark body {
+  background-color: var(--bg-app) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Background mappings */
+html.dark .bg-white {
+  background-color: var(--bg-surface) !important;
+}
+
+html.dark .bg-white\/95 {
+  background-color: rgba(23, 33, 43, 0.95) !important;
+}
+
+html.dark .bg-white\/90 {
+  background-color: rgba(23, 33, 43, 0.9) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-gray-50\/70,
+html.dark .bg-slate-50\/70,
+html.dark .bg-gray-50\/80,
+html.dark .bg-slate-50\/80,
+html.dark .bg-gray-50\/90,
+html.dark .bg-slate-50\/90,
+html.dark .bg-gray-50\/50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-gray-50\/40,
+html.dark .bg-slate-50\/40 {
+  background-color: var(--bg-app) !important;
+}
+
+html.dark .bg-gray-50\/60,
+html.dark .bg-slate-50\/60 {
+  background-color: var(--bg-subtle) !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/50,
+html.dark .bg-blue-50\/70,
+html.dark .bg-blue-50\/40 {
+  background-color: var(--color-brand-subtle) !important;
+}
+
+/* Text mappings */
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Border mappings */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-default) !important;
+}
+
+html.dark .border-blue-100,
+html.dark .border-blue-100\/80,
+html.dark .border-blue-100\/70,
+html.dark .border-blue-100\/60 {
+  border-color: var(--color-brand-border) !important;
+}
+
+/* Hover mappings */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-slate-50:hover {
+  background-color: var(--bg-subtle-hover) !important;
+}
+
+/* Form input elements */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+html.dark textarea {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+/* Modals & Dropdowns */
+html.dark .bg-black\/50,
+html.dark .bg-black\/80 {
+  background-color: var(--bg-overlay) !important;
+}
+
+/* Status alerts */
+html.dark .bg-emerald-50 {
+  background-color: var(--success-bg) !important;
+  color: var(--success-text) !important;
+  border-color: var(--success-border) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: var(--warning-bg) !important;
+  color: var(--warning-text) !important;
+  border-color: var(--warning-border) !important;
+}
+
+html.dark .bg-red-50,
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/30 {
+  background-color: var(--danger-bg) !important;
+  color: var(--danger-text) !important;
+  border-color: var(--danger-border) !important;
+}
+
+html.dark .text-rose-600,
+html.dark .text-rose-800,
+html.dark .text-red-600,
+html.dark .text-red-700 {
+  color: var(--danger-deep) !important;
 }
 
 /* Custom Dropdown Styling throughout website */
 select {
-  accent-color: #2274A5;
+  accent-color: var(--color-brand);
 }
 
 select:focus {
-  border-color: #2274A5 !important;
+  border-color: var(--color-brand) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(34, 116, 165, 0.15) !important;
+  box-shadow: 0 0 0 3px var(--color-brand-ring) !important;
 }
 
 select option {
-  background-color: #ffffff;
-  color: #1f2937;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   padding: 8px 12px;
 }
 
@@ -34,22 +294,33 @@ select option:hover,
 select option:focus,
 select option:active,
 select option:checked {
-  background-color: #2274A5 !important;
-  color: #ffffff !important;
+  background-color: var(--color-brand) !important;
+  color: var(--text-on-brand) !important;
+}
+
+html.dark select {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+html.dark select option {
+  background-color: var(--bg-surface-elevated) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Custom Calendar & Date Picker Styling */
 input[type="date"],
 input[type="datetime-local"],
 input[type="time"] {
-  accent-color: #2274A5;
+  accent-color: var(--color-brand);
 }
 
 input[type="date"]:focus,
 input[type="datetime-local"]:focus {
-  border-color: #2274A5 !important;
+  border-color: var(--color-brand) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(34, 116, 165, 0.15) !important;
+  box-shadow: 0 0 0 3px var(--color-brand-ring) !important;
 }
 
 ::-webkit-calendar-picker-indicator {
@@ -61,34 +332,53 @@ input[type="datetime-local"]:focus {
 }
 
 ::-webkit-calendar-picker-indicator:hover {
-  background-color: rgba(34, 116, 165, 0.1);
+  background-color: var(--color-brand-ring);
 }
 
-/* Unified Brand Color Overrides */
+html.dark ::-webkit-calendar-picker-indicator {
+  filter: invert(80%) sepia(20%) saturate(400%) hue-rotate(170deg) brightness(100%);
+}
+
+/* Brand Color Utility Overrides using CSS Variables */
 .bg-blue-900 {
-  background-color: #2274A5 !important;
-}
-
-.hover\:bg-blue-800:hover {
-  background-color: #1b5e87 !important;
+  background-color: var(--color-brand) !important;
 }
 
 .text-blue-900 {
-  color: #2274A5 !important;
+  color: var(--color-brand) !important;
 }
 
 .border-blue-900 {
-  border-color: #2274A5 !important;
+  border-color: var(--color-brand) !important;
 }
 
-.bg-[#0B3954] {
-  background-color: #2274A5 !important;
+.bg-brand {
+  background-color: var(--color-brand) !important;
 }
 
-.text-[#0B3954] {
-  color: #2274A5 !important;
+.text-brand {
+  color: var(--color-brand) !important;
 }
 
-.border-[#0B3954] {
-  border-color: #2274A5 !important;
+.border-brand {
+  border-color: var(--color-brand) !important;
+}
+
+/* Amber / Warning Contrast in Dark Mode */
+html.dark .text-amber-950,
+html.dark .text-amber-900,
+html.dark .text-amber-800 {
+  color: #fde68a !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(120, 53, 15, 0.25) !important;
+}
+
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.45) !important;
 }

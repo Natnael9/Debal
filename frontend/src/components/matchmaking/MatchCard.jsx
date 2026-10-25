@@ -82,11 +82,11 @@ const MatchCardComponent = ({ matchData, onBookmark }) => {
 
             <div className="flex items-center gap-2">
               {matchData.housingStatus === "has_room" ? (
-                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-semibold text-black dark:text-white bg-gray-100 dark:bg-[#242f3d] px-2 py-0.5 rounded-md">
                   Has room
                 </span>
               ) : matchData.housingStatus === "needs_room" ? (
-                <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                <span className="text-xs font-semibold text-black dark:text-white bg-gray-100 dark:bg-[#242f3d] px-2 py-0.5 rounded-md">
                   Seeking room
                 </span>
               ) : null}
@@ -163,7 +163,7 @@ const MatchCardComponent = ({ matchData, onBookmark }) => {
           {/* Preference Details (Only show real values) */}
           <div className="mt-3 flex flex-wrap gap-1.5">
             {matchData.preferences?.budgetMax && (
-              <span className="text-xs text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md">
+              <span className="text-xs font-semibold text-black dark:text-white bg-gray-100 dark:bg-[#242f3d] px-2.5 py-1 rounded-md">
                 Up to {Number(matchData.preferences.budgetMax).toLocaleString()} ETB/mo
               </span>
             )}

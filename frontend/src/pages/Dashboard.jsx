@@ -227,14 +227,14 @@ const MatchFeed = () => {
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Account Frozen Notification Banner */}
         {(user?.isFrozen || user?.isPaused) && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 shadow-xs">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-100 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 font-bold text-lg">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold text-lg">
                 ❄️
               </div>
               <div>
-                <h4 className="text-xs font-bold text-amber-950 sm:text-sm">Your account is currently frozen</h4>
-                <p className="text-[11px] sm:text-xs text-amber-800">
+                <h4 className="text-xs font-bold text-amber-950 dark:text-amber-100 sm:text-sm">Your account is currently frozen</h4>
+                <p className="text-[11px] sm:text-xs text-amber-800 dark:text-amber-200/90">
                   Your profile is paused and hidden from other roommates in the feed. You won't appear in candidate recommendations until you unfreeze.
                 </p>
               </div>
