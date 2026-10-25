@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
 import { MatchGridSkeleton } from '../components/common/Skeleton';
 import { apiGet, apiDelete } from '../services/api';
+import { updateCachedFeedBookmark } from './Dashboard';
 
 // Module-level in-memory cache for instant navigation transitions
 let cachedBookmarks = null;
 let lastBookmarksFetchTime = 0;
 
 export function updateCachedBookmark(candidateId, isBookmarked) {
-  if (!cachedBookmarks) return;
   if (!isBookmarked) {
-    cachedBookmarks = cachedBookmarks.filter((b) => b._id !== candidateId && b.id !== candidateId);
+    if (cachedBookmarks) {
+      cachedBookmarks = cachedBookmarks.filter((b) => b._id !== candidateId && b.id !== candidateId);
+    }
+  } else {
+    // Invalidate timestamp so entering BookmarksPage immediately fetches newly added bookmarks
+    lastBookmarksFetchTime = 0;
   }
 }
 
@@ -22,19 +27,14 @@ const BookmarksPage = () => {
   // Fetch real bookmarks on page load with SWR pattern
   useEffect(() => {
     let isMounted = true;
-    const now = Date.now();
-    const isStale = now - lastBookmarksFetchTime > 30000; // 30s freshness
 
     if (!cachedBookmarks) {
       setIsLoading(true);
+    } else {
+      setBookmarks(cachedBookmarks);
+      setIsLoading(false);
     }
     setError(null);
-
-    // If cache is fresh, render immediately without redundant API call
-    if (cachedBookmarks && !isStale) {
-      setIsLoading(false);
-      return;
-    }
 
     async function loadBookmarks() {
       try {
@@ -92,6 +92,7 @@ const BookmarksPage = () => {
       cachedBookmarks = cachedBookmarks.filter((b) => b._id !== candidateId && b.id !== candidateId);
     }
     setBookmarks((prev) => prev.filter((b) => b._id !== candidateId && b.id !== candidateId));
+    updateCachedFeedBookmark(candidateId, false);
 
     try {
       await apiDelete(`/bookmarks/${candidateId}`);

@@ -12,6 +12,14 @@ import { updateCachedBookmark } from "./BookmarksPage";
 let cachedFeed = null;
 let lastFeedFetchTime = 0;
 
+export function updateCachedFeedBookmark(candidateId, isBookmarked) {
+  if (cachedFeed) {
+    cachedFeed = cachedFeed.map((c) =>
+      (c._id === candidateId || c.id === candidateId) ? { ...c, isBookmarked } : c
+    );
+  }
+}
+
 const MatchFeed = () => {
   const { user, setUser } = useAuth();
   const [isUnfreezing, setIsUnfreezing] = useState(false);
