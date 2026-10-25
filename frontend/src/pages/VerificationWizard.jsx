@@ -35,25 +35,23 @@ const VerificationWizard = () => {
   const handleResubmit = () => setStep(1);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8 text-center">
-        <h2 className="text-3xl font-extrabold text-[#0B3954]">Verify Your Identity</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Debal requires ID verification to keep our community safe.
+    <div className="min-h-screen bg-slate-50/70 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 text-center">
+        <h2 className="text-xl font-bold text-gray-900">Verify Your Identity</h2>
+        <p className="mt-1 text-xs text-gray-500">
+          Debal requires ID verification to keep our roommate community safe.
         </p>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-sm rounded-2xl border border-gray-100 sm:px-10">
-          {step === 1 && <IDSubmitForm onSuccess={handleIDSubmitSuccess} />}
-          {step === 2 && <OTPConfirmForm onSuccess={handleOTPSubmitSuccess} onCancel={() => setStep(1)} />}
-          {step === 3 && (
-            <VerificationStatusScreen 
-              status={verificationStatus} 
-              onResubmit={handleResubmit} 
-            />
-          )}
-        </div>
+        {step === 1 && <IDSubmitForm onSuccess={handleIDSubmitSuccess} />}
+        {step === 2 && <OTPConfirmForm onSuccess={handleOTPSubmitSuccess} onCancel={() => setStep(1)} />}
+        {step === 3 && (
+          <VerificationStatusScreen 
+            status={verificationStatus} 
+            onResubmit={handleResubmit} 
+          />
+        )}
       </div>
     </div>
   );

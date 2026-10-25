@@ -5,35 +5,35 @@ import LoadingSpinner from './common/LoadingSpinner';
 const VerificationStatusScreen = ({ status, onResubmit, onClose }) => {
   const navigate = useNavigate();
 
-  // If the status is pending (e.g., waiting on manual review or a slow API)
+  // If the status is pending
   if (status === 'pending') {
     return (
-      <div className="text-center py-8">
-        <LoadingSpinner size="lg" className="mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Verifying Your Identity</h3>
-        <p className="text-gray-500">
-          Please wait while we check your Fayda ID records. This usually takes just a few seconds.
+      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100 text-center py-6">
+        <LoadingSpinner size="md" className="mx-auto mb-3" />
+        <h3 className="text-sm font-bold text-gray-900 mb-1">Verifying Your Identity</h3>
+        <p className="text-xs text-gray-500 max-w-xs mx-auto">
+          Checking your Fayda ID record. This usually takes just a few seconds.
         </p>
       </div>
     );
   }
 
-  // If the status is rejected (FR-2.6 requires a clear resubmit action)
+  // If the status is rejected
   if (status === 'rejected') {
     return (
-      <div className="text-center py-8">
-        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-          <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100 text-center py-6">
+        <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 mb-3">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Verification Failed</h3>
-        <p className="text-gray-500 mb-8">
+        <h3 className="text-sm font-bold text-gray-900 mb-1">Verification Failed</h3>
+        <p className="text-xs text-gray-500 mb-5 max-w-xs mx-auto leading-relaxed">
           The name or Date of Birth provided did not match the Fayda ID records. Please double-check your information and try again.
         </p>
         <button
           onClick={onResubmit}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none transition-colors"
+          className="w-full flex justify-center py-2 px-4 rounded-xl text-xs font-semibold text-white bg-[#2274A5] hover:bg-[#1b5e87] shadow-2xs transition cursor-pointer"
         >
           Try Again
         </button>
@@ -43,15 +43,15 @@ const VerificationStatusScreen = ({ status, onResubmit, onClose }) => {
 
   // If the status is verified
   return (
-    <div className="text-center py-8">
-      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-        <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100 text-center py-6">
+      <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 mb-3">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">Identity Verified!</h3>
-      <p className="text-gray-500 mb-8">
-        Thank you for helping keep the Debal community safe. You are now ready to find your ideal roommate.
+      <h3 className="text-sm font-bold text-gray-900 mb-1">Identity Verified!</h3>
+      <p className="text-xs text-gray-500 mb-5 max-w-xs mx-auto leading-relaxed">
+        Thank you for verifying your identity. You now have full access to match feed and messaging.
       </p>
       <button
         onClick={async () => {
@@ -60,7 +60,7 @@ const VerificationStatusScreen = ({ status, onResubmit, onClose }) => {
           }
           navigate('/app/dashboard');
         }}
-        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2274A5] hover:bg-[#1A5C83] focus:outline-none transition-colors"
+        className="w-full flex justify-center py-2 px-4 rounded-xl text-xs font-semibold text-white bg-[#2274A5] hover:bg-[#1b5e87] shadow-2xs transition cursor-pointer"
       >
         Go to Match Feed
       </button>
