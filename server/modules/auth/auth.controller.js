@@ -78,6 +78,14 @@ export async function login(request, reply) {
     '+passwordHash'
   );
 
+  if (user && !user.passwordHash && user.googleId) {
+    return reply.status(400).send({
+      success: false,
+      error: 'GOOGLE_ACCOUNT',
+      message: 'This account was registered using Google Sign-In. Please sign in with Google.',
+    });
+  }
+
   if (!user || !user.passwordHash) {
     return reply.status(401).send({
       success: false,

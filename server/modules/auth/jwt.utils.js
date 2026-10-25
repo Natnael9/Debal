@@ -46,15 +46,21 @@ const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days, in seconds
 
 export function setRefreshTokenCookie(reply, refreshToken, rememberMe = false) {
   const maxAge = rememberMe ? 30 * 24 * 60 * 60 : REFRESH_COOKIE_MAX_AGE;
+  const isProduction = process.env.NODE_ENV === 'production';
   reply.setCookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/api/v1/auth',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
     maxAge,
   });
 }
 
 export function clearRefreshTokenCookie(reply) {
-  reply.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' });
+  const isProduction = process.env.NODE_ENV === 'production';
+  reply.clearCookie(REFRESH_COOKIE_NAME, {
+    path: '/',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+  });
 }
