@@ -205,6 +205,34 @@ async function sendMatchRequest(fromUser, toUserId, message) {
     io.to(`user:${toUserId.toString()}`).emit('chat:new_message', payloadData);
     io.to(`user:${fromUser._id.toString()}`).emit('chat:new_message', payloadData);
     io.to(`match:${match._id.toString()}`).emit('chat:new_message', payloadData);
+
+    // Live pop-out notification for connection request
+    const notificationPayload = {
+      type: 'chat_request',
+      title: 'New Roommate Request',
+      message: `${fromUser.name} sent you a connection request!`,
+      sender: {
+        id: fromUser._id,
+        name: fromUser.name,
+        avatarUrl: fromUser.avatarUrl,
+      },
+      matchId: match._id.toString(),
+      requestId: request._id.toString(),
+      link: `/app/messages?matchId=${match._id.toString()}`,
+    };
+
+    io.to(`user:${toUserId.toString()}`).emit('notification:new', notificationPayload);
+    io.to(`user:${toUserId.toString()}`).emit('match:request', notificationPayload);
+
+    // Also publish to Redis if available
+    const healthy = await isRedisHealthy();
+    if (healthy) {
+      const redis = getRedisClient();
+      await redis.publish(
+        `user:${toUserId.toString()}`,
+        JSON.stringify({ event: 'notification:new', data: notificationPayload })
+      );
+    }
   } catch (e) {
     // Socket.IO may be offline or initializing
   }
@@ -255,6 +283,38 @@ async function respondToMatchRequest(currentUser, requestId, accept) {
 
   // Notify original requester that request was accepted
   await enqueueNewMatchEmail({ userId: request.fromUser, matchId: match._id });
+
+  // Real-time Socket.IO notification to requester
+  try {
+    const io = getIO();
+    const acceptedPayload = {
+      type: 'request_accepted',
+      title: 'Request Accepted!',
+      message: `${currentUser.name} accepted your roommate connection request!`,
+      user: {
+        id: currentUser._id,
+        name: currentUser.name,
+        avatarUrl: currentUser.avatarUrl,
+      },
+      matchId: match._id.toString(),
+      link: `/app/messages?matchId=${match._id.toString()}`,
+    };
+
+    io.to(`user:${request.fromUser.toString()}`).emit('notification:new', acceptedPayload);
+    io.to(`user:${request.fromUser.toString()}`).emit('match:accepted', acceptedPayload);
+
+    // Also publish to Redis if available
+    const healthy = await isRedisHealthy();
+    if (healthy) {
+      const redis = getRedisClient();
+      await redis.publish(
+        `user:${request.fromUser.toString()}`,
+        JSON.stringify({ event: 'notification:new', data: acceptedPayload })
+      );
+    }
+  } catch (e) {
+    // Socket.IO may be offline or initializing
+  }
 
   return { request, match };
 }
