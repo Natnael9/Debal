@@ -6,6 +6,20 @@ import { generateOtp, hashOtp, isOtpExpired } from './otp.util.js';
 import { sendVerificationOtpEmail, sendEmail } from '../notifications/email.util.js';
 import { enqueueVerificationResultEmail } from '../notifications/notification.queue.js';
 import { logAdminAction, logAdminRead } from '../admin/admin-action.service.js';
+import { getRedisClient, isRedisHealthy } from '../../config/redis.js';
+
+async function invalidateUserCaches(userId) {
+  if (!userId) return;
+  try {
+    if (isRedisHealthy()) {
+      const redis = getRedisClient();
+      const uid = userId.toString();
+      await redis.del(`user_session:${uid}`, `match_feed:${uid}`);
+    }
+  } catch (err) {
+    console.warn('[verification] Failed to invalidate Redis user cache:', err.message);
+  }
+}
 
 async function sendResultEmail(params) {
   try {
@@ -73,6 +87,7 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
 
   if (result === 'matched') {
     await User.findByIdAndUpdate(userId, { idNumberHash, verificationStatus: 'pending' });
+    await invalidateUserCaches(userId);
 
     // Generate, hash, store, and email the OTP
     const { otp, expiresAt } = generateOtp();
@@ -84,6 +99,7 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
     await sendVerificationOtpEmail(user.email, otp);
   } else {
     await User.findByIdAndUpdate(userId, { verificationStatus: 'rejected' });
+    await invalidateUserCaches(userId);
     await sendResultEmail({ userId, verified: false, reason: rejectionReason });
   }
 
@@ -127,6 +143,8 @@ export async function confirmOtp(userId, otp) {
     },
     { new: true }
   ).select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires');
+
+  await invalidateUserCaches(userId);
 
   await sendResultEmail({ userId, verified: true });
 
@@ -257,6 +275,8 @@ export async function decideVerification(verificationRequestId, adminId, { decis
       verifiedAt: new Date(),
     });
 
+    await invalidateUserCaches(verificationRequest.userId);
+
     await sendResultEmail({ userId: verificationRequest.userId, verified: true });
 
   } else {
@@ -266,6 +286,8 @@ export async function decideVerification(verificationRequestId, adminId, { decis
 
     await User.findByIdAndUpdate(verificationRequest.userId, { verificationStatus: 'rejected' });
     
+    await invalidateUserCaches(verificationRequest.userId);
+
     await sendResultEmail({
       userId: verificationRequest.userId,
       verified: false,

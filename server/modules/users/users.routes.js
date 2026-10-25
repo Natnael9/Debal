@@ -3,6 +3,9 @@ import {
   submitQuestionnaireHandler,
   updateProfileHandler,
   getUserProfileByIdHandler,
+  freezeAccountHandler,
+  unfreezeAccountHandler,
+  deleteAccountHandler,
 } from './users.controller.js';
 
 export default async function usersRoutes(fastify) {
@@ -30,5 +33,23 @@ export default async function usersRoutes(fastify) {
     '/api/v1/users/me',
     { preHandler: authMiddleware },
     updateProfileHandler
+  );
+
+  fastify.post(
+    '/api/v1/users/me/freeze',
+    { preHandler: authMiddleware },
+    freezeAccountHandler
+  );
+
+  fastify.post(
+    '/api/v1/users/me/unfreeze',
+    { preHandler: authMiddleware },
+    unfreezeAccountHandler
+  );
+
+  fastify.delete(
+    '/api/v1/users/me',
+    { preHandler: authMiddleware },
+    deleteAccountHandler
   );
 }

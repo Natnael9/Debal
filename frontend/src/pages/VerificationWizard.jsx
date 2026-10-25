@@ -1,24 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import IDSubmitForm from '../components/IDSubmitForm';
 import OTPConfirmForm from '../components/OTPConfirmForm';
 import VerificationStatusScreen from '../components/VerificationStatusScreen';
 import { useAuth } from '../context/AuthContext';
 
 const VerificationWizard = () => {
-  const { setUser } = useAuth();
+  const { user, setUser } = useAuth();
   // Tracks which step the user is on: 1 = ID, 2 = OTP, 3 = Status
-  const [step, setStep] = useState(1);
-  const [verificationStatus, setVerificationStatus] = useState('pending'); // 'pending', 'verified', or 'rejected'
+  const [step, setStep] = useState(user?.verificationStatus === 'verified' ? 3 : 1);
+  const [verificationStatus, setVerificationStatus] = useState(user?.verificationStatus || 'pending');
+
+  useEffect(() => {
+    if (user?.verificationStatus === 'verified') {
+      setStep(3);
+      setVerificationStatus('verified');
+    }
+  }, [user?.verificationStatus]);
 
   // Handlers to move between steps
   const handleIDSubmitSuccess = () => setStep(2);
   const handleOTPSubmitSuccess = (status, updatedUser) => {
-    setVerificationStatus(status);
+    setVerificationStatus(status || 'verified');
     setUser((prev) => {
-      if (!prev) return updatedUser || null;
+      const base = prev || {};
+      const extra = typeof updatedUser === 'object' && updatedUser ? updatedUser : {};
       return {
-        ...prev,
-        ...(typeof updatedUser === 'object' && updatedUser ? updatedUser : {}),
+        ...base,
+        ...extra,
         verificationStatus: 'verified',
       };
     });

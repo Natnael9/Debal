@@ -1,5 +1,13 @@
 import { questionnaireSchema, profileUpdateSchema } from './questionnaire.validator.js';
-import { submitQuestionnaire, updateProfile, getUserProfileById, UsersError } from './users.service.js';
+import {
+  submitQuestionnaire,
+  updateProfile,
+  getUserProfileById,
+  freezeAccount,
+  unfreezeAccount,
+  deleteAccount,
+  UsersError,
+} from './users.service.js';
 
 async function submitQuestionnaireHandler(request, reply) {
   const parsed = questionnaireSchema.safeParse(request.body);
@@ -86,4 +94,73 @@ async function getUserProfileByIdHandler(request, reply) {
   }
 }
 
-export { submitQuestionnaireHandler, updateProfileHandler, getUserProfileByIdHandler };
+async function freezeAccountHandler(request, reply) {
+  try {
+    const user = await freezeAccount(request.user._id);
+    return reply.status(200).send({
+      success: true,
+      data: { user },
+      message: 'Account paused successfully. Your profile is now hidden from the feed.',
+    });
+  } catch (err) {
+    if (err instanceof UsersError) {
+      return reply
+        .status(err.statusCode)
+        .send({ success: false, error: 'USERS_ERROR', message: err.message });
+    }
+    request.log.error(err);
+    return reply
+      .status(500)
+      .send({ success: false, error: 'SERVER_ERROR', message: 'Something went wrong.' });
+  }
+}
+
+async function unfreezeAccountHandler(request, reply) {
+  try {
+    const user = await unfreezeAccount(request.user._id);
+    return reply.status(200).send({
+      success: true,
+      data: { user },
+      message: 'Account reactivated successfully. Your profile is visible in the feed again.',
+    });
+  } catch (err) {
+    if (err instanceof UsersError) {
+      return reply
+        .status(err.statusCode)
+        .send({ success: false, error: 'USERS_ERROR', message: err.message });
+    }
+    request.log.error(err);
+    return reply
+      .status(500)
+      .send({ success: false, error: 'SERVER_ERROR', message: 'Something went wrong.' });
+  }
+}
+
+async function deleteAccountHandler(request, reply) {
+  try {
+    await deleteAccount(request.user._id);
+    return reply.status(200).send({
+      success: true,
+      message: 'Account permanently deleted.',
+    });
+  } catch (err) {
+    if (err instanceof UsersError) {
+      return reply
+        .status(err.statusCode)
+        .send({ success: false, error: 'USERS_ERROR', message: err.message });
+    }
+    request.log.error(err);
+    return reply
+      .status(500)
+      .send({ success: false, error: 'SERVER_ERROR', message: 'Failed to delete account.' });
+  }
+}
+
+export {
+  submitQuestionnaireHandler,
+  updateProfileHandler,
+  getUserProfileByIdHandler,
+  freezeAccountHandler,
+  unfreezeAccountHandler,
+  deleteAccountHandler,
+};

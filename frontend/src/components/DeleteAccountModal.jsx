@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiDelete, clearToken } from "../services/api";
+import { disconnectSocket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 
 const DeleteAccountModal = ({ isOpen, onClose }) => {
@@ -23,9 +24,11 @@ const DeleteAccountModal = ({ isOpen, onClose }) => {
 
     try {
       await apiDelete('/users/me');
+      disconnectSocket();
       clearToken();
       setUser(null);
-      navigate('/');
+      if (onClose) onClose();
+      navigate('/login');
     } catch (err) {
       setError(err.message || 'Failed to delete account. Please try again.');
       setIsDeleting(false);

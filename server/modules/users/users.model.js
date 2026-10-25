@@ -107,13 +107,38 @@ const userSchema = new Schema(
 
     // ---- Social ----
     blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+
+    // ---- Account freeze / pause state ----
+    isFrozen: { type: Boolean, default: false },
+    frozenAt: Date,
   },
-  { timestamps: true } // gives createdAt / updatedAt automatically
+  {
+    timestamps: true, // gives createdAt / updatedAt automatically
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        ret.isPaused = Boolean(ret.isFrozen);
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        ret.isPaused = Boolean(ret.isFrozen);
+        return ret;
+      },
+    },
+  }
 );
+
+userSchema.virtual('isPaused').get(function () {
+  return Boolean(this.isFrozen);
+});
 
 // ---- Compound & Special Indexes for Fast Lookups ----
 userSchema.index({ location: '2dsphere' }, { sparse: true });
-userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1 });
+userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1, isFrozen: 1 });
+userSchema.index({ isFrozen: 1 });
 
 export const User = mongoose.model('User', userSchema);
 export default User;

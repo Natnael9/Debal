@@ -15,6 +15,7 @@ async function getCandidatePoolA(user) {
     questionnaireCompleted: true,
     verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
+    isFrozen: { $ne: true },
     _id: { $nin: Array.from(excludeIds) },
   };
 
@@ -145,6 +146,7 @@ async function getCandidatePoolB(user) {
     questionnaireCompleted: true,
     verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
+    isFrozen: { $ne: true },
     _id: { $nin: Array.from(excludeIds) },
   };
 
