@@ -70,8 +70,32 @@ async function start() {
   });
 
   await fastify.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return cb(null, true);
+
+      const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null;
+      const allowedOrigins = [
+        frontendUrl,
+        'https://debal-orcin.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:4001',
+      ].filter(Boolean);
+
+      // Allow specified origins, all Vercel deployments, or localhost
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
+        return cb(null, true);
+      }
+
+      return cb(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   await fastify.register(cookie);
