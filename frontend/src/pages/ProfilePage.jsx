@@ -288,35 +288,6 @@ function ProfilePage() {
     );
   }
 
-  if (verificationStep) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          {verificationStep === "ID_FORM" && (
-            <IDSubmitForm 
-              onCancel={handleCancelVerification}
-              onSubmit={handleIDSubmit} 
-            />
-          )}
-
-          {verificationStep === "OTP_FORM" && (
-            <OTPConfirmForm 
-              onCancel={handleCancelVerification}
-              onSuccess={handleOTPSuccess} 
-            />
-          )}
-
-          {verificationStep === "STATUS_SCREEN" && (
-            <VerificationStatusScreen 
-              status="verified"
-              onClose={handleFinishVerification} 
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50/70 pt-6 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -661,6 +632,34 @@ function ProfilePage() {
         )}
 
       </div>
+
+      {/* ── VERIFICATION MODAL OVERLAY ────────────────────────────────────────── */}
+      {verificationStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md animate-in zoom-in-95 duration-150">
+            {verificationStep === "ID_FORM" && (
+              <IDSubmitForm 
+                onCancel={handleCancelVerification}
+                onSubmit={handleIDSubmit} 
+              />
+            )}
+
+            {verificationStep === "OTP_FORM" && (
+              <OTPConfirmForm 
+                onCancel={handleCancelVerification}
+                onSuccess={handleOTPSuccess} 
+              />
+            )}
+
+            {verificationStep === "STATUS_SCREEN" && (
+              <VerificationStatusScreen 
+                status="verified"
+                onClose={handleFinishVerification} 
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
