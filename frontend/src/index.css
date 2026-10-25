@@ -75,7 +75,7 @@ html.dark,
   --color-brand-ring: rgba(58, 142, 204, 0.25);
 
   /* Telegram Dark Surfaces */
-  --bg-app: #0e1621;
+  --bg-app: #0b1017;
   --bg-surface: #17212b;
   --bg-surface-elevated: #242f3d;
   --bg-subtle: #1c2733;
@@ -156,13 +156,20 @@ html.dark .bg-white\/90 {
 html.dark .bg-gray-50,
 html.dark .bg-slate-50,
 html.dark .bg-gray-50\/70,
-html.dark .bg-slate-50\/70 {
+html.dark .bg-slate-50\/70,
+html.dark .bg-gray-50\/80,
+html.dark .bg-slate-50\/80,
+html.dark .bg-gray-50\/90,
+html.dark .bg-slate-50\/90,
+html.dark .bg-gray-50\/50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-gray-50\/40,
+html.dark .bg-slate-50\/40 {
   background-color: var(--bg-app) !important;
 }
 
-html.dark .bg-gray-50\/50,
 html.dark .bg-gray-50\/60,
-html.dark .bg-slate-50\/50 {
+html.dark .bg-slate-50\/60 {
   background-color: var(--bg-subtle) !important;
 }
 

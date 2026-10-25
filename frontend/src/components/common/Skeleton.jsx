@@ -65,7 +65,7 @@ export function MatchGridSkeleton({ count = 6 }) {
 
 export function ChatLayoutSkeleton() {
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/80 p-3 sm:p-6 lg:p-8">
+    <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/80 dark:bg-[#0b1017] p-3 sm:p-6 lg:p-8">
       <div className="mx-auto flex h-[calc(100vh-6.5rem)] max-w-[1400px] gap-4 overflow-hidden">
         {/* Chat List Sidebar Skeleton */}
         <div className="hidden h-full w-[280px] shrink-0 flex-col rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:flex">
