@@ -1,0 +1,33 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feat/account-settings",
+    "feat/backend-engine-and-sockets",
+    "feat/dark-mode-and-theme-variables",
+    "feat/deletionModals-and-live-toasts",
+    "feat/integration",
+    "feat/updated-settings-page",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "feat/account-settings": "main",
+    "feat/backend-engine-and-sockets": "main",
+    "feat/dark-mode-and-theme-variables": "main",
+    "feat/deletionModals-and-live-toasts": "main",
+    "feat/integration": "main",
+    "feat/updated-settings-page": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "feat/account-settings",
+    "feat/backend-engine-and-sockets",
+    "feat/dark-mode-and-theme-variables",
+    "feat/deletionModals-and-live-toasts",
+    "feat/integration",
+    "feat/updated-settings-page",
+    "origin"
+  ]
+}

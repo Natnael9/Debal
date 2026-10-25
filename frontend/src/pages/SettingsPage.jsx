@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { updateUserSettings, freezeAccount, unfreezeAccount } from "../services/settingsService";
 import DeleteAccountModal from "../components/DeleteAccountModal";
+import ImageLightboxModal from "../components/common/ImageLightboxModal";
 
 
 const SettingsPage = () => {
@@ -26,6 +28,7 @@ const SettingsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [generalMessage, setGeneralMessage] = useState({ type: "", text: "" });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isImageLightboxOpen, setIsImageLightboxOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -167,6 +170,71 @@ const SettingsPage = () => {
               Saving...
             </span>
           )}
+        </div>
+
+        {/* Profile / Account Overview Card in Settings */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div 
+              onClick={() => user?.avatarUrl && setIsImageLightboxOpen(true)}
+              className={`relative flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-gradient-to-br from-blue-50 to-indigo-100 text-lg sm:text-xl font-bold text-[#0B3954] shadow-sm ${
+                user?.avatarUrl ? "cursor-pointer group/avatar" : ""
+              }`}
+              title={user?.avatarUrl ? "Click to view full photo" : ""}
+            >
+              {user?.avatarUrl ? (
+                <>
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name || "User profile photo"}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover/avatar:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="p-1 rounded-full bg-black/50 text-white backdrop-blur-xs shadow-sm">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                    </span>
+                  </div>
+                </>
+              ) : (
+                (user?.name || "U").charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-gray-900 sm:text-lg">{user?.name || "Your Account"}</h2>
+                {user?.isVerified && (
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#2274A5]">
+                    Verified
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">{user?.email || ""}</p>
+              {user?.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setIsImageLightboxOpen(true)}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[#2274A5] hover:text-[#0B3954] transition cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View full image
+                </button>
+              )}
+            </div>
+          </div>
+          <Link
+            to="/app/profile"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-2xs transition active:scale-95 cursor-pointer self-start sm:self-center"
+          >
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Edit Profile
+          </Link>
         </div>
 
         {generalMessage.text && (
@@ -325,6 +393,14 @@ const SettingsPage = () => {
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
+      />
+
+      <ImageLightboxModal
+        isOpen={isImageLightboxOpen}
+        onClose={() => setIsImageLightboxOpen(false)}
+        imageUrl={user?.avatarUrl}
+        altText={`${user?.name || "User"}'s profile picture`}
+        title={`${user?.name || "Your"} Profile Photo`}
       />
     </div>
   );
