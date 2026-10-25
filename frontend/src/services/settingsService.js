@@ -35,6 +35,12 @@ export async function deleteMyAccount() {
 }
 
 export async function changePassword(passwordData) {
-  // If backend password route isn't built yet, you can hook this up when ready
-  return await apiPost("/users/change-password", passwordData);
+  try {
+    return await apiPost("/users/me/password", passwordData);
+  } catch (err) {
+    if (err.status === 404) {
+      return await apiPost("/users/change-password", passwordData);
+    }
+    throw err;
+  }
 }
