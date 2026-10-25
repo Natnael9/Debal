@@ -4,18 +4,50 @@ const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM || `"Debal App" <${SMTP_USER}>`;
+const SMTP_FROM = process.env.SMTP_FROM || `"Debal App" <${SMTP_USER || 'noreply@debal.app'}>`;
 
-// Create reusable transporter
-const transporter = (SMTP_USER && SMTP_PASS)
-  ? nodemailer.createTransport({
+function createEmailTransporter() {
+  if (!SMTP_USER || !SMTP_PASS) return null;
+
+  const isGmail = SMTP_HOST.includes('gmail');
+  if (isGmail) {
+    return nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS,
       },
-    })
-  : null;
+    });
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+}
+
+// Create reusable transporter and verify on startup
+export const transporter = createEmailTransporter();
+
+if (transporter) {
+  transporter.verify((err) => {
+    if (err) {
+      console.warn('⚠️ [email] SMTP verification failed:', err.message);
+    } else {
+      console.log(`✅ [email] SMTP service connected and ready to send emails (${SMTP_USER})`);
+    }
+  });
+} else {
+  console.log('ℹ️ [email] SMTP credentials (SMTP_USER / SMTP_PASS) not configured. Emails will log to console.');
+}
 
 export async function sendEmail({ to, subject, text, html }) {
   if (!transporter) {
