@@ -1,0 +1,178 @@
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
+
+const userSchema = new Schema(
+  {
+    // ---- Auth ----
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    passwordHash: {
+      type: String, // absent for Google-only accounts
+      select: false,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // allows many docs with no googleId
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
+
+    // ---- Policy acceptance (FR-1.8) ----
+    privacyPolicyAccepted: {
+      version: { type: String },
+      acceptedAt: { type: Date },
+    },
+
+    // ---- Profile (populated by questionnaire, FR-3.1) ----
+    name: { type: String, required: true, trim: true },
+    age: Number,
+    gender: { type: String, enum: ['male', 'female'] },
+    bio: { type: String, maxlength: 500 },
+    avatarUrl: String,
+    phone: { type: String, trim: true },
+
+    // ---- Housing status & team-up (FR-3.2, FR-3.7) ----
+    housingStatus: {
+      type: String,
+      enum: ['has_room', 'needs_room'],
+    },
+    teamUpEnabled: { type: Boolean, default: false },
+
+    // ---- Location ----
+    location: {
+      type: { type: String, enum: ['Point'] },
+      coordinates: { type: [Number], default: undefined }, // [lng, lat]
+      displayName: String,
+    },
+    maxDistance: Number, // km, match radius
+
+    // ---- Preferences / lifestyle ----
+    preferences: {
+      budgetMin: Number,
+      budgetMax: Number,
+      cleanliness: { type: Number, min: 1, max: 5 },
+      sleepSchedule: {
+        type: String,
+        enum: ['early_bird', 'night_owl', 'flexible'],
+      },
+      smokingOk: Boolean,
+      petsOk: Boolean,
+    },
+
+    // ---- Onboarding / questionnaire state ----
+    questionnaireCompleted: { type: Boolean, default: false },
+    questionnaireStep: { type: Number, default: 1 },
+    profileCompletionPercent: { type: Number, default: 0 },
+    onboardingCompletedAt: Date,
+
+    // ---- Identity verification placeholders (module built Day 2 — FR-2.x) ----
+    verificationStatus: {
+      type: String,
+      enum: ['unverified', 'pending', 'verified', 'rejected'],
+      default: 'unverified',
+    },
+    idNumberHash: {
+      type: String, // never store the raw ID number
+      select: false,
+      unique: true,
+      sparse: true,
+    },
+    verificationRejectedReason: String,
+    verifiedAt: Date,
+
+    // ---- Moderation state ----
+    suspended: { type: Boolean, default: false },
+    suspendedReason: String,
+    suspendedAt: Date,
+    suspendedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
+
+    notificationPreferences: {
+      newChatRequest: { type: Boolean, default: true },
+      requestAccepted: { type: Boolean, default: true },
+      newMessage: { type: Boolean, default: true },
+      meetupUpdate: { type: Boolean, default: true },
+      reportStatus: { type: Boolean, default: true },
+    },
+    notificationSettings: {
+      chatRequests: { type: Boolean, default: true },
+      acceptedRequests: { type: Boolean, default: true },
+      messages: { type: Boolean, default: true },
+      meetupUpdates: { type: Boolean, default: true },
+      reportStatus: { type: Boolean, default: true },
+    },
+
+    // ---- Social ----
+    blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+
+    // ---- Account freeze / pause state ----
+    pauseProfile: { type: Boolean, default: false },
+    isFrozen: { type: Boolean, default: false },
+    frozenAt: Date,
+  },
+  {
+    timestamps: true, // gives createdAt / updatedAt automatically
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        const isPausedVal = Boolean(ret.pauseProfile ?? ret.isFrozen);
+        ret.isPaused = isPausedVal;
+        ret.pauseProfile = isPausedVal;
+        ret.isFrozen = isPausedVal;
+        if (!ret.notificationSettings && ret.notificationPreferences) {
+          ret.notificationSettings = {
+            chatRequests: ret.notificationPreferences.newChatRequest ?? true,
+            acceptedRequests: ret.notificationPreferences.requestAccepted ?? true,
+            messages: ret.notificationPreferences.newMessage ?? true,
+            meetupUpdates: ret.notificationPreferences.meetupUpdate ?? true,
+            reportStatus: ret.notificationPreferences.reportStatus ?? true,
+          };
+        }
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (doc, ret) => {
+        const isPausedVal = Boolean(ret.pauseProfile ?? ret.isFrozen);
+        ret.isPaused = isPausedVal;
+        ret.pauseProfile = isPausedVal;
+        ret.isFrozen = isPausedVal;
+        if (!ret.notificationSettings && ret.notificationPreferences) {
+          ret.notificationSettings = {
+            chatRequests: ret.notificationPreferences.newChatRequest ?? true,
+            acceptedRequests: ret.notificationPreferences.requestAccepted ?? true,
+            messages: ret.notificationPreferences.newMessage ?? true,
+            meetupUpdates: ret.notificationPreferences.meetupUpdate ?? true,
+            reportStatus: ret.notificationPreferences.reportStatus ?? true,
+          };
+        }
+        return ret;
+      },
+    },
+  }
+);
+
+userSchema.virtual('isPaused').get(function () {
+  return Boolean(this.pauseProfile ?? this.isFrozen);
+});
+
+// ---- Compound & Special Indexes for Fast Lookups ----
+userSchema.index({ location: '2dsphere' }, { sparse: true });
+userSchema.index({ housingStatus: 1, verificationStatus: 1, questionnaireCompleted: 1, suspended: 1, isFrozen: 1, pauseProfile: 1 });
+userSchema.index({ isFrozen: 1 });
+userSchema.index({ pauseProfile: 1 });
+
+export const User = mongoose.model('User', userSchema);
+export default User;

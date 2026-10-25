@@ -1,0 +1,37 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node scripts/test-all.js",
+    "test:e2e": "node scripts/test-all.js"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/cors": "^11.3.0",
+    "@fastify/multipart": "^10.1.1",
+    "@sendgrid/mail": "^8.1.6",
+    "@tensorflow/tfjs": "^4.22.0",
+    "arctic": "^3.7.0",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^6.1.2",
+    "cloudinary": "^2.10.1",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.2",
+    "nodemailer": "^9.0.5",
+    "nsfwjs": "^4.3.0",
+    "otplib": "^13.4.1",
+    "resend": "^6.20.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}
