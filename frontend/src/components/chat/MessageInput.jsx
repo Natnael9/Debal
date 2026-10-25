@@ -55,7 +55,7 @@ function MessageInput({ onSend, onTyping, onStopTyping, disabled = false, disabl
     <div className="shrink-0 border-t border-gray-100 bg-white p-3 sm:p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-2 rounded-full border border-gray-200 bg-slate-50/80 px-4 py-1.5 shadow-2xs transition-all focus-within:border-[#2274A5] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2274A5]/15"
+        className="flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 bg-slate-50/80 dark:bg-[#242f3d] px-4 py-1.5 shadow-2xs transition-all focus-within:border-[#2274A5] focus-within:bg-white dark:focus-within:bg-[#242f3d] focus-within:ring-2 focus-within:ring-[#2274A5]/15"
       >
         <input
           type="text"
