@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { updateUserSettings, freezeAccount, unfreezeAccount } from "../services/settingsService";
+import { updateUserSettings, freezeAccount, unfreezeAccount, changePassword } from "../services/settingsService";
 import DeleteAccountModal from "../components/DeleteAccountModal";
 import ImageLightboxModal from "../components/common/ImageLightboxModal";
 
@@ -18,6 +18,11 @@ const SettingsPage = () => {
     reportStatus: true,
   });
 
+  // Phone state
+  const [phone, setPhone] = useState("");
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [phoneMessage, setPhoneMessage] = useState({ type: "", text: "" });
+
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -32,16 +37,17 @@ const SettingsPage = () => {
 
   useEffect(() => {
     if (user) {
-      setIsPaused(Boolean(user.isFrozen ?? user.isPaused));
-      if (user.notificationPreferences) {
-        setPreferences({
-          newChatRequest: user.notificationPreferences.newChatRequest ?? true,
-          requestAccepted: user.notificationPreferences.requestAccepted ?? true,
-          newMessage: user.notificationPreferences.newMessage ?? true,
-          meetupUpdate: user.notificationPreferences.meetupUpdate ?? true,
-          reportStatus: user.notificationPreferences.reportStatus ?? true,
-        });
-      }
+      setIsPaused(Boolean(user.pauseProfile ?? user.isFrozen ?? user.isPaused));
+      setPhone(user.phone || "");
+      const userPrefs = user.notificationPreferences || {};
+      const userSettings = user.notificationSettings || {};
+      setPreferences({
+        newChatRequest: userSettings.chatRequests ?? userPrefs.newChatRequest ?? true,
+        requestAccepted: userSettings.acceptedRequests ?? userPrefs.requestAccepted ?? true,
+        newMessage: userSettings.messages ?? userPrefs.newMessage ?? true,
+        meetupUpdate: userSettings.meetupUpdates ?? userPrefs.meetupUpdate ?? true,
+        reportStatus: userSettings.reportStatus ?? userPrefs.reportStatus ?? true,
+      });
     }
   }, [user]);
 
@@ -56,12 +62,12 @@ const SettingsPage = () => {
       if (updatedUser) {
         setUser(updatedUser);
       } else {
-        setUser((prev) => (prev ? { ...prev, isFrozen: nextPaused, isPaused: nextPaused } : prev));
+        setUser((prev) => (prev ? { ...prev, pauseProfile: nextPaused, isFrozen: nextPaused, isPaused: nextPaused } : prev));
       }
       setGeneralMessage({
         type: "success",
         text: nextPaused
-          ? "Account frozen successfully. Your profile is now hidden from the feed until manually unfrozen."
+          ? "Account paused successfully. Your profile is now hidden from the feed until manually reactivated."
           : "Account reactivated successfully. Your profile is visible in the feed again.",
       });
     } catch (err) {
@@ -83,13 +89,37 @@ const SettingsPage = () => {
     setGeneralMessage({ type: "", text: "" });
 
     try {
-      const updatedUser = await updateUserSettings({ notificationPreferences: nextPrefs });
+      const updatedUser = await updateUserSettings({
+        notificationPreferences: nextPrefs,
+        notificationSettings: {
+          chatRequests: nextPrefs.newChatRequest,
+          acceptedRequests: nextPrefs.requestAccepted,
+          messages: nextPrefs.newMessage,
+          meetupUpdates: nextPrefs.meetupUpdate,
+          reportStatus: nextPrefs.reportStatus,
+        },
+      });
       if (updatedUser) setUser(updatedUser);
     } catch (err) {
       setPreferences(preferences); // revert on error
       setGeneralMessage({ type: "error", text: err.message || "Failed to update notification settings." });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePhone = async (e) => {
+    e.preventDefault();
+    setIsSavingPhone(true);
+    setPhoneMessage({ type: "", text: "" });
+    try {
+      const updatedUser = await updateUserSettings({ phone: phone.trim() });
+      if (updatedUser) setUser(updatedUser);
+      setPhoneMessage({ type: "success", text: "Phone number updated successfully!" });
+    } catch (err) {
+      setPhoneMessage({ type: "error", text: err.message || "Failed to update phone number." });
+    } finally {
+      setIsSavingPhone(false);
     }
   };
 
@@ -108,6 +138,7 @@ const SettingsPage = () => {
 
     setPasswordLoading(true);
     try {
+      await changePassword({ currentPassword, newPassword });
       setPasswordMessage({ type: "success", text: "Password changed successfully!" });
       setCurrentPassword("");
       setNewPassword("");
@@ -267,6 +298,45 @@ const SettingsPage = () => {
               </svg>
             }
           />
+        </div>
+
+        {/* Contact & Phone Number Card */}
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-700">Contact Information</h2>
+            <span className="text-[11px] text-gray-400">Account phone for notifications</span>
+          </div>
+
+          {phoneMessage.text && (
+            <div className={`p-3 rounded-xl text-xs font-medium border ${phoneMessage.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+              {phoneMessage.text}
+            </div>
+          )}
+
+          <form onSubmit={handleSavePhone} className="space-y-3">
+            <div>
+              <label htmlFor="settingsPhone" className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Phone Number
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  id="settingsPhone"
+                  type="tel"
+                  placeholder="+251 91 234 5678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="flex-1 rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-sm outline-none focus:border-[#2274A5] focus:bg-white focus:ring-2 focus:ring-[#2274A5]/10"
+                />
+                <button
+                  type="submit"
+                  disabled={isSavingPhone}
+                  className="rounded-xl bg-[#2274A5] hover:bg-[#1b5e87] px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition disabled:opacity-60 cursor-pointer shrink-0"
+                >
+                  {isSavingPhone ? "Saving..." : "Save Phone"}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
 
         {/* Notifications Card */}
