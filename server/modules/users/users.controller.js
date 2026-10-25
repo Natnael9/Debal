@@ -6,6 +6,7 @@ import {
   freezeAccount,
   unfreezeAccount,
   deleteAccount,
+  changeUserPassword,
   UsersError,
 } from './users.service.js';
 
@@ -156,6 +157,35 @@ async function deleteAccountHandler(request, reply) {
   }
 }
 
+async function changePasswordHandler(request, reply) {
+  const { currentPassword, newPassword } = request.body || {};
+  if (!currentPassword || !newPassword) {
+    return reply.status(400).send({
+      success: false,
+      error: 'VALIDATION_ERROR',
+      message: 'Current password and new password are required.',
+    });
+  }
+
+  try {
+    const result = await changeUserPassword(request.user._id, { currentPassword, newPassword });
+    return reply.status(200).send({
+      success: true,
+      message: result.message || 'Password updated successfully.',
+    });
+  } catch (err) {
+    if (err instanceof UsersError) {
+      return reply
+        .status(err.statusCode)
+        .send({ success: false, error: 'USERS_ERROR', message: err.message });
+    }
+    request.log.error(err);
+    return reply
+      .status(500)
+      .send({ success: false, error: 'SERVER_ERROR', message: 'Failed to update password.' });
+  }
+}
+
 export {
   submitQuestionnaireHandler,
   updateProfileHandler,
@@ -163,4 +193,5 @@ export {
   freezeAccountHandler,
   unfreezeAccountHandler,
   deleteAccountHandler,
+  changePasswordHandler,
 };

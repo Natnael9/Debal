@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import User from './users.model.js';
 import Bookmark from '../bookmarks/bookmarks.model.js';
 import Match from '../chat/matches.model.js';
@@ -10,13 +11,20 @@ import { calculateProfileCompletion } from './completion.util.js';
 import { enqueuePhotoModerationJob } from '../moderation/moderation.queue.js';
 import { getRedisClient, isRedisHealthy } from '../../config/redis.js';
 
-async function invalidateUserCaches(userId) {
+async function invalidateUserCaches(userId, { clearAllMatchFeeds = false } = {}) {
   if (!userId) return;
   try {
     if (isRedisHealthy()) {
       const redis = getRedisClient();
       const uid = userId.toString();
       await redis.del(`user_session:${uid}`, `match_feed:${uid}`);
+      if (clearAllMatchFeeds) {
+        // Clear all cached match feeds so paused profile immediately vanishes
+        const keys = await redis.keys('match_feed:*');
+        if (keys && keys.length > 0) {
+          await redis.del(...keys);
+        }
+      }
     }
   } catch (err) {
     console.warn('[users] Failed to invalidate Redis user cache:', err.message);
@@ -121,11 +129,33 @@ async function updateProfile(userId, data) {
   }
 
   if (maxDistance !== undefined) user.maxDistance = maxDistance;
+  if (data.phone !== undefined) user.phone = data.phone;
 
-  if (data.isFrozen !== undefined || data.isPaused !== undefined) {
-    const nextVal = Boolean(data.isFrozen !== undefined ? data.isFrozen : data.isPaused);
+  let pauseToggled = false;
+  if (data.pauseProfile !== undefined || data.isFrozen !== undefined || data.isPaused !== undefined) {
+    const nextVal = Boolean(
+      data.pauseProfile !== undefined ? data.pauseProfile :
+      data.isFrozen !== undefined ? data.isFrozen : data.isPaused
+    );
+    user.pauseProfile = nextVal;
     user.isFrozen = nextVal;
     user.frozenAt = nextVal ? (user.frozenAt || new Date()) : null;
+    pauseToggled = true;
+  }
+
+  if (data.notificationSettings) {
+    user.notificationSettings = {
+      ...(user.notificationSettings?.toObject?.() || user.notificationSettings || {}),
+      ...data.notificationSettings,
+    };
+    user.notificationPreferences = {
+      ...(user.notificationPreferences?.toObject?.() || user.notificationPreferences || {}),
+      newChatRequest: data.notificationSettings.chatRequests ?? user.notificationPreferences?.newChatRequest ?? true,
+      requestAccepted: data.notificationSettings.acceptedRequests ?? user.notificationPreferences?.requestAccepted ?? true,
+      newMessage: data.notificationSettings.messages ?? user.notificationPreferences?.newMessage ?? true,
+      meetupUpdate: data.notificationSettings.meetupUpdates ?? user.notificationPreferences?.meetupUpdate ?? true,
+      reportStatus: data.notificationSettings.reportStatus ?? user.notificationPreferences?.reportStatus ?? true,
+    };
   }
 
   if (data.notificationPreferences) {
@@ -133,11 +163,19 @@ async function updateProfile(userId, data) {
       ...(user.notificationPreferences?.toObject?.() || user.notificationPreferences || {}),
       ...data.notificationPreferences,
     };
+    user.notificationSettings = {
+      ...(user.notificationSettings?.toObject?.() || user.notificationSettings || {}),
+      chatRequests: data.notificationPreferences.newChatRequest ?? user.notificationSettings?.chatRequests ?? true,
+      acceptedRequests: data.notificationPreferences.requestAccepted ?? user.notificationSettings?.acceptedRequests ?? true,
+      messages: data.notificationPreferences.newMessage ?? user.notificationSettings?.messages ?? true,
+      meetupUpdates: data.notificationPreferences.meetupUpdate ?? user.notificationSettings?.meetupUpdates ?? true,
+      reportStatus: data.notificationPreferences.reportStatus ?? user.notificationSettings?.reportStatus ?? true,
+    };
   }
 
   user.profileCompletionPercent = calculateProfileCompletion(user);
   await user.save();
-  await invalidateUserCaches(userId);
+  await invalidateUserCaches(userId, { clearAllMatchFeeds: pauseToggled });
   return user;
 }
 
@@ -146,6 +184,7 @@ async function freezeAccount(userId) {
     userId,
     {
       isFrozen: true,
+      pauseProfile: true,
       frozenAt: new Date(),
     },
     { new: true }
@@ -155,7 +194,7 @@ async function freezeAccount(userId) {
     throw new UsersError('User not found.', 404);
   }
 
-  await invalidateUserCaches(userId);
+  await invalidateUserCaches(userId, { clearAllMatchFeeds: true });
   return user;
 }
 
@@ -164,6 +203,7 @@ async function unfreezeAccount(userId) {
     userId,
     {
       isFrozen: false,
+      pauseProfile: false,
       frozenAt: null,
     },
     { new: true }
@@ -173,7 +213,7 @@ async function unfreezeAccount(userId) {
     throw new UsersError('User not found.', 404);
   }
 
-  await invalidateUserCaches(userId);
+  await invalidateUserCaches(userId, { clearAllMatchFeeds: true });
   return user;
 }
 
@@ -239,12 +279,43 @@ async function getUserProfileById(userId) {
   return user;
 }
 
+async function changeUserPassword(userId, { currentPassword, newPassword }) {
+  if (!currentPassword || !newPassword) {
+    throw new UsersError('Current password and new password are required.', 400);
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    throw new UsersError('New password must be at least 6 characters long.', 400);
+  }
+
+  const user = await User.findById(userId).select('+passwordHash');
+  if (!user) {
+    throw new UsersError('User not found.', 404);
+  }
+
+  if (!user.passwordHash) {
+    throw new UsersError('This account was created via social login and does not have a password set.', 400);
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) {
+    throw new UsersError('Current password is incorrect.', 400);
+  }
+
+  const hash = await bcrypt.hash(newPassword, 12);
+  user.passwordHash = hash;
+  await user.save();
+
+  await invalidateUserCaches(userId);
+  return { success: true, message: 'Password changed successfully.' };
+}
+
 export {
   submitQuestionnaire,
   updateProfile,
   freezeAccount,
   unfreezeAccount,
   deleteAccount,
+  changeUserPassword,
   getUserProfileById,
   UsersError,
 };
