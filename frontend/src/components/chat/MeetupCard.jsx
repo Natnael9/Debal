@@ -81,8 +81,8 @@ function MeetupCard({
   ====================================================== */
   if (status === "none") {
     return (
-      <div className="flex w-full max-w-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-4 text-center md:max-w-[245px]">
-        <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+      <div className="flex w-full max-w-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#111822]/50 p-4 text-center md:max-w-[245px]">
+        <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-[#242f3d] text-gray-400 dark:text-gray-500">
           <svg
             className="h-4 w-4"
             fill="none"
@@ -98,11 +98,11 @@ function MeetupCard({
           </svg>
         </div>
 
-        <p className="text-[11px] font-semibold text-gray-700">
+        <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">
           No active meetup
         </p>
 
-        <p className="mt-0.5 text-[9px] text-gray-400">
+        <p className="mt-0.5 text-[9px] text-gray-400 dark:text-gray-500">
           Propose a meetup to schedule an in-person meeting.
         </p>
       </div>
@@ -110,17 +110,17 @@ function MeetupCard({
   }
 
   return (
-    <div className="flex w-full max-w-[220px] flex-col rounded-2xl border border-gray-100 bg-white p-2.5 shadow-sm transition hover:shadow-md md:max-w-[245px]">
+    <div className="flex w-full max-w-[220px] flex-col rounded-2xl border border-gray-100 dark:border-[#232e3c] bg-white dark:bg-[#17212b] p-2.5 shadow-sm transition hover:shadow-md md:max-w-[245px]">
 
       {/* =====================================================
           HEADER
       ====================================================== */}
-      <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+      <div className="flex items-center justify-between border-b border-gray-100 dark:border-[#232e3c] pb-2">
         <div className="flex min-w-0 items-center gap-2">
 
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-900 shadow-2xs">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-sky-300 shadow-2xs">
             <svg
-              className="h-4 w-4 text-blue-900"
+              className="h-4 w-4 text-blue-900 dark:text-sky-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -135,13 +135,13 @@ function MeetupCard({
           </div>
 
           <div className="truncate">
-            <h3 className="truncate text-[10px] font-bold leading-tight text-slate-900">
+            <h3 className="truncate text-[10px] font-bold leading-tight text-slate-900 dark:text-white">
               Meetup Proposal
             </h3>
 
             <p className="truncate text-[8px] text-slate-400">
               by{" "}
-              <span className="font-medium text-slate-600">
+              <span className="font-medium text-slate-600 dark:text-slate-300">
                 {proposedBy}
               </span>
             </p>
@@ -153,10 +153,10 @@ function MeetupCard({
           <span
             className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-semibold ${
               isConfirmed
-                ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                ? "border border-emerald-100 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
                 : isDeclined
-                ? "border border-rose-100 bg-rose-50 text-rose-700"
-                : "border border-blue-100/60 bg-blue-50 text-blue-900"
+                ? "border border-rose-100 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400"
+                : "border border-blue-100/60 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-sky-300"
             }`}
           >
             {isConfirmed
@@ -171,7 +171,7 @@ function MeetupCard({
             <button
               type="button"
               onClick={onRemove || onCancel || onDecline}
-              className="flex h-5 w-5 items-center justify-center rounded-full text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition shrink-0"
+              className="flex h-5 w-5 items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition shrink-0"
               title="Delete meetup from history and panel"
               aria-label="Delete meetup from history and panel"
             >
@@ -186,13 +186,13 @@ function MeetupCard({
       {/* =====================================================
           DETAILS BOX
       ====================================================== */}
-      <div className="mt-2 space-y-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2">
+      <div className="mt-2 space-y-2 rounded-xl border border-slate-100 dark:border-[#232e3c] bg-slate-50/70 dark:bg-[#111822] p-2">
 
         {/* DATE */}
         <div className="flex items-center gap-2">
-          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-700 shadow-2xs">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-sky-100 dark:border-sky-800/40 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 shadow-2xs">
             <svg
-              className="h-3.5 w-3.5 text-sky-700"
+              className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -211,7 +211,7 @@ function MeetupCard({
               Date
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
+            <p className="truncate text-[10px] font-semibold text-slate-900 dark:text-white mt-0.5">
               {formattedDate}
             </p>
           </div>
@@ -219,9 +219,9 @@ function MeetupCard({
 
         {/* TIME */}
         <div className="flex items-center gap-2">
-          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-700 shadow-2xs">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-2xs">
             <svg
-              className="h-3.5 w-3.5 text-indigo-700"
+              className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -240,7 +240,7 @@ function MeetupCard({
               Time
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
+            <p className="truncate text-[10px] font-semibold text-slate-900 dark:text-white mt-0.5">
               {formattedTime}
             </p>
           </div>
@@ -248,9 +248,9 @@ function MeetupCard({
 
         {/* LOCATION */}
         <div className="flex items-center gap-2">
-          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-2xs">
+          <div className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border border-emerald-100 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-2xs">
             <svg
-              className="h-3.5 w-3.5 text-emerald-700"
+              className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -275,7 +275,7 @@ function MeetupCard({
               Location
             </p>
 
-            <p className="truncate text-[10px] font-semibold text-slate-900 mt-0.5">
+            <p className="truncate text-[10px] font-semibold text-slate-900 dark:text-white mt-0.5">
               {displayLocation}
             </p>
           </div>
@@ -286,12 +286,12 @@ function MeetupCard({
           NOTE
       ====================================================== */}
       {displayNote && (
-        <div className="mt-2 rounded-lg border border-blue-100/60 bg-blue-50/30 px-2 py-1">
-          <p className="text-[7px] font-medium uppercase text-blue-900/60">
+        <div className="mt-2 rounded-lg border border-blue-100/60 dark:border-blue-900/40 bg-blue-50/30 dark:bg-blue-950/20 px-2 py-1">
+          <p className="text-[7px] font-medium uppercase text-blue-900/60 dark:text-sky-300/70">
             Note
           </p>
 
-          <p className="mt-0.5 line-clamp-2 text-[9px] italic leading-tight text-slate-600">
+          <p className="mt-0.5 line-clamp-2 text-[9px] italic leading-tight text-slate-600 dark:text-slate-300">
             "{displayNote}"
           </p>
         </div>
@@ -304,13 +304,13 @@ function MeetupCard({
         <div className="mt-2.5">
           {isProposer ? (
             <div className="flex flex-col gap-1.5 text-center">
-              <span className="rounded-lg border border-blue-100 bg-blue-50/70 py-1 text-[9px] font-medium text-blue-800">
+              <span className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-950/30 py-1 text-[9px] font-medium text-blue-800 dark:text-sky-300">
                 ⏳ Waiting for response...
               </span>
               <button
                 type="button"
                 onClick={onRemove || onCancel || onDecline}
-                className="w-full rounded-lg border border-rose-200 bg-rose-50/50 py-1 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 active:scale-98"
+                className="w-full rounded-lg border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/30 py-1 text-[10px] font-semibold text-rose-700 dark:text-rose-400 transition hover:bg-rose-100 dark:hover:bg-rose-900/40 dark:hover:text-rose-300 active:scale-98"
               >
                 Cancel Proposal
               </button>
@@ -321,7 +321,7 @@ function MeetupCard({
               <button
                 type="button"
                 onClick={onDecline}
-                className="flex-1 rounded-lg border border-gray-200 bg-white py-1 text-[10px] font-semibold text-slate-600 transition hover:bg-gray-50 active:scale-98"
+                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1c2733] py-1 text-[10px] font-semibold text-slate-600 dark:text-slate-200 transition hover:bg-gray-50 dark:hover:bg-[#232e3c] active:scale-98"
               >
                 Decline
               </button>
@@ -330,7 +330,7 @@ function MeetupCard({
               <button
                 type="button"
                 onClick={onAccept}
-                className="flex-1 rounded-lg bg-blue-900 py-1 text-[10px] font-semibold text-white shadow-xs transition hover:bg-blue-800 active:scale-98"
+                className="flex-1 rounded-lg bg-blue-900 dark:bg-[#2274A5] py-1 text-[10px] font-semibold text-white shadow-xs transition hover:bg-blue-800 dark:hover:bg-[#1b5e87] active:scale-98"
               >
                 Accept
               </button>
@@ -343,8 +343,8 @@ function MeetupCard({
           DECLINED MESSAGE
       ====================================================== */}
       {isDeclined && (
-        <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-2 py-1.5 text-center">
-          <p className="text-[9px] font-semibold text-rose-700">
+        <div className="mt-2 rounded-lg border border-rose-100 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 px-2 py-1.5 text-center">
+          <p className="text-[9px] font-semibold text-rose-700 dark:text-rose-400">
             Meetup Declined / Cancelled
           </p>
         </div>

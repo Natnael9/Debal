@@ -113,10 +113,10 @@ html.dark,
   --warning-text: #fde68a;
   --warning-border: rgba(245, 158, 11, 0.3);
   --danger: #f87171;
-  --danger-bg: rgba(239, 68, 68, 0.16);
-  --danger-text: #fca5a5;
-  --danger-border: rgba(239, 68, 68, 0.3);
-  --danger-deep: #fda4af;
+  --danger-bg: rgba(220, 38, 38, 0.12);
+  --danger-text: #f87171;
+  --danger-border: rgba(239, 68, 68, 0.25);
+  --danger-deep: #fca5a5;
 }
 
 @theme {
@@ -267,17 +267,20 @@ html.dark .bg-amber-50 {
 
 html.dark .bg-red-50,
 html.dark .bg-rose-50,
-html.dark .bg-rose-50\/30 {
+html.dark .bg-rose-50\/30,
+html.dark .bg-rose-50\/50,
+html.dark .bg-rose-50\/70 {
   background-color: var(--danger-bg) !important;
   color: var(--danger-text) !important;
   border-color: var(--danger-border) !important;
 }
 
 html.dark .text-rose-600,
+html.dark .text-rose-700,
 html.dark .text-rose-800,
 html.dark .text-red-600,
 html.dark .text-red-700 {
-  color: var(--danger-deep) !important;
+  color: var(--danger-text) !important;
 }
 
 /* Custom Dropdown Styling throughout website */
@@ -371,21 +374,37 @@ html.dark ::-webkit-calendar-picker-indicator {
   border-color: var(--color-brand) !important;
 }
 
-/* Amber / Warning Contrast in Dark Mode */
+/* Amber / Warning Contrast in Dark Mode (Matching Account Frozen) */
 html.dark .text-amber-950,
 html.dark .text-amber-900,
-html.dark .text-amber-800 {
+html.dark .text-amber-800,
+html.dark .text-amber-700 {
   color: #fde68a !important;
 }
 
-html.dark .bg-amber-50 {
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/50,
+html.dark .bg-amber-50\/70,
+html.dark .bg-amber-50\/80 {
   background-color: rgba(120, 53, 15, 0.25) !important;
 }
 
-html.dark .border-amber-200 {
+html.dark .border-amber-100,
+html.dark .border-amber-200,
+html.dark .border-amber-200\/70 {
   border-color: rgba(245, 158, 11, 0.3) !important;
 }
 
 html.dark .bg-amber-100 {
   background-color: rgba(120, 53, 15, 0.45) !important;
+}
+
+/* Rose / Danger Contrast in Dark Mode (Matching Danger Zone) */
+html.dark .border-rose-100,
+html.dark .border-rose-200,
+html.dark .border-rose-200\/70,
+html.dark .border-rose-200\/80,
+html.dark .border-red-100,
+html.dark .border-red-200 {
+  border-color: rgba(239, 68, 68, 0.25) !important;
 }

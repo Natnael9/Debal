@@ -113,7 +113,7 @@ function ChatWindowComponent({
           <button
             type="button"
             onClick={onOpenSidebar}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition hover:bg-gray-200 md:hidden"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 dark:bg-[#242f3d] text-gray-600 dark:text-gray-300 transition hover:bg-gray-200 dark:hover:bg-[#2c3848] md:hidden"
             aria-label="Open chat list"
           >
             <svg
@@ -165,8 +165,8 @@ function ChatWindowComponent({
               onClick={() => setShowActions((prev) => !prev)}
               className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
                 showActions
-                  ? "bg-gray-100 text-gray-800"
-                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  ? "bg-gray-100 dark:bg-[#242f3d] text-gray-800 dark:text-gray-100"
+                  : "text-gray-400 hover:bg-gray-100 dark:hover:bg-[#242f3d] hover:text-gray-600 dark:hover:text-gray-200"
               }`}
               aria-label="Chat actions"
             >
@@ -186,7 +186,7 @@ function ChatWindowComponent({
             </button>
 
             {showActions && (
-              <div className="absolute right-0 top-8 z-50 w-44 origin-top-right rounded-2xl border border-gray-100 bg-white p-1.5 shadow-xl shadow-slate-200/60 ring-1 ring-black/5 focus:outline-none">
+              <div className="absolute right-0 top-8 z-50 w-44 origin-top-right rounded-2xl border border-gray-100 dark:border-[#232e3c] bg-white dark:bg-[#17212b] p-1.5 shadow-xl shadow-slate-200/60 dark:shadow-black/40 ring-1 ring-black/5 dark:ring-white/5 focus:outline-none">
                 {/* Show Meetups Button (Mobile only, since desktop already shows meetups panel) */}
                 <button
                   type="button"
@@ -194,9 +194,9 @@ function ChatWindowComponent({
                     setShowActions(false);
                     onOpenMeetups?.();
                   }}
-                  className="group flex md:hidden w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-blue-50 hover:text-blue-900"
+                  className="group flex md:hidden w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 dark:text-gray-200 transition hover:bg-blue-50 dark:hover:bg-[#242f3d] hover:text-blue-900 dark:hover:text-sky-300"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-900 group-hover:bg-white">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-sky-300 group-hover:bg-white dark:group-hover:bg-[#1c2733]">
                     <svg
                       className="h-3.5 w-3.5"
                       fill="none"
@@ -220,9 +220,9 @@ function ChatWindowComponent({
                     setShowActions(false);
                     setShowMeetupRequest(true);
                   }}
-                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 transition hover:bg-emerald-50 hover:text-emerald-700"
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-700 dark:text-gray-200 transition hover:bg-emerald-50 dark:hover:bg-[#242f3d] hover:text-emerald-700 dark:hover:text-emerald-400"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-white">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 group-hover:bg-white dark:group-hover:bg-[#1c2733]">
                     <svg
                       className="h-3.5 w-3.5"
                       fill="none"
@@ -241,7 +241,7 @@ function ChatWindowComponent({
                   <span>Send Meetup</span>
                 </button>
 
-                <div className="my-1 border-t border-gray-100" />
+                <div className="my-1 border-t border-gray-100 dark:border-[#232e3c]" />
 
                 <button
                   type="button"
@@ -249,9 +249,9 @@ function ChatWindowComponent({
                     setShowActions(false);
                     setShowDeleteModal(true);
                   }}
-                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-rose-600 dark:text-rose-400 transition hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-300"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50 text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-700">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/40 group-hover:text-rose-700 dark:group-hover:text-rose-300">
                     <svg
                       className="h-3.5 w-3.5"
                       viewBox="0 0 24 24"
@@ -271,9 +271,9 @@ function ChatWindowComponent({
                     setShowActions(false);
                     setShowReportModal(true);
                   }}
-                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-600 transition hover:bg-amber-50 hover:text-amber-700"
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-gray-600 dark:text-gray-300 transition hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-700 dark:hover:text-amber-300"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 text-gray-400 group-hover:bg-amber-100 group-hover:text-amber-700">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 dark:bg-amber-950/40 text-gray-400 dark:text-amber-400 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 group-hover:text-amber-700 dark:group-hover:text-amber-300">
                     <svg
                       className="h-3.5 w-3.5"
                       fill="none"
@@ -302,9 +302,9 @@ function ChatWindowComponent({
                         console.error("Failed to unblock user:", err);
                       }
                     }}
-                    className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                    className="group flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[11px] font-medium text-emerald-600 dark:text-emerald-400 transition hover:bg-emerald-50 dark:hover:bg-[#242f3d] hover:text-emerald-700 dark:hover:text-emerald-300"
                   >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100">
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>

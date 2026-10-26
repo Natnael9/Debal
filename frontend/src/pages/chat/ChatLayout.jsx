@@ -770,9 +770,9 @@ function ChatLayout() {
         </div>
 
         {/* 3. DESKTOP MEETUP PANEL */}
-        <aside className="hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 shadow-sm h-full md:flex">
-          <div className="mb-3 flex w-full flex-col items-center border-b border-gray-100 pb-2.5 text-center">
-            <h2 className="text-xs font-bold leading-tight text-gray-900">Meetups</h2>
+        <aside className="hidden w-[290px] shrink-0 flex-col items-center overflow-y-auto rounded-3xl border border-gray-100 dark:border-[#232e3c] bg-white dark:bg-[#17212b] p-4 shadow-sm h-full md:flex">
+          <div className="mb-3 flex w-full flex-col items-center border-b border-gray-100 dark:border-[#232e3c] pb-2.5 text-center">
+            <h2 className="text-xs font-bold leading-tight text-gray-900 dark:text-white">Meetups</h2>
             <p className="mt-0.5 text-[9px] leading-none text-gray-400">
               Meetup proposals with {activeChat?.name ?? "..."}
             </p>
@@ -818,10 +818,10 @@ function ChatLayout() {
             onClick={() => setIsMeetupOpen(false)}
             className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
           />
-          <div className="fixed inset-x-4 top-1/2 z-[70] max-h-[85vh] -translate-y-1/2 overflow-y-auto rounded-3xl border border-gray-100 bg-white p-5 shadow-2xl md:hidden">
-            <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="fixed inset-x-4 top-1/2 z-[70] max-h-[85vh] -translate-y-1/2 overflow-y-auto rounded-3xl border border-gray-100 dark:border-[#232e3c] bg-white dark:bg-[#17212b] p-5 shadow-2xl md:hidden">
+            <div className="mb-4 flex items-center justify-between border-b border-gray-100 dark:border-[#232e3c] pb-3">
               <div>
-                <h2 className="text-sm font-bold text-gray-900">Meetups</h2>
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white">Meetups</h2>
                 <p className="text-[10px] text-gray-400">
                   Meetup proposals with {activeChat?.name ?? "..."}
                 </p>
@@ -829,7 +829,7 @@ function ChatLayout() {
               <button
                 type="button"
                 onClick={() => setIsMeetupOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-[#242f3d] text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2c3848]"
               >
                 ✕
               </button>

@@ -29,7 +29,7 @@ function ChatListComponent({ chats = [], activeChatId, onSelectChat, onCloseMobi
         <button
           type="button"
           onClick={onCloseMobile}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 md:hidden"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-[#242f3d] text-gray-500 dark:text-gray-300 transition hover:bg-gray-200 dark:hover:bg-[#2c3848] md:hidden"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />

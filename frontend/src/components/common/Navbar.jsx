@@ -253,13 +253,13 @@ function Navbar() {
                   </div>
 
                   {/* Logout Button */}
-                  <div className="border-t border-gray-100 pt-1">
+                  <div className="border-t border-gray-100 dark:border-[#232e3c] pt-1">
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50/70"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-50/70 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                     >
-                      <svg className="h-3.5 w-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
                       Logout
@@ -352,7 +352,7 @@ function Navbar() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full rounded-xl border border-rose-100 bg-rose-50/50 py-2 text-center text-xs font-semibold text-rose-600 hover:bg-rose-100/50"
+                  className="w-full rounded-xl border border-rose-200/80 dark:border-rose-500/30 bg-rose-50/50 dark:bg-rose-950/30 py-2 text-center text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100/50 dark:hover:bg-rose-900/40 dark:hover:text-rose-300 transition"
                 >
                   Logout
                 </button>

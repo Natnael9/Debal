@@ -112,7 +112,7 @@ function ReportModal({ user, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-[1.5rem] w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-gray-100 text-[0.75rem] text-gray-500 transition hover:bg-gray-200"
+                className="flex h-[1.5rem] w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-[#242f3d] text-[0.75rem] text-gray-500 dark:text-gray-300 transition hover:bg-gray-200 dark:hover:bg-[#2c3848]"
                 aria-label="Close report modal"
               >
                 ✕

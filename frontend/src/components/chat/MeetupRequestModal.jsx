@@ -115,7 +115,7 @@ function MeetupRequestModal({ matchId, user, onClose, onSent }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-[#242f3d] hover:text-slate-600 dark:hover:text-slate-200"
             aria-label="Close"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
