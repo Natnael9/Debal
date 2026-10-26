@@ -2,7 +2,7 @@ import { isDatabaseHealthy } from '../config/database.js';
 import { isRedisHealthy } from '../config/redis.js';
 
 export default async function healthRoute(fastify) {
-  fastify.get('/health', async (request, reply) => {
+  const handleHealth = async (request, reply) => {
     const dbOk = isDatabaseHealthy();
     const redisOk = await isRedisHealthy();
     const allOk = dbOk && redisOk;
@@ -15,5 +15,9 @@ export default async function healthRoute(fastify) {
       },
       timestamp: new Date().toISOString(),
     });
-  });
+  };
+
+  fastify.get('/health', handleHealth);
+  fastify.get('/api/health', handleHealth);
+  fastify.get('/api/v1/health', handleHealth);
 }
