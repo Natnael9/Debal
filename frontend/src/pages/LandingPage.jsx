@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import bgImage from '../assets/Background.jpg';
+import { useTheme } from '../context/ThemeContext';
+import bgLight from '../assets/Background.jpg';
+import bgDark from '../assets/Background-dark.jpg';
 
 // Helper component for smooth scroll-reveal animations
 const FadeInSection = ({ children, delay = 0 }) => {
@@ -44,6 +46,8 @@ const FadeInSection = ({ children, delay = 0 }) => {
 
 const LandingPage = () => {
   const { isAuthenticated, user, loading } = useAuth();
+  const { isDark } = useTheme();
+  const bgImage = isDark ? bgDark : bgLight;
 
   if (!loading && isAuthenticated) {
     if (user && !user.questionnaireCompleted) {
