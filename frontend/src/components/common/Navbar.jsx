@@ -232,7 +232,7 @@ function Navbar() {
                       Settings
                     </NavLink>
 
-                    {/* Telegram-style Night Mode toggle row */}
+                    {/* Night Mode toggle row */}
                     <div className="flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-700">
                       <div className="flex items-center gap-2">
                         <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -120,7 +120,7 @@ const BookmarksPage = () => {
         
         {/* Page Header */}
         <div className="mb-8 border-b border-gray-200 pb-5">
-          <h1 className="text-3xl font-extrabold text-[#0B3954]">Saved Profiles</h1>
+          <h1 className="text-3xl font-extrabold text-[#0B3954] dark:!text-white">Saved Profiles</h1>
           <p className="mt-2 text-sm text-gray-500">
             Keep track of potential roommates you want to connect with later.
           </p>

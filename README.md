@@ -1,5 +1,7 @@
 # Debal
 
+> **Live Application:** [https://debal-orcin.vercel.app/app/dashboard](https://debal-orcin.vercel.app/app/dashboard)
+
 ## Overview
 
 **Debal** is a platform that helps people find compatible roommates to rent a home together. It aims to make the roommate-finding process more secure, trustworthy, and efficient.
@@ -82,7 +84,7 @@ Access the application at `http://localhost:5173`.
    - `REDIS_URL`: Managed Redis connection string (`rediss://...`)
    - `JWT_ACCESS_SECRET` & `JWT_REFRESH_SECRET`
    - `IDENTITY_ENCRYPTION_KEY` & `ID_HASH_PEPPER`
-   - `FRONTEND_URL`: URL of your deployed frontend (e.g., `https://debal.vercel.app`)
+   - `FRONTEND_URL`: URL of your deployed frontend (e.g., `https://debal-orcin.vercel.app`)
 
 2. **Start Command**:
    ```bash

@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ==========================================================================
-   CSS Variables Architecture: Light & Dark (Telegram Night Mode Inspired)
+   CSS Variables Architecture: Light & Dark
    ========================================================================== */
 :root {
   /* Brand / Primary Palette */
@@ -61,7 +61,7 @@
 }
 
 /* ==========================================================================
-   Dark Theme (Telegram Desktop Night Mode Palette)
+   Dark Theme
    ========================================================================== */
 html.dark,
 [data-theme="dark"] {
@@ -74,7 +74,7 @@ html.dark,
   --color-brand-border: rgba(58, 142, 204, 0.3);
   --color-brand-ring: rgba(58, 142, 204, 0.25);
 
-  /* Telegram Dark Surfaces */
+  /* Dark Surfaces */
   --bg-app: #0b1017;
   --bg-surface: #17212b;
   --bg-surface-elevated: #242f3d;

@@ -23,7 +23,7 @@ const ThemeToggle = ({ className = "" }) => {
           />
         </svg>
       ) : (
-        /* Moon Icon for Switching to Night Mode (Telegram style) */
+        /* Moon Icon for Switching to Night Mode */
         <svg className="w-5 h-5 text-gray-600 hover:text-[#2274A5] transition-transform -rotate-12 hover:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"

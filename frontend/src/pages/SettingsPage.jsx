@@ -301,15 +301,15 @@ const SettingsPage = () => {
           />
         </div>
 
-        {/* Appearance & Night Mode (Telegram Inspired) */}
+        {/* Appearance & Night Mode */}
         <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm sm:p-7 space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-700">Appearance</h2>
-            <span className="text-[11px] text-gray-400">Telegram-inspired Night Mode</span>
+            <span className="text-[11px] text-gray-400">Night Mode</span>
           </div>
           <SettingRow
             title="Night Mode"
-            description="Switch to deep dark blue Telegram night theme for comfortable viewing in low-light environments."
+            description="Switch to dark theme for comfortable viewing in low-light environments."
             checked={isDark}
             onChange={toggleTheme}
             icon={
