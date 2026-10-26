@@ -96,7 +96,7 @@ async function loginUser({ email, password }) {
   const user = await User.findOne({ email }).select('+passwordHash');
 
   if (!user) {
-    throw new AuthError('Invalid email or password.', 401);
+    throw new AuthError("An account with this detail doesn't exist", 401);
   }
 
   // Handle Google OAuth registered accounts attempting password login
@@ -105,7 +105,7 @@ async function loginUser({ email, password }) {
   }
 
   if (!user.passwordHash) {
-    throw new AuthError('Invalid email or password.', 401);
+    throw new AuthError("An account with this detail doesn't exist", 401);
   }
 
   const passwordMatches = await bcrypt.compare(password, user.passwordHash);

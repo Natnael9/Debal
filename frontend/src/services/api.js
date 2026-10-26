@@ -119,7 +119,7 @@ async function _fetch(path, options = {}, retried = false) {
       message = "Service temporarily unavailable. Please try again in a few moments.";
     } else if (res.status === 401) {
       if (path.includes('/auth/login')) {
-        message = "Invalid email or password. Please check your credentials and try again.";
+        message = message || "Invalid email or password. Please check your credentials and try again.";
       } else {
         message = "Your session has expired. Please log in again.";
       }

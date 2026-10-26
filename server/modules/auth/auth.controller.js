@@ -82,8 +82,8 @@ export async function login(request, reply) {
     request.log.warn({ email }, '[auth] Login failed: user not found');
     return reply.status(401).send({
       success: false,
-      error: 'INVALID_CREDENTIALS',
-      message: 'Invalid email or password',
+      error: 'USER_NOT_FOUND',
+      message: "An account with this detail doesn't exist",
     });
   }
 
@@ -94,7 +94,7 @@ export async function login(request, reply) {
       error: 'INVALID_CREDENTIALS',
       message: user.googleId
         ? 'This account was created with Google. Please use Google Sign In.'
-        : 'Invalid email or password',
+        : "An account with this detail doesn't exist",
     });
   }
 
@@ -104,7 +104,7 @@ export async function login(request, reply) {
     return reply.status(401).send({
       success: false,
       error: 'INVALID_CREDENTIALS',
-      message: 'Invalid email or password',
+      message: 'Invalid password. Please check your password and try again.',
     });
   }
 
