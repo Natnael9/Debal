@@ -73,7 +73,7 @@ const LandingPage = () => {
           <div className="max-w-2xl w-full relative z-20">
             <FadeInSection>
               {/* HEADLINE */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#0B3954] leading-[1.1] tracking-tight mb-6 uppercase">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#0B3954] dark:text-[#B0E0E6] leading-[1.1] tracking-tight mb-6 uppercase">
                 Find Your Ideal <br className="hidden sm:block" />
                 Co-Living <br className="hidden sm:block" />
                 Companion
@@ -179,7 +179,7 @@ const LandingPage = () => {
           <FadeInSection>
             <div className="space-y-6">
               <h2 className="text-sm font-bold text-[#2274A5] uppercase tracking-widest">About Debal</h2>
-              <h3 className="text-3xl md:text-4xl font-extrabold text-[#0B3954] leading-tight">
+              <h3 className="text-3xl md:text-4xl font-extrabold text-[#0B3954] dark:text-[#B0E0E6] leading-tight">
                 Bridging the housing gap.
               </h3>
               <p className="text-gray-600 leading-relaxed text-lg">
@@ -217,7 +217,7 @@ const LandingPage = () => {
           <FadeInSection>
             <div className="text-center mb-16">
               <h2 className="text-sm font-bold text-[#2274A5] uppercase tracking-widest mb-2">The Process</h2>
-              <h3 className="text-3xl md:text-4xl font-extrabold text-[#0B3954]">How It Works</h3>
+              <h3 className="text-3xl md:text-4xl font-extrabold text-[#0B3954] dark:text-[#B0E0E6]">How It Works</h3>
             </div>
           </FadeInSection>
 
