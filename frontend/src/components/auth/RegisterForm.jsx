@@ -48,12 +48,14 @@ function RegisterForm() {
     }
   };
 
+  const googleAuthUrl = `${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/auth/google`;
+
   return (
     <div>
       {/* Google Sign Up */}
-      {/* <a
-        href="/api/v1/auth/google"
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-98"
+      <a
+        href={googleAuthUrl}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#242f3d] py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-50 dark:hover:bg-[#2e3b4c] active:scale-98"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -62,17 +64,17 @@ function RegisterForm() {
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
         </svg>
         Continue with Google
-      </a> */}
+      </a>
 
       {/* Divider */}
-      {/* <div className="relative my-3">
+      <div className="relative my-3">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-100" />
+          <div className="w-full border-t border-gray-100 dark:border-gray-800" />
         </div>
         <div className="relative flex justify-center text-[10px]">
-          <span className="bg-white px-2 font-medium text-gray-400">or</span>
+          <span className="bg-white dark:bg-[#17212b] px-2 font-medium text-gray-400 dark:text-gray-500">or</span>
         </div>
-      </div> */}
+      </div>
 
       {/* Error */}
       {error && (
