@@ -425,7 +425,7 @@ function ProfilePage() {
 
                   <span className="h-1 w-1 rounded-full bg-gray-300" />
 
-                  <span className="font-medium text-[#0B3954] dark:text-[#B0E0E6]">
+                  <span className="font-medium text-[#0B3954] dark:text-[#2274A5]">
                     {profile.housingStatus === "has_room" ? "Has a Room Available" : "Seeking a Room"}
                   </span>
                 </div>
