@@ -181,6 +181,13 @@ html.dark .bg-blue-50\/40 {
 }
 
 /* Text mappings */
+html.dark .text-\[\#0B3954\],
+html.dark .text-\[\#0b3954\],
+[data-theme="dark"] .text-\[\#0B3954\],
+[data-theme="dark"] .text-\[\#0b3954\] {
+  color: #38bdf8 !important;
+}
+
 html.dark .text-gray-900,
 html.dark .text-gray-800,
 html.dark .text-slate-900,
