@@ -1,4 +1,17 @@
+import { Resend } from 'resend';
+import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
+
+// ─── Provider Configuration ──────────────────────────────────────────────────
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const resendClient = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+const resendFrom = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Debal App <onboarding@resend.dev>';
+
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
+const sendgridFrom = process.env.SENDGRID_FROM || process.env.EMAIL_FROM || process.env.SMTP_FROM || 'noreply@debal.app';
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
@@ -24,42 +37,81 @@ function createEmailTransporter() {
   });
 }
 
-// Create reusable transporter and verify on startup
+// Create reusable transporter
 export const transporter = createEmailTransporter();
 
-if (transporter) {
-  transporter.verify((err) => {
-    if (err) {
-      console.warn('⚠️ [email] SMTP verification failed:', err.message);
-    } else {
-      console.log(`✅ [email] SMTP service connected and ready to send emails (${SMTP_USER})`);
-    }
-  });
+// Startup health log
+if (resendClient) {
+  console.log('✅ [email] Resend HTTP API active (HTTPS port 443 - optimal for Render)');
+} else if (SENDGRID_API_KEY) {
+  console.log('✅ [email] SendGrid HTTP API active (HTTPS port 443)');
+} else if (transporter) {
+  console.log(`ℹ️ [email] Using SMTP transporter (${SMTP_USER})`);
 } else {
-  console.log('ℹ️ [email] SMTP credentials (SMTP_USER / SMTP_PASS) not configured. Emails will log to console.');
+  console.log('ℹ️ [email] No email service configured. Emails will log to console.');
 }
 
 export async function sendEmail({ to, subject, text, html }) {
-  if (!transporter) {
-    console.log(`\n========================================\n[email:fallback]\nTo: ${to}\nSubject: ${subject}\n${text || html}\n========================================\n`);
-    return;
+  // 1. Try Resend (HTTPS Port 443 — Never blocked by Render firewall)
+  if (resendClient) {
+    try {
+      const { data, error } = await resendClient.emails.send({
+        from: resendFrom,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        text,
+        html: html || text,
+      });
+
+      if (error) {
+        throw new Error(error.message || JSON.stringify(error));
+      }
+
+      console.log(`[email] Resend successfully sent email to ${to} (id: ${data?.id})`);
+      return { success: true, id: data?.id };
+    } catch (err) {
+      console.warn(`⚠️ [email] Resend delivery failed to ${to}: ${err.message}`);
+    }
   }
 
-  try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html: html || text,
-    });
-
-    console.log(`[email] Successfully sent email to ${to} (MessageId: ${info.messageId})`);
-    return info;
-  } catch (err) {
-    console.warn(`\n⚠️ [email] SMTP send failed to ${to}: ${err.message}`);
-    console.log(`\n========================================\n[email:dev-fallback]\nTo: ${to}\nSubject: ${subject}\n${text || html}\n========================================\n`);
+  // 2. Try SendGrid (HTTPS Port 443)
+  if (SENDGRID_API_KEY) {
+    try {
+      const [response] = await sgMail.send({
+        to,
+        from: sendgridFrom,
+        subject,
+        text,
+        html: html || text,
+      });
+      console.log(`[email] SendGrid successfully sent email to ${to} (statusCode: ${response.statusCode})`);
+      return { success: true, statusCode: response.statusCode };
+    } catch (err) {
+      console.warn(`⚠️ [email] SendGrid delivery failed to ${to}: ${err.message}`);
+    }
   }
+
+  // 3. Try Nodemailer SMTP (Local / open networks)
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: SMTP_FROM,
+        to,
+        subject,
+        text,
+        html: html || text,
+      });
+
+      console.log(`[email] SMTP successfully sent email to ${to} (MessageId: ${info.messageId})`);
+      return info;
+    } catch (err) {
+      console.warn(`⚠️ [email] SMTP send failed to ${to}: ${err.message}`);
+    }
+  }
+
+  // 4. Safe dev/fallback logging
+  console.log(`\n========================================\n[email:dev-fallback]\nTo: ${to}\nSubject: ${subject}\n${text || html}\n========================================\n`);
+  return { fallback: true };
 }
 
 export async function sendVerificationOtpEmail(to, otp) {
