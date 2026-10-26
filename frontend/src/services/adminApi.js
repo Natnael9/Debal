@@ -1,5 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "./api";
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || "";
+const BASE = `${API_URL}/api/v1`;
 const ADMIN_TOKEN_KEY = "adminToken";
 
 /** Build headers with the admin token for direct fetch calls */
@@ -10,7 +12,7 @@ function adminHeaders() {
 
 /** Thin wrapper that injects admin token */
 async function adminFetch(path, opts = {}) {
-  const res = await fetch(`/api/v1${path}`, {
+  const res = await fetch(`${BASE}${path}`, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
