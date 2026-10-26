@@ -66,8 +66,6 @@ const LandingPage = () => {
         className="relative min-h-screen bg-white overflow-hidden flex flex-col justify-center bg-cover bg-no-repeat bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] md:bg-transparent"></div>
-
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-20 pb-12 md:px-16 lg:px-24 flex flex-col lg:flex-row items-center justify-between h-full">
           
           <div className="max-w-2xl w-full relative z-20">
@@ -82,7 +80,7 @@ const LandingPage = () => {
 
             <FadeInSection delay={200}>
               {/* SUBHEADLINE */}
-              <p className="text-base sm:text-lg text-gray-800 md:text-gray-700 max-w-lg mb-8 leading-relaxed font-medium bg-white/60 md:bg-transparent p-4 md:p-0 rounded-xl">
+              <p className="text-base sm:text-lg text-gray-800 md:text-gray-700 max-w-lg mb-8 leading-relaxed font-medium">
                 Our smart algorithm connects you with compatible roommates based on 
                 shared habits, personality, and lifestyle. Simplify your search and 
                 co-create your perfect home.
