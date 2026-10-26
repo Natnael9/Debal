@@ -24,8 +24,10 @@ function Step6TeamUp({ defaultValues, onNext, onBack }) {
       </div>
 
       <label
-        className={`flex items-start gap-3 cursor-pointer rounded-lg border p-4 transition ${
-          teamUp ? "border-blue-600 ring-1 ring-blue-600 bg-blue-50" : "border-gray-300 bg-white"
+        className={`flex items-start gap-3 cursor-pointer rounded-xl border p-4 transition-all ${
+          teamUp
+            ? "border-[#2274A5] ring-2 ring-[#2274A5]/20 bg-blue-50/70 dark:bg-blue-950/40 dark:border-[#2274A5]"
+            : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-400"
         }`}
       >
         <input
@@ -34,8 +36,8 @@ function Step6TeamUp({ defaultValues, onNext, onBack }) {
           {...register("teamUp")}
         />
         <span>
-          <span className="block font-medium text-gray-900">Open to teaming up</span>
-          <span className="block text-sm text-gray-500 mt-0.5">
+          <span className="block font-medium text-gray-900 dark:text-white">Open to teaming up</span>
+          <span className="block text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Also match me with other people looking for a place, so we can
             search together — not just with people who already have a room.
           </span>

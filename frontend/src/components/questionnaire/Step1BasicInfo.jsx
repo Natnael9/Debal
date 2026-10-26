@@ -46,32 +46,32 @@ function Step1BasicInfo({ defaultValues, onNext }) {
 
       {/* Housing status — required before the rest of the wizard (FR-3.2) */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           What's your housing situation?
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label
-            className={`cursor-pointer rounded-lg border p-4 transition ${
+            className={`cursor-pointer rounded-xl border p-4 transition-all ${
               housingStatus === "has_room"
-                ? "border-blue-600 ring-1 ring-blue-600 bg-blue-50"
-                : "border-gray-300 bg-white"
+                ? "border-[#2274A5] ring-2 ring-[#2274A5]/20 bg-blue-50/70 dark:bg-blue-950/40 dark:border-[#2274A5]"
+                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-400"
             }`}
           >
             <input type="radio" value="has_room" className="sr-only" {...register("housingStatus")} />
-            <span className="block font-medium text-gray-900">I have a room</span>
-            <span className="block text-sm text-gray-500 mt-1">Looking for someone to move in.</span>
+            <span className="block font-medium text-gray-900 dark:text-white">I have a room</span>
+            <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">Looking for someone to move in.</span>
           </label>
 
           <label
-            className={`cursor-pointer rounded-lg border p-4 transition ${
+            className={`cursor-pointer rounded-xl border p-4 transition-all ${
               housingStatus === "needs_room"
-                ? "border-blue-600 ring-1 ring-blue-600 bg-blue-50"
-                : "border-gray-300 bg-white"
+                ? "border-[#2274A5] ring-2 ring-[#2274A5]/20 bg-blue-50/70 dark:bg-blue-950/40 dark:border-[#2274A5]"
+                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-400"
             }`}
           >
             <input type="radio" value="needs_room" className="sr-only" {...register("housingStatus")} />
-            <span className="block font-medium text-gray-900">I need a room</span>
-            <span className="block text-sm text-gray-500 mt-1">Looking for a place to live.</span>
+            <span className="block font-medium text-gray-900 dark:text-white">I need a room</span>
+            <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">Looking for a place to live.</span>
           </label>
         </div>
         {errors.housingStatus && (

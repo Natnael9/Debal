@@ -37,18 +37,18 @@ function Step4Lifestyle({ defaultValues, onNext, onBack }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Lifestyle</h2>
-        <p className="text-sm text-gray-500 mt-1">Helps us match you with compatible roommates.</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lifestyle</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Helps us match you with compatible roommates.</p>
       </div>
 
       {FIELDS.map((field) => (
         <div key={field.name}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{field.label}</label>
           <div className="grid grid-cols-3 gap-2">
             {field.options.map((opt) => (
               <label
                 key={opt.value}
-                className="cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-center text-sm has-[:checked]:border-blue-600 has-[:checked]:ring-1 has-[:checked]:ring-blue-600 has-[:checked]:bg-blue-50"
+                className="cursor-pointer select-none rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-center text-sm font-medium text-gray-700 dark:text-gray-200 transition-all hover:border-[#2274A5] hover:bg-gray-50 dark:hover:bg-gray-700/60 has-[:checked]:border-[#2274A5] has-[:checked]:bg-[#2274A5] has-[:checked]:text-white dark:has-[:checked]:border-[#2274A5] dark:has-[:checked]:bg-[#2274A5] dark:has-[:checked]:text-white has-[:checked]:shadow-xs has-[:checked]:font-semibold"
               >
                 <input type="radio" value={opt.value} className="sr-only" {...register(field.name)} />
                 {opt.label}
@@ -60,8 +60,8 @@ function Step4Lifestyle({ defaultValues, onNext, onBack }) {
       ))}
 
       <div className="flex justify-between pt-2">
-        <button type="button" onClick={onBack} className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Back</button>
-        <button type="submit" className="rounded-lg bg-blue-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Continue</button>
+        <button type="button" onClick={onBack} className="rounded-xl border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">Back</button>
+        <button type="submit" className="rounded-xl bg-[#0B3954] hover:bg-[#072435] dark:bg-[#2274A5] dark:hover:bg-[#1b5d85] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition">Continue</button>
       </div>
     </form>
   );
