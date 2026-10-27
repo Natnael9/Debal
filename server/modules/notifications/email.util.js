@@ -13,6 +13,10 @@ if (SENDGRID_API_KEY) {
 }
 const sendgridFrom = process.env.SENDGRID_FROM || process.env.EMAIL_FROM || process.env.SMTP_FROM || 'noreply@debal.app';
 
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const brevoFromEmail = process.env.BREVO_FROM_EMAIL || process.env.SMTP_USER || 'debal.app.service@gmail.com';
+const brevoFromName = process.env.BREVO_FROM_NAME || 'Debal App';
+
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 const SMTP_USER = process.env.SMTP_USER;
@@ -88,6 +92,38 @@ export async function sendEmail({ to, subject, text, html }) {
       return { success: true, statusCode: response.statusCode };
     } catch (err) {
       console.warn(`⚠️ [email] SendGrid delivery failed to ${to}: ${err.message}`);
+    }
+  }
+
+  // 3. Try Brevo HTTP REST API (HTTPS Port 443 — Free 300 emails/day to ANY recipient, no domain required)
+  if (BREVO_API_KEY) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': BREVO_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: brevoFromName, email: brevoFromEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html || text,
+          textContent: text,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log(`[email] Brevo successfully sent email to ${to} (id: ${data?.messageId})`);
+      return { success: true, id: data?.messageId };
+    } catch (err) {
+      console.warn(`⚠️ [email] Brevo delivery failed to ${to}: ${err.message}`);
     }
   }
 
