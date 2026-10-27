@@ -408,3 +408,39 @@ html.dark .border-red-100,
 html.dark .border-red-200 {
   border-color: rgba(239, 68, 68, 0.25) !important;
 }
+
+/* ==========================================================================
+   Live Scanner Laser & HUD Animations
+   ========================================================================== */
+@keyframes scanner-laser {
+  0% {
+    top: 2%;
+    opacity: 0.75;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  100% {
+    top: 2%;
+    opacity: 0.75;
+  }
+}
+
+.animate-scanner-laser {
+  animation: scanner-laser 2.4s ease-in-out infinite;
+}
+
+@keyframes scanner-glow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-scanner-glow {
+  animation: scanner-glow 2s ease-in-out infinite;
+}
+

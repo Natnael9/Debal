@@ -41,6 +41,7 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
   const [qrVerified, setQrVerified] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -83,6 +84,80 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
       stopCameraStream();
     };
   }, []);
+
+  // Global clipboard paste listener (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handleGlobalPaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            await processImageBytes(bytes);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
+
+  // Real-time camera live scanning loop
+  useEffect(() => {
+    if (!isCameraOpen) return;
+    let isCancelled = false;
+    let isChecking = false;
+
+    const interval = setInterval(async () => {
+      if (isChecking || isDecoding || isCancelled) return;
+      const video = videoRef.current;
+      if (!video || video.readyState < 2 || !video.videoWidth) return;
+
+      isChecking = true;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(video.videoWidth, 800);
+        canvas.height = Math.min(video.videoHeight, 800);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(async (blob) => {
+          if (!blob || isCancelled) {
+            isChecking = false;
+            return;
+          }
+          try {
+            const arrayBuffer = await blob.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            const decoded = await decodeImage(bytes, { includeFace: false });
+            if (decoded && decoded.ok && !isCancelled) {
+              stopCameraStream();
+              await processImageBytes(bytes);
+            }
+          } catch {
+            // Keep scanning continuously
+          } finally {
+            isChecking = false;
+          }
+        }, 'image/jpeg', 0.85);
+      } catch {
+        isChecking = false;
+      }
+    }, 700);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [isCameraOpen, isDecoding]);
 
   const processImageBytes = async (bytes) => {
     setIsDecoding(true);
@@ -147,6 +222,45 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
       await processImageBytes(bytes);
     } finally {
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage("Please drop an image file (JPEG, PNG, WebP).");
+      return;
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    await processImageBytes(bytes);
+  };
+
+  const handlePasteFromClipboard = async () => {
+    setErrorMessage('');
+    try {
+      if (!navigator.clipboard?.read) {
+        setErrorMessage("Please press Ctrl+V (or Cmd+V on Mac) to paste your copied image.");
+        return;
+      }
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((t) => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const arrayBuffer = await blob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          await processImageBytes(bytes);
+          return;
+        }
+      }
+      setErrorMessage("No image found on your clipboard. Please copy a Fayda QR photo or screenshot first, or press Ctrl+V.");
+    } catch (err) {
+      console.warn("Clipboard reading blocked:", err);
+      setErrorMessage("Clipboard access was blocked. Press Ctrl+V (or Cmd+V) to paste the image directly.");
     }
   };
 
@@ -280,115 +394,211 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
         />
 
         {isCameraOpen ? (
-          <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-black">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-52 object-cover"
+              className="w-full h-64 object-cover"
             />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
-              <div className="h-36 w-36 rounded-xl border-2 border-dashed border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+
+            {/* Dark vignette overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60" />
+
+            {/* Live Scanner Header Badge */}
+            <div className="pointer-events-none absolute top-3 inset-x-0 flex items-center justify-between px-3.5 z-10">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/75 backdrop-blur-md px-2.5 py-1 text-[10px] font-bold tracking-wider text-emerald-400 border border-emerald-500/40 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                LIVE HUD SCANNER
+              </span>
+              <span className="text-[10px] font-medium text-slate-300 bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                Auto-detecting QR
+              </span>
             </div>
 
-            <div className="flex items-center justify-between gap-2.5 bg-gray-900/95 p-2.5">
+            {/* Target Viewfinder with Laser Scanner Effect */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+              <div className="relative h-44 w-44 sm:h-48 sm:w-48 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                {/* 4 Glowing Target Corner Brackets */}
+                <div className="absolute -top-0.5 -left-0.5 h-6 w-6 border-t-3 border-l-3 border-emerald-400 rounded-tl-xl shadow-[0_0_10px_#34d399]" />
+                <div className="absolute -top-0.5 -right-0.5 h-6 w-6 border-t-3 border-r-3 border-emerald-400 rounded-tr-xl shadow-[0_0_10px_#34d399]" />
+                <div className="absolute -bottom-0.5 -left-0.5 h-6 w-6 border-b-3 border-l-3 border-emerald-400 rounded-bl-xl shadow-[0_0_10px_#34d399]" />
+                <div className="absolute -bottom-0.5 -right-0.5 h-6 w-6 border-b-3 border-r-3 border-emerald-400 rounded-br-xl shadow-[0_0_10px_#34d399]" />
+
+                {/* Center crosshairs */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                  <div className="w-6 h-0.5 bg-emerald-400" />
+                  <div className="h-6 w-0.5 bg-emerald-400" />
+                </div>
+
+                {/* Holographic Laser Sweep Effect */}
+                <div className="absolute inset-x-0 overflow-hidden h-full rounded-2xl pointer-events-none">
+                  {/* Laser Beam Fan Glow */}
+                  <div className="absolute inset-x-0 h-16 bg-gradient-to-b from-emerald-400/0 via-emerald-400/15 to-emerald-400/35 animate-scanner-laser pointer-events-none" />
+                  {/* High Intensity Laser Line */}
+                  <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_#34d399,0_0_24px_#10b981] animate-scanner-laser pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="relative flex items-center justify-between gap-2.5 bg-slate-950/90 backdrop-blur-md p-3 border-t border-slate-800 z-10">
               <button
                 type="button"
                 onClick={stopCameraStream}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition cursor-pointer"
+                className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer border border-slate-700"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleCapturePhoto}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition cursor-pointer flex items-center justify-center gap-1.5"
               >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 Capture Photo
               </button>
             </div>
           </div>
         ) : (
           <div
-            className={`w-full flex flex-col items-center justify-center p-4 border border-dashed rounded-xl transition-all ${
-              qrVerified
-                ? 'border-emerald-200 bg-emerald-50/50'
-                : 'border-gray-200 bg-gray-50/60'
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={`w-full flex flex-col items-center justify-center p-4 sm:p-5 border-2 border-dashed rounded-2xl transition-all ${
+              isDragging
+                ? 'border-[#2274A5] bg-blue-50/70 dark:bg-blue-950/30 scale-[1.01]'
+                : qrVerified
+                ? 'border-emerald-300 dark:border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50 hover:border-slate-300'
             }`}
           >
             {isDecoding ? (
-              <div className="flex flex-col items-center space-y-1.5 py-2">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#2274A5] border-t-transparent" />
-                <span className="text-xs font-semibold text-[#0B3954]">
-                  Decoding Fayda signature...
-                </span>
+              <div className="relative overflow-hidden w-full py-4 flex flex-col items-center space-y-2.5">
+                <div className="relative flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full border-2 border-[#2274A5] border-t-transparent animate-spin" />
+                  <div className="absolute h-6 w-6 rounded-full bg-[#2274A5]/20 animate-ping" />
+                </div>
+                <div className="text-center">
+                  <span className="text-xs font-bold text-[#0B3954] dark:text-sky-300 block">
+                    Scanning & Decrypting Fayda Signature...
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Verifying NIDP cryptographic proof 100% offline
+                  </span>
+                </div>
               </div>
             ) : qrVerified ? (
               <div className="flex flex-col items-center space-y-2 text-center w-full py-1">
-                <div className="inline-flex items-center gap-1.5 text-emerald-800 font-semibold text-xs bg-emerald-100/80 px-3 py-1 rounded-full">
-                  <svg className="w-3.5 h-3.5 text-emerald-700" fill="currentColor" viewBox="0 0 20 20">
+                <div className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-semibold text-xs bg-emerald-100/90 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-700 px-3.5 py-1.5 rounded-full">
+                  <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Fayda Signature Verified</span>
+                  <span>Fayda Signature Verified & Extracted</span>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  {isMobile && (
-                    <button
-                      type="button"
-                      onClick={handleOpenCamera}
-                      disabled={isSubmitting}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold text-[#0B3954] bg-white border border-gray-200 hover:bg-gray-50 shadow-2xs transition cursor-pointer"
-                    >
-                      Retake
-                    </button>
-                  )}
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={handleOpenCamera}
+                    disabled={isSubmitting}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#0B3954] dark:text-sky-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-2xs transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Rescan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboard}
+                    disabled={isSubmitting}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-2xs transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Paste New
+                  </button>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isSubmitting}
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 shadow-2xs transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-2xs transition cursor-pointer flex items-center gap-1.5"
                   >
-                    Change Image
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Change File
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-2 text-center w-full py-1">
+              <div className="flex flex-col items-center space-y-2.5 text-center w-full py-1">
                 <div>
-                  <div className="text-xs font-bold text-gray-900">
-                    {isMobile ? "Scan or Upload Fayda QR" : "Upload Fayda QR Code Photo"}
+                  <div className="text-xs font-bold text-gray-900 dark:text-white">
+                    Scan, Paste, or Upload Fayda QR
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
+                  <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
                     JPEG, PNG, or WebP • Decrypted 100% offline in browser
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  {isMobile && (
-                    <button
-                      type="button"
-                      onClick={handleOpenCamera}
-                      disabled={isDecoding || isSubmitting}
-                      className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-[#2274A5] hover:bg-[#1b5e87] text-white text-xs font-semibold shadow-2xs transition cursor-pointer"
-                    >
-                      Scan QR
-                    </button>
-                  )}
+                {/* Action Buttons: Live Scan, Paste Image, Choose File */}
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleOpenCamera}
+                    disabled={isDecoding || isSubmitting}
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-[#2274A5] hover:bg-[#1b5e87] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Scan QR
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboard}
+                    disabled={isDecoding || isSubmitting}
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-750 text-[#0B3954] dark:text-sky-300 border border-slate-200 dark:border-slate-700 text-xs font-bold shadow-2xs transition cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-[#2274A5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Paste Image
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isDecoding || isSubmitting}
-                    className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-semibold shadow-2xs transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-750 text-gray-700 dark:text-gray-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
                   >
-                    Choose Image
+                    <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Choose File
                   </button>
                 </div>
+
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
+                  Drag & drop, or copy image and press <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono text-[9px] font-semibold">Ctrl+V</kbd>
+                </p>
               </div>
             )}
           </div>
