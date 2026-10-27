@@ -337,8 +337,9 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
       });
 
       if (res?.success) {
-        if (onSuccess) onSuccess(data);
-        if (onSubmit) onSubmit(data);
+        const updatedUser = res.data?.user || res.data;
+        if (onSuccess) onSuccess(data, updatedUser);
+        if (onSubmit) onSubmit(data, updatedUser);
       } else {
         setErrorMessage(res?.message || 'Verification submission failed.');
       }

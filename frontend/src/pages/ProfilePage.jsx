@@ -244,10 +244,18 @@ function ProfilePage() {
     }
   };
   
-  const handleIDSubmit = () => {
-    setProfile((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
-    setUser((prev) => (prev ? { ...prev, verificationStatus: "pending" } : prev));
-    setVerificationStep("OTP_FORM");
+  const handleIDSubmit = (data, updatedUser) => {
+    const freshUser = updatedUser || { verificationStatus: "verified" };
+    setUser((prev) => ({
+      ...(prev || {}),
+      ...freshUser,
+      verificationStatus: "verified",
+    }));
+    setProfile((prev) => ({
+      ...(prev || {}),
+      verificationStatus: "verified",
+    }));
+    setVerificationStep("STATUS_SCREEN");
   };
   
   const handleOTPSuccess = (status = "verified", updatedUser = null) => {

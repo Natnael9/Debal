@@ -86,17 +86,23 @@ export async function submitVerification(userId, { idNumber, name, dateOfBirth }
   });
 
   if (result === 'matched') {
-    await User.findByIdAndUpdate(userId, { idNumberHash, verificationStatus: 'pending' });
+    // Directly verify the user without requiring an email OTP step for now
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        idNumberHash,
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+      },
+      { new: true }
+    ).select('-passwordHash -refreshTokenHashes -idNumberHash -resetPasswordToken -resetPasswordExpires');
     await invalidateUserCaches(userId);
 
-    // Generate, hash, store, and email the OTP
-    const { otp, expiresAt } = generateOtp();
-    verificationRequest.otpHash = hashOtp(otp);
-    verificationRequest.otpExpiresAt = expiresAt;
+    verificationRequest.result = 'matched';
+    verificationRequest.resolvedAt = new Date();
     await verificationRequest.save();
 
-    const user = await User.findById(userId);
-    await sendVerificationOtpEmail(user.email, otp);
+    return { result, verified: true, user: updatedUser, verificationRequestId: verificationRequest._id };
   } else {
     await User.findByIdAndUpdate(userId, { verificationStatus: 'rejected' });
     await invalidateUserCaches(userId);

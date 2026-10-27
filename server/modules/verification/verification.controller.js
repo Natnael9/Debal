@@ -27,8 +27,8 @@ export async function submitVerificationHandler(request, reply) {
     if (outcome.result === 'matched') {
       return reply.send({
         success: true,
-        data: { result: 'matched', nextStep: 'confirm-otp' },
-        message: 'Identity matched. Check your email for a verification code.',
+        data: { result: 'matched', verified: true, user: outcome.user },
+        message: 'Identity verified successfully!',
       });
     }
 

@@ -18,7 +18,20 @@ const VerificationWizard = () => {
   }, [user?.verificationStatus]);
 
   // Handlers to move between steps
-  const handleIDSubmitSuccess = () => setStep(2);
+  // With email OTP verification removed for now, submitting ID immediately verifies the user
+  const handleIDSubmitSuccess = (data, updatedUser) => {
+    setVerificationStatus('verified');
+    setUser((prev) => {
+      const base = prev || {};
+      const extra = typeof updatedUser === 'object' && updatedUser ? updatedUser : {};
+      return {
+        ...base,
+        ...extra,
+        verificationStatus: 'verified',
+      };
+    });
+    setStep(3);
+  };
   const handleOTPSubmitSuccess = (status, updatedUser) => {
     setVerificationStatus(status || 'verified');
     setUser((prev) => {
