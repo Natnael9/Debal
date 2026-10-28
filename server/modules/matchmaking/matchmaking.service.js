@@ -146,31 +146,28 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
 
   const connectedIds = new Set();
+
   for (const r of acceptedRequests) {
     const otherId = r.fromUser.toString() === user._id.toString() ? r.toUser.toString() : r.fromUser.toString();
     connectedIds.add(otherId);
   }
 
-  // Include active matches where there is no pending request from the current user
   for (const m of activeMatches) {
     const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
-    if (!sentPendingIds.has(otherId) && !receivedPendingIds.has(otherId)) {
-      connectedIds.add(otherId);
-    }
+    connectedIds.add(otherId);
   }
 
   const bookmarkedIds = new Set(userBookmarks.map((b) => b.bookmarkedUserId.toString()));
 
   const pageItems = rawPageItems.map((item) => {
     const itemIdStr = (item.id || item._id).toString();
-    const isRequestSent = sentPendingIds.has(itemIdStr);
-    const hasReceivedRequest = !isRequestSent && receivedPendingIds.has(itemIdStr);
-    const isConnected = !isRequestSent && (connectedIds.has(itemIdStr) || hasReceivedRequest);
+    const isConnected = connectedIds.has(itemIdStr);
+    const isRequestSent = !isConnected && sentPendingIds.has(itemIdStr);
     return {
       ...item,
       isConnected,
       isRequestSent,
-      hasReceivedRequest,
+      hasReceivedRequest: isConnected,
       isBookmarked: bookmarkedIds.has(itemIdStr),
     };
   });

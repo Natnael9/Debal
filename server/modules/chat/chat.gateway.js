@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import mongoose from 'mongoose';
 import { verifyAccessToken } from '../auth/jwt.utils.js';
 import { User } from '../users/users.model.js';
 import { MatchRequest } from '../matchmaking/matchrequest.model.js';
@@ -135,9 +136,14 @@ export function initChatGateway(httpServer) {
 
         // When a person chats back after receiving a request, mark connection as connected/accepted!
         try {
+          const uOid1 = new mongoose.Types.ObjectId(String(otherUserId));
+          const uOid2 = new mongoose.Types.ObjectId(String(userId));
+
           const pendingRequest = await MatchRequest.findOneAndUpdate(
             {
               $or: [
+                { fromUser: uOid1, toUser: uOid2 },
+                { fromUser: uOid2, toUser: uOid1 },
                 { fromUser: otherUserId, toUser: userId },
                 { fromUser: userId, toUser: otherUserId },
               ],

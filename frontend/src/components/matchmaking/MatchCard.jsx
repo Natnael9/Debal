@@ -5,11 +5,17 @@ import { apiPost, apiDelete } from "../../services/api";
 const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
   const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
   const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
+
+  // Once connected, show Connected on BOTH sides!
+  const isConnected = Boolean(matchData.isConnected || matchData.status === "accepted");
   const [localIsRequestSent, setLocalIsRequestSent] = useState(
-    Boolean(matchData.isRequestSent || matchData.hasPendingRequest)
+    Boolean(!isConnected && (matchData.isRequestSent || matchData.hasPendingRequest))
   );
-  const isRequestSent = matchData.isRequestSent !== undefined ? Boolean(matchData.isRequestSent) : localIsRequestSent;
-  const isConnected = Boolean(!isRequestSent && (matchData.isConnected || matchData.status === "accepted"));
+  const isRequestSent = Boolean(
+    !isConnected &&
+    (matchData.isRequestSent !== undefined ? matchData.isRequestSent : localIsRequestSent)
+  );
+
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -18,9 +24,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
 
   useEffect(() => {
     if (matchData.isRequestSent !== undefined) {
-      setLocalIsRequestSent(Boolean(matchData.isRequestSent));
+      setLocalIsRequestSent(Boolean(!isConnected && matchData.isRequestSent));
     }
-  }, [matchData.isRequestSent]);
+  }, [matchData.isRequestSent, isConnected]);
 
   useEffect(() => {
     if (matchData.isBookmarked !== undefined) {
@@ -71,9 +77,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
     try {
       await apiPost(`/matches/request/${candidateId}`, { message: requestMessage });
       setRequestSuccess(true);
-      setLocalIsRequestSent(true);
-      matchData.isRequestSent = true;
-      matchData.isConnected = false;
+      matchData.isConnected = true;
+      matchData.isRequestSent = false;
+      setLocalIsRequestSent(false);
       if (onConnect) {
         onConnect(candidateId);
       }
@@ -84,9 +90,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
       }, 1500);
     } catch (err) {
       if (err.message && err.message.toLowerCase().includes("already")) {
-        setLocalIsRequestSent(true);
-        matchData.isRequestSent = true;
-        matchData.isConnected = false;
+        matchData.isConnected = true;
+        matchData.isRequestSent = false;
+        setLocalIsRequestSent(false);
         if (onConnect) {
           onConnect(candidateId);
         }

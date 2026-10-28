@@ -197,16 +197,16 @@ const MatchFeed = () => {
     }
   }, []);
 
-  // Track sent connection requests across optimistic cache & local results
+  // Track connection status across optimistic cache & local results
   const handleConnect = useCallback((candidateId) => {
     setResults((prev) =>
       prev.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
       )
     );
     if (cachedFeed) {
       cachedFeed = cachedFeed.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
       );
     }
   }, []);

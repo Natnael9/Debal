@@ -172,12 +172,12 @@ const BookmarksPage = () => {
   const handleConnect = React.useCallback((candidateId) => {
     setBookmarks((prev) =>
       prev.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
       )
     );
     if (cachedBookmarks) {
       cachedBookmarks = cachedBookmarks.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
       );
     }
   }, []);

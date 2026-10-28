@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { authMiddleware } from '../auth/auth.middleware.js';
 import { requireFullAccess } from '../../shared/middleware/require-full-access.middleware.js';
 import {
@@ -101,9 +102,14 @@ export default async function chatRoutes(fastify) {
           io.to(`user:${userId}`).emit('chat:new_message', payloadData);
 
           // When a person chats back after receiving a request, mark connection as connected/accepted!
+          const uOid1 = new mongoose.Types.ObjectId(String(otherUserId));
+          const uOid2 = new mongoose.Types.ObjectId(String(userId));
+
           const pendingRequest = await MatchRequest.findOneAndUpdate(
             {
               $or: [
+                { fromUser: uOid1, toUser: uOid2 },
+                { fromUser: uOid2, toUser: uOid1 },
                 { fromUser: otherUserId, toUser: userId },
                 { fromUser: userId, toUser: otherUserId },
               ],

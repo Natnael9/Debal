@@ -79,9 +79,7 @@ async function listBookmarks(userId) {
 
   for (const m of activeMatches) {
     const otherId = m.userA.toString() === userId.toString() ? m.userB.toString() : m.userA.toString();
-    if (!sentPendingIds.has(otherId) && !receivedPendingIds.has(otherId)) {
-      connectedIds.add(otherId);
-    }
+    connectedIds.add(otherId);
   }
 
   return bookmarks
@@ -89,9 +87,8 @@ async function listBookmarks(userId) {
     .map((b) => {
       const u = b.bookmarkedUserId;
       const uIdStr = u._id.toString();
-      const isRequestSent = sentPendingIds.has(uIdStr);
-      const hasReceivedRequest = !isRequestSent && receivedPendingIds.has(uIdStr);
-      const isConnected = !isRequestSent && (connectedIds.has(uIdStr) || hasReceivedRequest);
+      const isConnected = connectedIds.has(uIdStr);
+      const isRequestSent = !isConnected && sentPendingIds.has(uIdStr);
       return {
         bookmarkId: b._id,
         bookmarkedAt: b.createdAt,
