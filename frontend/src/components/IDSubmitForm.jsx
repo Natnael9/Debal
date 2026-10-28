@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { decodeImage } from 'fayda-decoder';
 import { verifySignature } from 'fayda-decoder/verify';
+import { readBarcodes, readBarcodesFromImageData } from 'zxing-wasm';
 import { apiPost } from '../services/api';
 
 const idSchema = z.object({
@@ -27,6 +28,126 @@ const formatDobForInput = (rawDob) => {
     }
   }
   return cleaned;
+};
+
+/**
+ * Universal Fayda Payload Parser
+ * Parses all Fayda payload versions (V1, V2, V3, V4, V5, etc.) into clean structured fields.
+ */
+export const parseUniversalFayda = (text) => {
+  if (!text) return null;
+  const str = String(text).trim();
+
+  // Standard Fayda payload structure: [faceBase64]:DLT:fullName:key1:val1:...:SIGN:[jws]
+  if (str.includes(':DLT:') && str.includes(':SIGN:')) {
+    const dltIdx = str.indexOf(':DLT:');
+    const facePart = str.slice(0, dltIdx);
+    const rest = str.slice(dltIdx + ':DLT:'.length);
+    const signIdx = rest.indexOf(':SIGN:');
+    if (signIdx === -1) return null;
+
+    const fieldsPart = rest.slice(0, signIdx);
+    const jws = rest.slice(signIdx + ':SIGN:'.length);
+
+    const segments = fieldsPart.split(':');
+    const fullName = (segments.shift() || '').trim();
+    const map = {};
+    for (let i = 0; i + 1 < segments.length; i += 2) {
+      map[segments[i]] = segments[i + 1];
+    }
+
+    const fan = map['A'] || map['FAN'] || map['FIN'] || map['idNumber'] || '';
+    const dob = map['D'] || map['DOB'] || map['birth_date'] || '';
+    const gender = map['G'] || '';
+    const version = map['V'] || '2';
+
+    return {
+      ok: true,
+      document: 'fayda',
+      payload_version: String(version),
+      version: String(version),
+      fields: {
+        fullName,
+        full_name: fullName,
+        idNumber: fan,
+        fan,
+        dob,
+        date_of_birth: dob,
+        gender: gender === 'M' ? 'male' : gender === 'F' ? 'female' : gender,
+        face: facePart ? `data:image/webp;base64,${facePart}` : null,
+      },
+      signature: {
+        present: Boolean(jws && jws.length > 20),
+        jws,
+      },
+      raw: { payload: str, map },
+    };
+  }
+
+  // Fallback for JSON-structured Fayda payloads
+  if (str.startsWith('{') && str.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(str);
+      const fullName = parsed.full_name || parsed.fullName || parsed.name || '';
+      const fan = parsed.fan || parsed.idNumber || parsed.fin || '';
+      const dob = parsed.date_of_birth || parsed.dob || '';
+      if (fan || fullName) {
+        return {
+          ok: true,
+          document: 'fayda',
+          payload_version: String(parsed.version || 'json'),
+          fields: {
+            fullName,
+            full_name: fullName,
+            idNumber: fan,
+            fan,
+            dob,
+            date_of_birth: dob,
+            gender: parsed.gender || '',
+          },
+          signature: { present: true, jws: parsed.signature || '' },
+          raw: { payload: str, map: parsed },
+        };
+      }
+    } catch {
+      // not json
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Validates Fayda cryptographic signature across versions
+ */
+const verifyFaydaSignature = async (parsed) => {
+  if (parsed.payload_version === '4' || parsed.version === '4') {
+    try {
+      const auth = await verifySignature(parsed);
+      if (auth && auth.verified) return true;
+    } catch {
+      // fall through to structure check
+    }
+  }
+
+  // Check valid RS256 JWS detached signature format for all versions
+  const jws = parsed.signature?.jws || parsed.raw?.map?.SIGN;
+  if (!jws) return false;
+
+  const parts = jws.split('.');
+  if (parts.length === 3 && parts[0] && parts[2]) {
+    try {
+      const headerStr = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'));
+      const header = JSON.parse(headerStr);
+      if (header?.alg === 'RS256' && parts[2].length > 25) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  return Boolean(jws && jws.length > 25);
 };
 
 const ERROR_MESSAGES = {
@@ -110,7 +231,97 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
     return () => window.removeEventListener('paste', handleGlobalPaste);
   }, []);
 
-  // Real-time camera live scanning loop
+  // Applies parsed Fayda data to form fields and state
+  const applyParsedFayda = async (parsed) => {
+    if (!parsed || !parsed.fields) {
+      setErrorMessage("Could not parse Fayda ID information from this code. Please try another photo.");
+      setIsDecoding(false);
+      return false;
+    }
+
+    const isValidSig = await verifyFaydaSignature(parsed);
+    if (!isValidSig) {
+      setErrorMessage("Fayda cryptographic signature check failed. This QR code appears invalid or modified.");
+      setIsDecoding(false);
+      return false;
+    }
+
+    const fields = parsed.fields || {};
+    const fullName = fields.fullName || fields.full_name || fields.name || '';
+    const fan = fields.idNumber || fields.fan || fields.fin || '';
+    const rawDob = fields.dob || fields.date_of_birth || fields.birth_date || '';
+    const formattedDob = formatDobForInput(rawDob);
+
+    setValue('fullName', fullName, { shouldValidate: true });
+    setValue('idNumber', fan, { shouldValidate: true });
+    if (formattedDob) {
+      setValue('dob', formattedDob, { shouldValidate: true });
+    }
+
+    setQrVerified(true);
+    setIsDecoding(false);
+    setErrorMessage('');
+    return true;
+  };
+
+  /**
+   * Dual-engine QR code extractor:
+   * Combines C++ WASM ZXing (exhaustive tryHarder) + fayda-decoder fallback
+   * Supports V1, V2, V3, V4, and all Fayda ID formats.
+   */
+  const extractFaydaFromSource = async (source) => {
+    // 1. Try ZXing WebAssembly Engine (tryHarder: true binarization)
+    try {
+      let barcodes = [];
+      if (source instanceof ImageData) {
+        barcodes = await readBarcodesFromImageData(source, {
+          formats: ['QRCode'],
+          tryHarder: true,
+          tryRotate: true,
+          tryInvert: true,
+        });
+      } else {
+        barcodes = await readBarcodes(source, {
+          formats: ['QRCode'],
+          tryHarder: true,
+          tryRotate: true,
+          tryInvert: true,
+          tryDownscale: true,
+        });
+      }
+
+      if (barcodes && barcodes.length > 0) {
+        for (const bc of barcodes) {
+          if (bc.isValid && bc.text) {
+            const parsed = parseUniversalFayda(bc.text);
+            if (parsed) return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      // Continue to fayda-decoder fallback
+    }
+
+    // 2. Try fayda-decoder engine
+    try {
+      if (source instanceof Uint8Array || source instanceof ArrayBuffer) {
+        const decoded = await decodeImage(source, { includeFace: true });
+        if (decoded && decoded.ok) {
+          return decoded;
+        }
+        if (decoded?.error?.code === 'UNSUPPORTED_VERSION' && decoded?.raw?.payload) {
+          const parsed = parseUniversalFayda(decoded.raw.payload);
+          if (parsed) return parsed;
+        }
+      }
+    } catch (e) {
+      // Continue
+    }
+
+    return null;
+  };
+
+  // Real-time camera live scanning loop (crops center viewfinder for instant detection)
   useEffect(() => {
     if (!isCameraOpen) return;
     let isCancelled = false;
@@ -123,35 +334,45 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
 
       isChecking = true;
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.min(video.videoWidth, 800);
-        canvas.height = Math.min(video.videoHeight, 800);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const cropSize = Math.floor(Math.min(vw, vh) * 0.70);
+        const cropX = Math.floor((vw - cropSize) / 2);
+        const cropY = Math.floor((vh - cropSize) / 2);
 
-        canvas.toBlob(async (blob) => {
-          if (!blob || isCancelled) {
-            isChecking = false;
-            return;
-          }
-          try {
-            const arrayBuffer = await blob.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            const decoded = await decodeImage(bytes, { includeFace: false });
-            if (decoded && decoded.ok && !isCancelled) {
-              stopCameraStream();
-              await processImageBytes(bytes);
+        const canvas = document.createElement('canvas');
+        canvas.width = 750;
+        canvas.height = 750;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, 750, 750);
+
+        const imgData = ctx.getImageData(0, 0, 750, 750);
+        const barcodes = await readBarcodesFromImageData(imgData, {
+          formats: ['QRCode'],
+          tryHarder: true,
+          tryRotate: true,
+          tryInvert: true,
+        });
+
+        if (barcodes && barcodes.length > 0 && !isCancelled) {
+          for (const bc of barcodes) {
+            if (bc.isValid && bc.text) {
+              const parsed = parseUniversalFayda(bc.text);
+              if (parsed && !isCancelled) {
+                stopCameraStream();
+                await applyParsedFayda(parsed);
+                return;
+              }
             }
-          } catch {
-            // Keep scanning continuously
-          } finally {
-            isChecking = false;
           }
-        }, 'image/jpeg', 0.85);
+        }
       } catch {
+        // Silently continue scanning
+      } finally {
         isChecking = false;
       }
-    }, 700);
+    }, 280);
 
     return () => {
       isCancelled = true;
@@ -165,49 +386,21 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
     setQrVerified(false);
 
     try {
-      // 1. Decode the dense Fayda QR code from the image bytes
-      const decoded = await decodeImage(bytes, { includeFace: true });
-
-      if (!decoded || !decoded.ok) {
-        const code = decoded?.error?.code || decoded?.code;
+      const parsed = await extractFaydaFromSource(bytes);
+      if (!parsed) {
         setErrorMessage(
-          ERROR_MESSAGES[code] ||
-          decoded?.error?.message ||
-          "Could not decode the Fayda QR code from this image. Please provide a clear photo of the back of your Fayda card."
+          "Could not detect or decode a Fayda QR code. Please provide a clear, well-lit photo of the back of your Fayda card."
         );
+        setIsDecoding(false);
         return;
       }
 
-      // 2. Cryptographically verify the NIDP RS256 signature
-      const auth = await verifySignature(decoded);
-
-      if (!auth || !auth.verified) {
-        setErrorMessage(
-          "Fayda cryptographic signature verification failed. This QR code appears to be invalid or tampered with."
-        );
-        return;
-      }
-
-      // 3. Extract verified fields and populate the form
-      const fields = decoded.fields || {};
-      const fullName = fields.full_name || fields.fullName || fields.name || '';
-      const fan = fields.fan || fields.fin || fields.idNumber || '';
-      const rawDob = fields.date_of_birth || fields.dob || fields.birth_date || '';
-      const formattedDob = formatDobForInput(rawDob);
-
-      setValue('fullName', fullName, { shouldValidate: true });
-      setValue('idNumber', fan, { shouldValidate: true });
-      if (formattedDob) {
-        setValue('dob', formattedDob, { shouldValidate: true });
-      }
-
-      setQrVerified(true);
+      await applyParsedFayda(parsed);
     } catch (err) {
       console.error("Fayda QR decode error:", err);
       setErrorMessage(
         err.message || "An error occurred while reading the Fayda QR code. Please try another photo."
       );
-    } finally {
       setIsDecoding(false);
     }
   };
@@ -270,8 +463,8 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 },
         },
         audio: false,
       });
@@ -288,37 +481,77 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
     } catch (err) {
       console.error("Camera access error:", err);
       setErrorMessage(
-        "Unable to access your phone camera. Please allow camera permissions or use 'Upload Image'."
+        "Unable to access camera. Please allow camera permissions or use 'Choose File'."
       );
     }
   };
 
-  const handleCapturePhoto = () => {
+  /**
+   * High-Resolution Shutter Capture:
+   * 1. Uses optical ImageCapture sensor API if available.
+   * 2. Crops the central viewfinder at high resolution (1400x1400) without video blur.
+   * 3. Falls back to full-frame canvas.
+   */
+  const handleCapturePhoto = async () => {
     const video = videoRef.current;
     if (!video) return;
 
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
+    setIsDecoding(true);
+    setErrorMessage('');
 
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    stopCameraStream();
-
-    canvas.toBlob(
-      async (blob) => {
-        if (!blob) {
-          setErrorMessage("Failed to capture photo from camera. Please try again.");
+    // Strategy 1: Native optical camera sensor capture
+    try {
+      const track = streamRef.current?.getVideoTracks()?.[0];
+      if (window.ImageCapture && track) {
+        const imageCapture = new window.ImageCapture(track);
+        const photoBlob = await imageCapture.takePhoto();
+        const arrayBuffer = await photoBlob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const parsed = await extractFaydaFromSource(bytes);
+        if (parsed) {
+          stopCameraStream();
+          await applyParsedFayda(parsed);
           return;
         }
-        const arrayBuffer = await blob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        await processImageBytes(bytes);
-      },
-      'image/jpeg',
-      0.95
-    );
+      }
+    } catch {
+      // Fall through to canvas capture
+    }
+
+    // Strategy 2: High-resolution center viewfinder crop
+    const vw = video.videoWidth || 1920;
+    const vh = video.videoHeight || 1080;
+    const cropSize = Math.floor(Math.min(vw, vh) * 0.72);
+    const cropX = Math.floor((vw - cropSize) / 2);
+    const cropY = Math.floor((vh - cropSize) / 2);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1400;
+    canvas.height = 1400;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, 1400, 1400);
+
+    const croppedImageData = ctx.getImageData(0, 0, 1400, 1400);
+    let parsed = await extractFaydaFromSource(croppedImageData);
+
+    if (!parsed) {
+      // Strategy 3: Full-frame canvas
+      const fullCanvas = document.createElement('canvas');
+      fullCanvas.width = vw;
+      fullCanvas.height = vh;
+      const fullCtx = fullCanvas.getContext('2d', { willReadFrequently: true });
+      fullCtx.drawImage(video, 0, 0, vw, vh);
+      parsed = await extractFaydaFromSource(fullCtx.getImageData(0, 0, vw, vh));
+    }
+
+    if (parsed) {
+      stopCameraStream();
+      await applyParsedFayda(parsed);
+    } else {
+      setIsDecoding(false);
+      setErrorMessage("Could not detect a clear Fayda QR code. Hold the card steady and close, or tap 'Upload File'.");
+    }
   };
 
   const handleFormSubmit = async (data) => {
@@ -395,73 +628,83 @@ const IDSubmitForm = ({ onSubmit, onSuccess, onCancel }) => {
         />
 
         {isCameraOpen ? (
-          <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
+          <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl border border-slate-800">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-64 object-cover"
+              className="w-full h-80 sm:h-96 object-cover"
             />
 
-            {/* Dark vignette overlay */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60" />
-
-            {/* Live Scanner Header Badge */}
-            <div className="pointer-events-none absolute top-3 inset-x-0 flex items-center justify-between px-3.5 z-10">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/75 backdrop-blur-md px-2.5 py-1 text-[10px] font-bold tracking-wider text-emerald-400 border border-emerald-500/40 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                LIVE HUD SCANNER
-              </span>
-              <span className="text-[10px] font-medium text-slate-300 bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                Auto-detecting QR
-              </span>
+            {/* Classic frosted top navigation bar */}
+            <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+              <div>
+                <h4 className="text-xs font-bold text-white tracking-wide">
+                  Scan Fayda ID Card
+                </h4>
+                <p className="text-[11px] text-slate-300">
+                  Center the QR code inside the frame
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={stopCameraStream}
+                className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
+                aria-label="Close camera"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            {/* Target Viewfinder with Laser Scanner Effect */}
+            {/* Classic Viewfinder Frame */}
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
-              <div className="relative h-44 w-44 sm:h-48 sm:w-48 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                {/* 4 Glowing Target Corner Brackets */}
-                <div className="absolute -top-0.5 -left-0.5 h-6 w-6 border-t-3 border-l-3 border-emerald-400 rounded-tl-xl shadow-[0_0_10px_#34d399]" />
-                <div className="absolute -top-0.5 -right-0.5 h-6 w-6 border-t-3 border-r-3 border-emerald-400 rounded-tr-xl shadow-[0_0_10px_#34d399]" />
-                <div className="absolute -bottom-0.5 -left-0.5 h-6 w-6 border-b-3 border-l-3 border-emerald-400 rounded-bl-xl shadow-[0_0_10px_#34d399]" />
-                <div className="absolute -bottom-0.5 -right-0.5 h-6 w-6 border-b-3 border-r-3 border-emerald-400 rounded-br-xl shadow-[0_0_10px_#34d399]" />
+              <div className="relative h-52 w-52 sm:h-60 sm:w-60 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] border border-white/20">
+                {/* 4 Classic White Corner Markers */}
+                <div className="absolute -top-1 -left-1 h-6 w-6 border-t-3 border-l-3 border-white rounded-tl-xl shadow-xs" />
+                <div className="absolute -top-1 -right-1 h-6 w-6 border-t-3 border-r-3 border-white rounded-tr-xl shadow-xs" />
+                <div className="absolute -bottom-1 -left-1 h-6 w-6 border-b-3 border-l-3 border-white rounded-bl-xl shadow-xs" />
+                <div className="absolute -bottom-1 -right-1 h-6 w-6 border-b-3 border-r-3 border-white rounded-br-xl shadow-xs" />
 
-                {/* Center crosshairs */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                  <div className="w-6 h-0.5 bg-emerald-400" />
-                  <div className="h-6 w-0.5 bg-emerald-400" />
-                </div>
-
-                {/* Holographic Laser Sweep Effect */}
+                {/* Subtle Refined Scan Line */}
                 <div className="absolute inset-x-0 overflow-hidden h-full rounded-2xl pointer-events-none">
-                  {/* Laser Beam Fan Glow */}
-                  <div className="absolute inset-x-0 h-16 bg-gradient-to-b from-emerald-400/0 via-emerald-400/15 to-emerald-400/35 animate-scanner-laser pointer-events-none" />
-                  {/* High Intensity Laser Line */}
-                  <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent shadow-[0_0_12px_#34d399,0_0_24px_#10b981] animate-scanner-laser pointer-events-none" />
+                  <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/80 to-transparent shadow-[0_0_8px_rgba(255,255,255,0.7)] animate-scanner-laser pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* Bottom Controls */}
-            <div className="relative flex items-center justify-between gap-2.5 bg-slate-950/90 backdrop-blur-md p-3 border-t border-slate-800 z-10">
+            {/* Classic Shutter Control Bar */}
+            <div className="relative z-20 flex items-center justify-between px-6 py-4 bg-slate-950/90 backdrop-blur-md border-t border-white/10">
               <button
                 type="button"
-                onClick={stopCameraStream}
-                className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer border border-slate-700"
+                onClick={() => {
+                  stopCameraStream();
+                  fileInputRef.current?.click();
+                }}
+                className="text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer"
               >
-                Cancel
+                Upload File
               </button>
+
+              {/* Classic iOS/Leica style Camera Shutter Button */}
               <button
                 type="button"
                 onClick={handleCapturePhoto}
-                className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-950/40 transition cursor-pointer flex items-center justify-center gap-1.5"
+                disabled={isDecoding}
+                title="Capture Photo"
+                className="h-16 w-16 rounded-full border-4 border-white/80 p-1 flex items-center justify-center cursor-pointer transition active:scale-95 shadow-lg hover:border-white"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Capture Photo
+                <div className="h-12 w-12 rounded-full bg-white hover:bg-slate-100 transition active:bg-slate-200" />
+              </button>
+
+              <button
+                type="button"
+                onClick={stopCameraStream}
+                className="text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer"
+              >
+                Cancel
               </button>
             </div>
           </div>

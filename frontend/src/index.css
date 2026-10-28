@@ -410,37 +410,30 @@ html.dark .border-red-200 {
 }
 
 /* ==========================================================================
-   Live Scanner Laser & HUD Animations
+   Classic Document Scanner Animations
    ========================================================================== */
-@keyframes scanner-laser {
+@keyframes classic-scan-beam {
   0% {
-    top: 2%;
-    opacity: 0.75;
+    top: 4%;
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 0.85;
   }
   50% {
-    top: 96%;
-    opacity: 1;
+    top: 94%;
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.85;
   }
   100% {
-    top: 2%;
-    opacity: 0.75;
+    top: 4%;
+    opacity: 0.3;
   }
 }
 
 .animate-scanner-laser {
-  animation: scanner-laser 2.4s ease-in-out infinite;
-}
-
-@keyframes scanner-glow {
-  0%, 100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-.animate-scanner-glow {
-  animation: scanner-glow 2s ease-in-out infinite;
+  animation: classic-scan-beam 2.8s ease-in-out infinite;
 }
 
