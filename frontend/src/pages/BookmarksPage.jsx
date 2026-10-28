@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MatchCard from '../components/matchmaking/MatchCard';
 import { MatchGridSkeleton } from '../components/common/Skeleton';
-import { apiGet, apiDelete } from '../services/api';
+import { apiGet, apiDelete, getToken } from '../services/api';
+import { connectSocket, getSocket } from '../services/socket';
+import { useAuth } from '../context/AuthContext';
 import { updateCachedFeedBookmark } from './Dashboard';
 
 // Module-level in-memory cache for instant navigation transitions
@@ -20,9 +22,75 @@ export function updateCachedBookmark(candidateId, isBookmarked) {
 }
 
 const BookmarksPage = () => {
+  const { user } = useAuth();
   const [bookmarks, setBookmarks] = useState(cachedBookmarks || []);
   const [isLoading, setIsLoading] = useState(!cachedBookmarks);
   const [error, setError] = useState(null);
+
+  // Real-time match connection updates without refresh
+  useEffect(() => {
+    const token = getToken();
+    const socket = getSocket() || (token ? connectSocket(token) : null);
+    if (!socket) return;
+
+    const handleMatchAccepted = (data) => {
+      const targetUserId = String(data?.userId || data?.partnerId || data?.fromUser || "");
+      if (targetUserId) {
+        setBookmarks((prev) =>
+          prev.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === targetUserId
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          })
+        );
+        if (cachedBookmarks) {
+          cachedBookmarks = cachedBookmarks.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === targetUserId
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          });
+        }
+      }
+    };
+
+    const handleChatMessage = (payload) => {
+      const sender = String(
+        payload?.message?.senderId?._id ||
+        payload?.message?.senderId?.id ||
+        payload?.message?.senderId ||
+        payload?.message?.sender ||
+        ""
+      );
+      const myId = String(user?._id || user?.id || "");
+      if (sender && sender !== myId) {
+        setBookmarks((prev) =>
+          prev.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === sender
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          })
+        );
+        if (cachedBookmarks) {
+          cachedBookmarks = cachedBookmarks.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === sender
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          });
+        }
+      }
+    };
+
+    socket.on("match:accepted", handleMatchAccepted);
+    socket.on("chat:new_message", handleChatMessage);
+    return () => {
+      socket.off("match:accepted", handleMatchAccepted);
+      socket.off("chat:new_message", handleChatMessage);
+    };
+  }, [user]);
 
   // Fetch real bookmarks on page load with SWR pattern
   useEffect(() => {
@@ -104,12 +172,12 @@ const BookmarksPage = () => {
   const handleConnect = React.useCallback((candidateId) => {
     setBookmarks((prev) =>
       prev.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
       )
     );
     if (cachedBookmarks) {
       cachedBookmarks = cachedBookmarks.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
       );
     }
   }, []);

@@ -142,25 +142,30 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
     Bookmark.find({ userId: user._id }).select('bookmarkedUserId').lean(),
   ]);
 
+  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
+  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+
   const connectedIds = new Set();
-  for (const m of activeMatches) {
-    const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
-    connectedIds.add(otherId);
-  }
   for (const r of acceptedRequests) {
     const otherId = r.fromUser.toString() === user._id.toString() ? r.toUser.toString() : r.fromUser.toString();
     connectedIds.add(otherId);
   }
 
-  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
-  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+  // Include active matches where there is no pending request from the current user
+  for (const m of activeMatches) {
+    const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
+    if (!sentPendingIds.has(otherId) && !receivedPendingIds.has(otherId)) {
+      connectedIds.add(otherId);
+    }
+  }
+
   const bookmarkedIds = new Set(userBookmarks.map((b) => b.bookmarkedUserId.toString()));
 
   const pageItems = rawPageItems.map((item) => {
     const itemIdStr = (item.id || item._id).toString();
-    const isConnected = connectedIds.has(itemIdStr);
-    const isRequestSent = !isConnected && sentPendingIds.has(itemIdStr);
-    const hasReceivedRequest = !isConnected && receivedPendingIds.has(itemIdStr);
+    const isRequestSent = sentPendingIds.has(itemIdStr);
+    const hasReceivedRequest = !isRequestSent && receivedPendingIds.has(itemIdStr);
+    const isConnected = !isRequestSent && (connectedIds.has(itemIdStr) || hasReceivedRequest);
     return {
       ...item,
       isConnected,

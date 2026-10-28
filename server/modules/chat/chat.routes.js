@@ -11,6 +11,7 @@ import {
   deleteMatch,
 } from './chat.service.js';
 import { User } from '../users/users.model.js';
+import { MatchRequest } from '../matchmaking/matchrequest.model.js';
 import { getIO } from './chat.gateway.js';
 
 export default async function chatRoutes(fastify) {
@@ -98,6 +99,36 @@ export default async function chatRoutes(fastify) {
           }
           io.to(`user:${otherUserId}`).emit('chat:new_message', payloadData);
           io.to(`user:${userId}`).emit('chat:new_message', payloadData);
+
+          // When a person chats back after receiving a request, mark connection as connected/accepted!
+          const pendingRequest = await MatchRequest.findOneAndUpdate(
+            {
+              $or: [
+                { fromUser: otherUserId, toUser: userId },
+                { fromUser: userId, toUser: otherUserId },
+              ],
+              status: 'pending',
+            },
+            { status: 'accepted' },
+            { new: true }
+          );
+
+          if (pendingRequest) {
+            const connectPayloadForOther = {
+              matchId: actualMatchId,
+              userId: userId,
+              partnerId: userId,
+              status: 'connected',
+            };
+            const connectPayloadForSelf = {
+              matchId: actualMatchId,
+              userId: otherUserId,
+              partnerId: otherUserId,
+              status: 'connected',
+            };
+            io.to(`user:${otherUserId}`).emit('match:accepted', connectPayloadForOther);
+            io.to(`user:${userId}`).emit('match:accepted', connectPayloadForSelf);
+          }
         } catch (e) {
           // Socket.IO might not be initialized yet
         }

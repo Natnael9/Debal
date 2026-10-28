@@ -124,11 +124,43 @@ const MatchFeed = () => {
       }
     };
 
+    const handleChatMessage = (payload) => {
+      const sender = String(
+        payload?.message?.senderId?._id ||
+        payload?.message?.senderId?.id ||
+        payload?.message?.senderId ||
+        payload?.message?.sender ||
+        ""
+      );
+      const myId = String(user?._id || user?.id || "");
+      if (sender && sender !== myId) {
+        // When a candidate chats back, immediately update card to Connected!
+        setResults((prev) =>
+          prev.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === sender
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          })
+        );
+        if (cachedFeed) {
+          cachedFeed = cachedFeed.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === sender
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          });
+        }
+      }
+    };
+
     socket.on("match:accepted", handleMatchAccepted);
+    socket.on("chat:new_message", handleChatMessage);
     return () => {
       socket.off("match:accepted", handleMatchAccepted);
+      socket.off("chat:new_message", handleChatMessage);
     };
-  }, []);
+  }, [user]);
 
   const handleClearAll = useCallback(() => {
     setFilters(initialFilters);
@@ -169,12 +201,12 @@ const MatchFeed = () => {
   const handleConnect = useCallback((candidateId) => {
     setResults((prev) =>
       prev.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
       )
     );
     if (cachedFeed) {
       cachedFeed = cachedFeed.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isRequestSent: true, isConnected: false } : c
       );
     }
   }, []);

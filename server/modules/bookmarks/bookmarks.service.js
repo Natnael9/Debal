@@ -68,27 +68,30 @@ async function listBookmarks(userId) {
     }).select('userA userB').lean(),
   ]);
 
+  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
+  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+
   const connectedIds = new Set();
-  for (const m of activeMatches) {
-    const otherId = m.userA.toString() === userId.toString() ? m.userB.toString() : m.userA.toString();
-    connectedIds.add(otherId);
-  }
   for (const r of acceptedRequests) {
     const otherId = r.fromUser.toString() === userId.toString() ? r.toUser.toString() : r.fromUser.toString();
     connectedIds.add(otherId);
   }
 
-  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
-  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+  for (const m of activeMatches) {
+    const otherId = m.userA.toString() === userId.toString() ? m.userB.toString() : m.userA.toString();
+    if (!sentPendingIds.has(otherId) && !receivedPendingIds.has(otherId)) {
+      connectedIds.add(otherId);
+    }
+  }
 
   return bookmarks
     .filter((b) => b.bookmarkedUserId) // guard against a bookmarked user that was later deleted
     .map((b) => {
       const u = b.bookmarkedUserId;
       const uIdStr = u._id.toString();
-      const isConnected = connectedIds.has(uIdStr);
-      const isRequestSent = !isConnected && sentPendingIds.has(uIdStr);
-      const hasReceivedRequest = !isConnected && receivedPendingIds.has(uIdStr);
+      const isRequestSent = sentPendingIds.has(uIdStr);
+      const hasReceivedRequest = !isRequestSent && receivedPendingIds.has(uIdStr);
+      const isConnected = !isRequestSent && (connectedIds.has(uIdStr) || hasReceivedRequest);
       return {
         bookmarkId: b._id,
         bookmarkedAt: b.createdAt,

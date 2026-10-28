@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { verifyAccessToken } from '../auth/jwt.utils.js';
 import { User } from '../users/users.model.js';
+import { MatchRequest } from '../matchmaking/matchrequest.model.js';
 import { getRedisClient } from '../../config/redis.js';
 import {
   assertUserInMatch,
@@ -131,6 +132,49 @@ export function initChatGateway(httpServer) {
         }
         io.to(`user:${otherUserId}`).emit('chat:new_message', payloadData);
         io.to(`user:${userId}`).emit('chat:new_message', payloadData);
+
+        // When a person chats back after receiving a request, mark connection as connected/accepted!
+        try {
+          const pendingRequest = await MatchRequest.findOneAndUpdate(
+            {
+              $or: [
+                { fromUser: otherUserId, toUser: userId },
+                { fromUser: userId, toUser: otherUserId },
+              ],
+              status: 'pending',
+            },
+            { status: 'accepted' },
+            { new: true }
+          );
+
+          if (pendingRequest) {
+            const connectPayloadForOther = {
+              matchId: actualMatchId,
+              userId: userId,
+              partnerId: userId,
+              status: 'connected',
+            };
+            const connectPayloadForSelf = {
+              matchId: actualMatchId,
+              userId: otherUserId,
+              partnerId: otherUserId,
+              status: 'connected',
+            };
+
+            io.to(`user:${otherUserId}`).emit('match:accepted', connectPayloadForOther);
+            io.to(`user:${userId}`).emit('match:accepted', connectPayloadForSelf);
+
+            try {
+              const redis = getRedisClient();
+              if (redis && ['ready', 'connecting', 'connect'].includes(redis.status)) {
+                await redis.publish(`user:${otherUserId}`, JSON.stringify({ event: 'match:accepted', data: connectPayloadForOther }));
+                await redis.publish(`user:${userId}`, JSON.stringify({ event: 'match:accepted', data: connectPayloadForSelf }));
+              }
+            } catch (redisErr) {}
+          }
+        } catch (reqErr) {
+          console.warn('[chat] Auto-accept match request error:', reqErr.message);
+        }
 
         // 2. Redis pub/sub (guarded safely with try/catch)
         try {
