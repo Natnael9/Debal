@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import MatchCard from "../components/matchmaking/MatchCard";
 import { MatchGridSkeleton } from "../components/common/Skeleton";
 import CustomDropdown from "../components/common/CustomDropdown";
-import { apiGet, apiPost, apiDelete } from "../services/api";
+import { apiGet, apiPost, apiDelete, getToken } from "../services/api";
+import { connectSocket, getSocket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 import { unfreezeAccount } from "../services/settingsService";
 import { TopFilterBar, SideFilterBar } from "./SearchPage";
@@ -93,6 +94,40 @@ const MatchFeed = () => {
   const handleSearch = useCallback((e) => {
     if (e) e.preventDefault();
     setPage(1);
+  }, []);
+
+  // Real-time match connection updates without refresh
+  useEffect(() => {
+    const token = getToken();
+    const socket = getSocket() || (token ? connectSocket(token) : null);
+    if (!socket) return;
+
+    const handleMatchAccepted = (data) => {
+      const targetUserId = String(data?.userId || data?.partnerId || data?.fromUser || "");
+      if (targetUserId) {
+        setResults((prev) =>
+          prev.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === targetUserId
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          })
+        );
+        if (cachedFeed) {
+          cachedFeed = cachedFeed.map((c) => {
+            const cId = String(c._id || c.id || "");
+            return cId === targetUserId
+              ? { ...c, isConnected: true, isRequestSent: false }
+              : c;
+          });
+        }
+      }
+    };
+
+    socket.on("match:accepted", handleMatchAccepted);
+    return () => {
+      socket.off("match:accepted", handleMatchAccepted);
+    };
   }, []);
 
   const handleClearAll = useCallback(() => {

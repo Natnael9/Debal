@@ -121,13 +121,8 @@ function QuestionnaireWizardInner() {
 
       clearDraft();
 
-      // Route based on verification status
-      const targetUser = updatedUser || user;
-      if (targetUser?.verificationStatus !== "verified") {
-        navigate("/app/verification", { replace: true });
-      } else {
-        navigate("/app/dashboard", { replace: true });
-      }
+      // Access dashboard immediately upon completing questionnaire
+      navigate("/app/dashboard", { replace: true });
     } catch (err) {
       setSubmitError(err.message || "Something went wrong submitting your answers. Please try again.");
     } finally {

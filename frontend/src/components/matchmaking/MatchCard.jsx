@@ -5,8 +5,9 @@ import { apiPost, apiDelete } from "../../services/api";
 const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
   const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
   const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
+  const isConnected = Boolean(matchData.isConnected || matchData.status === "active" || matchData.status === "accepted");
   const [isRequestSent, setIsRequestSent] = useState(
-    Boolean(matchData.isRequestSent || matchData.hasPendingRequest)
+    Boolean(!isConnected && (matchData.isRequestSent || matchData.hasPendingRequest))
   );
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
@@ -16,9 +17,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
 
   useEffect(() => {
     if (matchData.isRequestSent !== undefined) {
-      setIsRequestSent(Boolean(matchData.isRequestSent));
+      setIsRequestSent(Boolean(!isConnected && matchData.isRequestSent));
     }
-  }, [matchData.isRequestSent]);
+  }, [matchData.isRequestSent, isConnected]);
 
   useEffect(() => {
     if (matchData.isBookmarked !== undefined) {
@@ -218,29 +219,46 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
             View Profile
           </button>
 
-          <button
-            type="button"
-            disabled={isRequestSent}
-            onClick={() => {
-              if (!isRequestSent) setShowRequestModal(true);
-            }}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white transition active:scale-98 ${
-              isRequestSent
-                ? "bg-emerald-600 cursor-default opacity-95"
-                : "bg-[#2274A5] hover:bg-[#1b5e87] cursor-pointer"
-            }`}
-          >
-            {isRequestSent ? (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Request Sent</span>
-              </>
-            ) : (
-              "Connect"
-            )}
-          </button>
+          {isConnected ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/app/messages?chat=${candidateId}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition cursor-pointer shadow-xs active:scale-98"
+              title="Chat with your connection"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Connected</span>
+            </button>
+          ) : isRequestSent ? (
+            <button
+              type="button"
+              disabled
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 cursor-default opacity-95 shadow-2xs"
+            >
+              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Request Sent</span>
+            </button>
+          ) : matchData.hasReceivedRequest ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/app/messages?chat=${candidateId}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer shadow-xs active:scale-98"
+            >
+              <span>Respond</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowRequestModal(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-[#2274A5] hover:bg-[#1b5e87] transition cursor-pointer shadow-xs active:scale-98"
+            >
+              <span>Connect</span>
+            </button>
+          )}
         </div>
       </div>
 

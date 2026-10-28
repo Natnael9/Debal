@@ -102,6 +102,8 @@ function ChatLayout() {
         cachedChats = finalChats;
         lastChatsFetchTime = Date.now();
         setChats(finalChats);
+        const unreadCount = finalChats.filter((c) => (c.unreadCount || 0) > 0).length;
+        window.dispatchEvent(new CustomEvent("app:unread_chats_count", { detail: unreadCount }));
       })
       .catch((err) => console.error("[chat] failed to load matches:", err.message))
       .finally(() => { if (!cancelled) setIsLoadingChats(false); });
@@ -137,13 +139,17 @@ function ChatLayout() {
         const socket = getSocket();
         socket?.emit("chat:mark_read", { matchId: activeChatId });
 
-        setChats((prev) =>
-          prev.map((c) =>
+        setChats((prev) => {
+          const next = prev.map((c) =>
             c.id === activeChatId || c.matchId === activeChatId || c.userId === activeChatId
               ? { ...c, unreadCount: 0 }
               : c
-          )
-        );
+          );
+          cachedChats = next;
+          const unreadCount = next.filter((c) => (c.unreadCount || 0) > 0).length;
+          window.dispatchEvent(new CustomEvent("app:unread_chats_count", { detail: unreadCount }));
+          return next;
+        });
       })
       .catch((err) => console.error("[chat] failed to load messages:", err.message))
       .finally(() => { if (!cancelled) setIsLoadingMsgs(false); });
@@ -181,21 +187,38 @@ function ChatLayout() {
 
       const currentActiveId = activeChatIdRef.current;
       const currentActive = activeChatRef.current;
-      const senderId = message.senderId?.toString() || message.sender?.toString();
-      const isForCurrentChat =
-        matchId === currentActiveId ||
-        currentActive?.id === matchId ||
-        currentActive?.matchId === matchId ||
-        currentActive?.userId === matchId ||
-        currentActive?.userId === senderId;
+      const senderId = String(
+        message.senderId?._id ||
+        message.senderId?.id ||
+        message.senderId ||
+        message.sender ||
+        ""
+      );
+      const payloadMatchId = String(matchId || message.matchId || "");
+
+      const isForCurrentChat = Boolean(
+        (payloadMatchId && (
+          payloadMatchId === String(currentActiveId) ||
+          payloadMatchId === String(currentActive?.id) ||
+          payloadMatchId === String(currentActive?.matchId)
+        )) ||
+        (senderId && (
+          senderId === String(currentActive?.userId) ||
+          senderId === String(currentActiveId)
+        ))
+      );
 
       if (isForCurrentChat) {
         setMessages((prev) => {
-          const exists = prev.some((m) => m._id === message._id);
+          const exists = prev.some((m) => String(m._id) === String(message._id));
           if (exists) return prev;
-          const filteredTemp = prev.filter((m) => !m._id?.toString().startsWith("temp-") || m.content !== message.content);
+          const filteredTemp = prev.filter(
+            (m) => !String(m._id || "").startsWith("temp-") || m.content !== message.content
+          );
           const updated = [...filteredTemp, message];
-          cachedMessagesByMatch.set(matchId, updated);
+          if (payloadMatchId) {
+            cachedMessagesByMatch.set(payloadMatchId, updated);
+          }
           return updated;
         });
 
@@ -204,30 +227,64 @@ function ChatLayout() {
           socket.emit("chat:mark_read", { matchId: currentActiveId, messageId: message._id });
           apiPost(`/matches/${currentActiveId}/read`).catch(() => { });
         }
-      } else {
-        const existing = cachedMessagesByMatch.get(matchId);
+      } else if (payloadMatchId) {
+        const existing = cachedMessagesByMatch.get(payloadMatchId);
         if (existing) {
-          cachedMessagesByMatch.set(matchId, [...existing, message]);
+          cachedMessagesByMatch.set(payloadMatchId, [...existing, message]);
         }
       }
 
-      setChats((prev) =>
-        prev.map((c) => {
+      setChats((prev) => {
+        let matchedAny = false;
+        const updated = prev.map((c) => {
+          const cId = String(c.id || "");
+          const cMatchId = String(c.matchId || "");
+          const cUserId = String(c.userId || "");
           const isMatch =
-            c.id === matchId ||
-            c.matchId === matchId ||
-            c.userId === matchId ||
-            c.userId === senderId;
-          return isMatch
-            ? {
+            (payloadMatchId && (cId === payloadMatchId || cMatchId === payloadMatchId)) ||
+            (senderId && cUserId === senderId);
+
+          if (isMatch) {
+            matchedAny = true;
+            return {
               ...c,
               lastMessage: message.content,
               time: "Now",
               unreadCount: isForCurrentChat ? 0 : (c.unreadCount || 0) + 1,
+            };
+          }
+          return c;
+        });
+
+        let finalChats = updated;
+        if (matchedAny) {
+          const activeIndex = updated.findIndex((c) =>
+            (payloadMatchId && (String(c.id) === payloadMatchId || String(c.matchId) === payloadMatchId)) ||
+            (senderId && String(c.userId) === senderId)
+          );
+          if (activeIndex > 0) {
+            const target = updated[activeIndex];
+            finalChats = [target, ...updated.slice(0, activeIndex), ...updated.slice(activeIndex + 1)];
+          }
+        } else {
+          // New conversation not yet in list — trigger fresh fetch
+          apiGet("/matches").then((res) => {
+            const fetched = res?.data?.matches || [];
+            if (fetched.length > 0) {
+              setChats(fetched);
+              cachedChats = fetched;
+              const unreadCount = fetched.filter((c) => (c.unreadCount || 0) > 0).length;
+              window.dispatchEvent(new CustomEvent("app:unread_chats_count", { detail: unreadCount }));
             }
-            : c;
-        })
-      );
+          }).catch(() => {});
+        }
+
+        const unreadCount = finalChats.filter((c) => (c.unreadCount || 0) > 0).length;
+        window.dispatchEvent(new CustomEvent("app:unread_chats_count", { detail: unreadCount }));
+
+        cachedChats = finalChats;
+        return finalChats;
+      });
     };
 
     const handleUserTyping = (data) => {

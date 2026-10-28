@@ -4,15 +4,76 @@ import logo from "../../assets/Debal(LOGO).png";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
+import { apiGet, getToken } from "../../services/api";
+import { getSocket, connectSocket } from "../../services/socket";
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0);
 
   const { isAuthenticated, user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+
+  // Track distinct chats that have unread messages
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadChatsCount(0);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchUnreadChats = () => {
+      apiGet("/matches")
+        .then((res) => {
+          if (!isMounted) return;
+          const matches = res?.data?.matches || [];
+          const count = matches.filter((c) => (c.unreadCount || 0) > 0).length;
+          setUnreadChatsCount(count);
+        })
+        .catch(() => {});
+    };
+
+    fetchUnreadChats();
+
+    // Custom sync event from ChatLayout
+    const handleCustomUnread = (e) => {
+      if (typeof e?.detail === "number") {
+        setUnreadChatsCount(e.detail);
+      } else {
+        fetchUnreadChats();
+      }
+    };
+    window.addEventListener("app:unread_chats_count", handleCustomUnread);
+
+    // Socket listener for incoming messages
+    const token = getToken();
+    const socket = getSocket() || (token ? connectSocket(token) : null);
+
+    const handleSocketMsg = (payload) => {
+      const sender = String(
+        payload?.message?.senderId?._id ||
+        payload?.message?.senderId ||
+        payload?.message?.sender ||
+        ""
+      );
+      const myId = String(user?._id || user?.id || "");
+      if (sender && sender !== myId) {
+        fetchUnreadChats();
+      }
+    };
+
+    socket?.on("chat:new_message", handleSocketMsg);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("app:unread_chats_count", handleCustomUnread);
+      socket?.off("chat:new_message", handleSocketMsg);
+    };
+  }, [isAuthenticated, user]);
 
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -102,7 +163,14 @@ function Navbar() {
               </NavLink>
 
               <NavLink to="/app/messages" className={navLinkStyle}>
-                Messages
+                <span className="relative inline-flex items-center gap-1.5">
+                  <span>Messages</span>
+                  {unreadChatsCount > 0 && (
+                    <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-extrabold bg-[#2274A5] text-white shadow-xs">
+                      {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
+                    </span>
+                  )}
+                </span>
               </NavLink>
               <NavLink to="/app/bookmarks" className={navLinkStyle}>
                 Book Marks
@@ -295,7 +363,14 @@ function Navbar() {
                 </NavLink>
 
                 <NavLink to="/app/messages" className={mobileNavLinkStyle} onClick={closeMenu}>
-                  Messages
+                  <div className="flex items-center justify-between w-full">
+                    <span>Messages</span>
+                    {unreadChatsCount > 0 && (
+                      <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-extrabold bg-[#2274A5] text-white shadow-xs">
+                        {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
+                      </span>
+                    )}
+                  </div>
                 </NavLink>
 
                 <NavLink to="/app/bookmarks" className={mobileNavLinkStyle} onClick={closeMenu}>

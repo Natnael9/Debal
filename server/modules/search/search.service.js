@@ -17,9 +17,6 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
   if (!user.questionnaireCompleted) {
     throw new SearchError('Complete the onboarding questionnaire first.', 403);
   }
-  if (user.verificationStatus !== 'verified') {
-    throw new SearchError('Identity verification is required to search.', 403);
-  }
 
   const oppositeStatus = user.housingStatus === 'has_room' ? 'needs_room' : 'has_room';
 

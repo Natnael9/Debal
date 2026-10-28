@@ -45,32 +45,50 @@ async function addBookmark(userId, bookmarkedUserId) {
  * info rather than bare ids.
  */
 async function listBookmarks(userId) {
-  const [bookmarks, sentRequests, activeMatches] = await Promise.all([
+  const [bookmarks, sentPendingRequests, receivedPendingRequests, acceptedRequests, activeMatches] = await Promise.all([
     Bookmark.find({ userId })
       .sort({ createdAt: -1 })
       .populate('bookmarkedUserId', 'name age gender bio avatarUrl housingStatus location preferences')
       .lean(),
     MatchRequest.find({
       fromUser: userId,
-      status: { $in: ['pending', 'accepted'] },
+      status: 'pending',
     }).select('toUser').lean(),
+    MatchRequest.find({
+      toUser: userId,
+      status: 'pending',
+    }).select('fromUser').lean(),
+    MatchRequest.find({
+      $or: [{ fromUser: userId }, { toUser: userId }],
+      status: 'accepted',
+    }).select('fromUser toUser').lean(),
     Match.find({
       $or: [{ userA: userId }, { userB: userId }],
       status: 'active',
     }).select('userA userB').lean(),
   ]);
 
-  const sentTargetIds = new Set(sentRequests.map((r) => r.toUser.toString()));
+  const connectedIds = new Set();
   for (const m of activeMatches) {
     const otherId = m.userA.toString() === userId.toString() ? m.userB.toString() : m.userA.toString();
-    sentTargetIds.add(otherId);
+    connectedIds.add(otherId);
   }
+  for (const r of acceptedRequests) {
+    const otherId = r.fromUser.toString() === userId.toString() ? r.toUser.toString() : r.fromUser.toString();
+    connectedIds.add(otherId);
+  }
+
+  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
+  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
 
   return bookmarks
     .filter((b) => b.bookmarkedUserId) // guard against a bookmarked user that was later deleted
     .map((b) => {
       const u = b.bookmarkedUserId;
       const uIdStr = u._id.toString();
+      const isConnected = connectedIds.has(uIdStr);
+      const isRequestSent = !isConnected && sentPendingIds.has(uIdStr);
+      const hasReceivedRequest = !isConnected && receivedPendingIds.has(uIdStr);
       return {
         bookmarkId: b._id,
         bookmarkedAt: b.createdAt,
@@ -87,7 +105,9 @@ async function listBookmarks(userId) {
           preferences: u.preferences || {},
           budgetMax: u.preferences?.budgetMax,
           budgetMin: u.preferences?.budgetMin,
-          isRequestSent: sentTargetIds.has(uIdStr),
+          isConnected,
+          isRequestSent,
+          hasReceivedRequest,
         },
       };
     });

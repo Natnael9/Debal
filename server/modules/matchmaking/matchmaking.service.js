@@ -40,9 +40,6 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   if (!user.questionnaireCompleted) {
     throw new MatchmakingError('Complete the onboarding questionnaire first.', 403);
   }
-  if (user.verificationStatus !== 'verified') {
-    throw new MatchmakingError('Identity verification is required to view matches.', 403);
-  }
 
   const cacheKey = `match_feed:${user._id.toString()}`;
   let allMatches = null;
@@ -124,12 +121,20 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
   const start = (page - 1) * pageSize;
   const rawPageItems = allMatches.slice(start, start + pageSize);
 
-  // Dynamically decorate candidates with real-time match request and bookmark status
-  const [sentRequests, activeMatches, userBookmarks] = await Promise.all([
+  // Dynamically decorate candidates with real-time match request, connection, and bookmark status
+  const [sentPendingRequests, receivedPendingRequests, acceptedRequests, activeMatches, userBookmarks] = await Promise.all([
     MatchRequest.find({
       fromUser: user._id,
-      status: { $in: ['pending', 'accepted'] },
+      status: 'pending',
     }).select('toUser').lean(),
+    MatchRequest.find({
+      toUser: user._id,
+      status: 'pending',
+    }).select('fromUser').lean(),
+    MatchRequest.find({
+      $or: [{ fromUser: user._id }, { toUser: user._id }],
+      status: 'accepted',
+    }).select('fromUser toUser').lean(),
     Match.find({
       $or: [{ userA: user._id }, { userB: user._id }],
       status: 'active',
@@ -137,19 +142,30 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
     Bookmark.find({ userId: user._id }).select('bookmarkedUserId').lean(),
   ]);
 
-  const sentTargetIds = new Set(sentRequests.map((r) => r.toUser.toString()));
+  const connectedIds = new Set();
   for (const m of activeMatches) {
     const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
-    sentTargetIds.add(otherId);
+    connectedIds.add(otherId);
+  }
+  for (const r of acceptedRequests) {
+    const otherId = r.fromUser.toString() === user._id.toString() ? r.toUser.toString() : r.fromUser.toString();
+    connectedIds.add(otherId);
   }
 
+  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
+  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
   const bookmarkedIds = new Set(userBookmarks.map((b) => b.bookmarkedUserId.toString()));
 
   const pageItems = rawPageItems.map((item) => {
     const itemIdStr = (item.id || item._id).toString();
+    const isConnected = connectedIds.has(itemIdStr);
+    const isRequestSent = !isConnected && sentPendingIds.has(itemIdStr);
+    const hasReceivedRequest = !isConnected && receivedPendingIds.has(itemIdStr);
     return {
       ...item,
-      isRequestSent: sentTargetIds.has(itemIdStr),
+      isConnected,
+      isRequestSent,
+      hasReceivedRequest,
       isBookmarked: bookmarkedIds.has(itemIdStr),
     };
   });
@@ -170,10 +186,6 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
 async function sendMatchRequest(fromUser, toUserId, message) {
   if (!fromUser.questionnaireCompleted) {
     throw new MatchmakingError('Complete the onboarding questionnaire first.', 403);
-  }
-  
-  if (fromUser.verificationStatus !== 'verified') {
-    throw new MatchmakingError('Identity verification is required to send match requests.', 403);
   }
 
   if (fromUser._id.toString() === toUserId.toString()) {

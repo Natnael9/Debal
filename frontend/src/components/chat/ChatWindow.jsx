@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ReportModal from "./ReportModal";
@@ -27,8 +28,19 @@ function ChatWindowComponent({
   const [showMeetupSuccess, setShowMeetupSuccess] = useState(false);   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isFullscreenAvatarOpen, setIsFullscreenAvatarOpen] = useState(false);
 
+  const navigate = useNavigate();
   const actionsRef = useRef(null);
+
+  const handleOpenProfile = () => {
+    const partnerId = chat?.userId || chat?.id;
+    if (partnerId) {
+      navigate(`/app/candidate-profile/${partnerId}`, {
+        state: { candidate: chat },
+      });
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -131,26 +143,47 @@ function ChatWindowComponent({
             </svg>
           </button>
 
-          {/* Avatar */}
+          {/* Avatar - Touching profile image opens full screen */}
           <div className="relative">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-[#2274A5] shadow-xs">
-              {chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")}
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsFullscreenAvatarOpen(true)}
+              className="group flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-bold text-[#2274A5] ring-2 ring-transparent transition hover:ring-[#2274A5]/40 active:scale-95 cursor-pointer shadow-xs"
+              title="Click to view full image"
+              aria-label="View profile image full screen"
+            >
+              {chat.avatarUrl ? (
+                <img
+                  src={chat.avatarUrl}
+                  alt={chat.name || "User"}
+                  className="h-full w-full object-cover transition group-hover:scale-105"
+                />
+              ) : (
+                chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")
+              )}
+            </button>
 
             {isBlocked ? (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-500 shadow-xs" title="Blocked" />
+              <span className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-500 shadow-xs" title="Blocked" />
             ) : chat.isOnline ? (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+              <span className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
             ) : null}
           </div>
 
-          {/* User Info */}
-          <div>
-            <h1 className="text-xs font-bold leading-tight text-gray-800">
-              {chat.name || "Chat"}
+          {/* User Info - Touching name/profile navigates to candidate profile */}
+          <div
+            onClick={handleOpenProfile}
+            className="cursor-pointer group select-none transition"
+            title="View candidate profile"
+          >
+            <h1 className="text-xs font-bold leading-tight text-gray-800 dark:text-gray-100 group-hover:text-[#2274A5] transition flex items-center gap-1.5">
+              <span>{chat.name || "Chat"}</span>
+              <svg className="w-3 h-3 text-gray-400 opacity-60 group-hover:opacity-100 group-hover:text-[#2274A5] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </h1>
 
-            <p className={`text-[10px] leading-none ${isBlocked ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
+            <p className={`text-[10px] leading-none mt-0.5 ${isBlocked ? "text-amber-600 font-semibold" : "text-gray-400 group-hover:text-gray-600"}`}>
               {isBlocked ? "Blocked" : chat.isOnline ? "Online" : "Offline"}
             </p>
           </div>
@@ -468,6 +501,57 @@ function ChatWindowComponent({
                 className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60 shadow-2xs transition"
               >
                 {isDeleting ? "Clearing..." : "Clear History"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Fullscreen Profile Photo Modal Lightbox */}
+      {isFullscreenAvatarOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setIsFullscreenAvatarOpen(false)}
+        >
+          <div
+            className="relative flex flex-col items-center justify-center max-h-[92vh] max-w-[92vw] overflow-hidden rounded-3xl bg-neutral-900 shadow-2xl p-2 border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreenAvatarOpen(false)}
+              className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur-md hover:bg-black transition cursor-pointer"
+              aria-label="Close fullscreen view"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {chat.avatarUrl ? (
+              <img
+                src={chat.avatarUrl}
+                alt={chat.name || "Profile Photo"}
+                className="max-h-[80vh] max-w-[85vw] object-contain rounded-2xl shadow-lg"
+              />
+            ) : (
+              <div className="flex h-72 w-72 flex-col items-center justify-center rounded-2xl bg-slate-800 text-white">
+                <span className="text-6xl font-bold">{chat.avatarText || (chat.name ? chat.name[0].toUpperCase() : "U")}</span>
+                <span className="mt-4 text-xs font-semibold text-slate-300">{chat.name || "Candidate"}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between w-full px-4 py-3">
+              <span className="text-xs font-semibold text-white truncate">{chat.name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFullscreenAvatarOpen(false);
+                  handleOpenProfile();
+                }}
+                className="text-xs text-[#3a8ecc] hover:underline cursor-pointer font-medium"
+              >
+                View Profile &rarr;
               </button>
             </div>
           </div>

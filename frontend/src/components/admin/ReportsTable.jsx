@@ -97,7 +97,7 @@ function ReportsTable() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="mb-4 flex flex-wrap gap-1.5 rounded-2xl border border-slate-300/80 dark:border-slate-700 bg-slate-200/60 dark:bg-slate-800/80 p-1 w-fit">
+      <div className="mb-4 flex flex-wrap gap-1.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-200/80 dark:bg-slate-800/90 p-1 w-fit shadow-xs">
         {FILTERS.map((filter) => {
           const isActive = activeFilter === filter.key;
           return (
@@ -105,9 +105,9 @@ function ReportsTable() {
               key={filter.key}
               type="button"
               onClick={() => setActiveFilter(filter.key)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                 isActive
-                  ? "bg-[#0B3954] text-white shadow-sm dark:bg-[#2274A5] dark:text-white"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
                   : "text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-slate-300/50 dark:hover:bg-slate-700/60"
               }`}
             >
@@ -115,8 +115,8 @@ function ReportsTable() {
               <span
                 className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold transition-all ${
                   isActive
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300/70 dark:border-slate-600"
+                    ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700"
+                    : "bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-400/40 dark:border-slate-600"
                 }`}
               >
                 {counts[filter.key] ?? 0}

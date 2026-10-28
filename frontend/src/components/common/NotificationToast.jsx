@@ -121,7 +121,7 @@ const NotificationToast = () => {
   if (!toast) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full animate-in slide-in-from-bottom-5 fade-in duration-200">
+    <div className="fixed top-5 right-5 z-[9999] max-w-sm w-full animate-in slide-in-from-top-5 fade-in duration-200">
       <div 
         onClick={() => {
           if (toast.link) navigate(toast.link);
