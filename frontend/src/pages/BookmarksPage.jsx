@@ -199,8 +199,9 @@ const BookmarksPage = () => {
           <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-600 border border-red-100 flex items-center justify-between">
             <span>{error}</span>
             <button
+              type="button"
               onClick={() => window.location.reload()}
-              className="text-xs font-semibold text-red-700 underline hover:text-red-800"
+              className="text-xs font-semibold text-red-700 underline hover:text-red-800 cursor-pointer active:scale-95"
             >
               Retry
             </button>

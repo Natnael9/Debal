@@ -395,8 +395,9 @@ const MatchFeed = () => {
                 <h3 className="text-sm font-bold text-rose-900">Unable to load candidates</h3>
                 <p className="mt-1 text-xs text-rose-600">{error}</p>
                 <button
-                  onClick={() => setPage(1)}
-                  className="mt-4 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-rose-700"
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="mt-4 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-rose-700 cursor-pointer active:scale-95"
                 >
                   Retry
                 </button>

@@ -131,12 +131,22 @@ function CandidateProfilePage() {
             {error || "We couldn't find the profile you're looking for."}
           </p>
 
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-800"
-          >
-            Back to matches
-          </button>
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 cursor-pointer"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-800 active:scale-95 cursor-pointer"
+            >
+              Back to matches
+            </button>
+          </div>
         </div>
       </div>
     );
