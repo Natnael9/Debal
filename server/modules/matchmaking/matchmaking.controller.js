@@ -7,7 +7,7 @@ import {
 
 async function getMatchFeedHandler(request, reply) {
   const page = Math.max(1, parseInt(request.query.page, 10) || 1);
-  const pageSize = Math.min(50, Math.max(1, parseInt(request.query.pageSize, 10) || 20));
+  const pageSize = Math.min(200, Math.max(1, parseInt(request.query.pageSize, 10) || 20));
 
   try {
     const result = await getMatchFeed(request.user, { page, pageSize });

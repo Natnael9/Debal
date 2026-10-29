@@ -22,15 +22,25 @@ async function searchCandidates(user, filters = {}, { page = 1, pageSize = 20 } 
 
   const query = {
     _id: { $nin: [...(user.blockedUsers || []), user._id] },
-    questionnaireCompleted: true,
-    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
     isFrozen: { $ne: true },
   };
 
+  // Name or keyword search
+  const searchTerm = (filters.search || filters.q || filters.name || '').trim();
+  if (searchTerm) {
+    query.$or = [
+      { name: { $regex: searchTerm, $options: 'i' } },
+      { bio: { $regex: searchTerm, $options: 'i' } },
+      { 'location.displayName': { $regex: searchTerm, $options: 'i' } },
+    ];
+  }
+
+  // Filter housing status if explicitly selected
   if (filters.status && filters.status !== 'any') {
     query.housingStatus = filters.status;
-  } else if (!filters.status) {
+  } else if (!searchTerm && !filters.status) {
+    // If not searching by name and status is not specified, default to opposite status
     query.housingStatus = oppositeStatus;
   }
 

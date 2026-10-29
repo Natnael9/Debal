@@ -112,8 +112,9 @@ async function start() {
   await fastify.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`[server] listening on http://localhost:${PORT}`);
   initChatGateway(fastify.server);
-  startNotificationWorker();
-  startModerationWorker();
+  // Redis workers commented out for now
+  // startNotificationWorker();
+  // startModerationWorker();
 
   const shutdown = async (signal) => {
     console.log(`[server] received ${signal}, shutting down`);

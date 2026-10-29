@@ -1,8 +1,10 @@
 import React, { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost, apiDelete } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 
 const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
+  const { user } = useAuth();
   const [localIsBookmarked, setLocalIsBookmarked] = useState(matchData.isBookmarked || false);
   const isBookmarked = matchData.isBookmarked !== undefined ? matchData.isBookmarked : localIsBookmarked;
 
@@ -15,8 +17,14 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
     !isConnected &&
     (matchData.isRequestSent !== undefined ? matchData.isRequestSent : localIsRequestSent)
   );
+  const hasReceivedRequest = Boolean(
+    !isConnected &&
+    !isRequestSent &&
+    Boolean(matchData.hasReceivedRequest)
+  );
 
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [requestError, setRequestError] = useState("");
@@ -69,6 +77,14 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
     }
   };
 
+  const handleConnectClick = () => {
+    if (user?.verificationStatus !== 'verified') {
+      setShowVerificationPrompt(true);
+      return;
+    }
+    setShowRequestModal(true);
+  };
+
   const handleSendMatchRequest = async (e) => {
     e.preventDefault();
     setRequestError("");
@@ -77,9 +93,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
     try {
       await apiPost(`/matches/request/${candidateId}`, { message: requestMessage });
       setRequestSuccess(true);
-      matchData.isConnected = true;
-      matchData.isRequestSent = false;
-      setLocalIsRequestSent(false);
+      matchData.isConnected = false;
+      matchData.isRequestSent = true;
+      setLocalIsRequestSent(true);
       if (onConnect) {
         onConnect(candidateId);
       }
@@ -90,9 +106,9 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
       }, 1500);
     } catch (err) {
       if (err.message && err.message.toLowerCase().includes("already")) {
-        matchData.isConnected = true;
-        matchData.isRequestSent = false;
-        setLocalIsRequestSent(false);
+        matchData.isConnected = false;
+        matchData.isRequestSent = true;
+        setLocalIsRequestSent(true);
         if (onConnect) {
           onConnect(candidateId);
         }
@@ -252,10 +268,22 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
               </svg>
               <span>Request Sent</span>
             </button>
+          ) : hasReceivedRequest ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/app/messages?chat=${candidateId}`)}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-[#2274A5] hover:bg-[#1b5e87] transition cursor-pointer shadow-xs active:scale-98"
+              title="Candidate sent you a request! Click to chat back"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>Request Received</span>
+            </button>
           ) : (
             <button
               type="button"
-              onClick={() => setShowRequestModal(true)}
+              onClick={handleConnectClick}
               className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-white bg-[#2274A5] hover:bg-[#1b5e87] transition cursor-pointer shadow-xs active:scale-98"
             >
               <span>Connect</span>
@@ -263,6 +291,55 @@ const MatchCardComponent = ({ matchData, onBookmark, onConnect }) => {
           )}
         </div>
       </div>
+
+      {/* Verification Required Modal */}
+      {showVerificationPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </span>
+                <h3 className="text-sm font-bold text-gray-900">ID Verification Required</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVerificationPrompt(false)}
+                className="text-gray-400 hover:text-gray-600 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="my-5 text-center">
+              <p className="text-xs text-gray-600 leading-relaxed">
+                To keep our roommate community safe and verified, please verify your National ID (Fayda) before sending connection requests.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowVerificationPrompt(false)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVerificationPrompt(false);
+                  navigate('/app/verification');
+                }}
+                className="rounded-xl bg-blue-900 px-5 py-2 text-xs font-semibold text-white hover:bg-blue-800"
+              >
+                Verify ID Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Send Request Modal */}
       {showRequestModal && (

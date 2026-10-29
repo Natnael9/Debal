@@ -61,7 +61,7 @@ const MatchFeed = () => {
       return;
     }
 
-    apiGet(`/matches/feed?page=${page}&pageSize=24`)
+    apiGet(`/matches/feed?page=${page}&pageSize=100`)
       .then((data) => {
         if (cancelled) return;
         const matches = data?.data?.matches ?? [];
@@ -201,12 +201,12 @@ const MatchFeed = () => {
   const handleConnect = useCallback((candidateId) => {
     setResults((prev) =>
       prev.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: false, isRequestSent: true } : c
       )
     );
     if (cachedFeed) {
       cachedFeed = cachedFeed.map((c) =>
-        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: true, isRequestSent: false } : c
+        (c._id === candidateId || c.id === candidateId) ? { ...c, isConnected: false, isRequestSent: true } : c
       );
     }
   }, []);
@@ -235,13 +235,15 @@ const MatchFeed = () => {
         if (filters.status !== "any" && candidate.housingStatus !== filters.status) {
           return false;
         }
-        // Location filter
-        if (
-          filters.location &&
-          !candidate.location?.toLowerCase().includes(filters.location.toLowerCase()) &&
-          !candidate.name?.toLowerCase().includes(filters.location.toLowerCase())
-        ) {
-          return false;
+        // Location / Name / Bio search filter
+        if (filters.location && filters.location.trim()) {
+          const q = filters.location.trim().toLowerCase();
+          const nameMatch = candidate.name?.toLowerCase().includes(q);
+          const locMatch = candidate.location?.toLowerCase().includes(q);
+          const bioMatch = candidate.bio?.toLowerCase().includes(q);
+          if (!nameMatch && !locMatch && !bioMatch) {
+            return false;
+          }
         }
         // Candidate budget fields (handles both top-level & preferences)
         const cMax = candidate.budgetMax ?? candidate.preferences?.budgetMax;

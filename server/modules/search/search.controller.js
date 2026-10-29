@@ -10,6 +10,8 @@ async function searchCandidatesHandler(request, reply) {
   const pageSize = Math.min(50, Math.max(1, parseInt(request.query.pageSize, 10) || 20));
 
   const filters = {
+    search: request.query.search || request.query.q || request.query.name,
+    status: request.query.status,
     budgetMin: request.query.budgetMin ? Number(request.query.budgetMin) : undefined,
     budgetMax: request.query.budgetMax ? Number(request.query.budgetMax) : undefined,
     cleanliness: request.query.cleanliness ? Number(request.query.cleanliness) : undefined,

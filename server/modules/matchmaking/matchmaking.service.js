@@ -154,20 +154,25 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
 
   for (const m of activeMatches) {
     const otherId = m.userA.toString() === user._id.toString() ? m.userB.toString() : m.userA.toString();
-    connectedIds.add(otherId);
+    if (!sentPendingIds.has(otherId) && !receivedPendingIds.has(otherId)) {
+      connectedIds.add(otherId);
+    }
   }
 
   const bookmarkedIds = new Set(userBookmarks.map((b) => b.bookmarkedUserId.toString()));
 
   const pageItems = rawPageItems.map((item) => {
     const itemIdStr = (item.id || item._id).toString();
-    const isConnected = connectedIds.has(itemIdStr);
-    const isRequestSent = !isConnected && sentPendingIds.has(itemIdStr);
+    const isPendingSent = sentPendingIds.has(itemIdStr);
+    const isPendingReceived = receivedPendingIds.has(itemIdStr);
+    const isConnected = !isPendingSent && !isPendingReceived && connectedIds.has(itemIdStr);
+    const isRequestSent = isPendingSent;
+    const hasReceivedRequest = isPendingReceived;
     return {
       ...item,
       isConnected,
       isRequestSent,
-      hasReceivedRequest: isConnected,
+      hasReceivedRequest,
       isBookmarked: bookmarkedIds.has(itemIdStr),
     };
   });
@@ -186,6 +191,10 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
  * Creates active Match, saves initial Message, and broadcasts real-time Socket.IO notification.
  */
 async function sendMatchRequest(fromUser, toUserId, message) {
+  if (fromUser.verificationStatus !== 'verified') {
+    throw new MatchmakingError('Identity verification is required to send connection requests.', 403);
+  }
+
   if (!fromUser.questionnaireCompleted) {
     throw new MatchmakingError('Complete the onboarding questionnaire first.', 403);
   }

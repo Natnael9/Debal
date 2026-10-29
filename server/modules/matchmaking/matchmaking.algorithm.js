@@ -12,20 +12,17 @@ async function getCandidatePoolA(user) {
 
   const filterQuery = {
     housingStatus: oppositeStatus,
-    questionnaireCompleted: true,
-    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
     suspended: false,
     isFrozen: { $ne: true },
-    pauseProfile: { $ne: true },
     _id: { $nin: Array.from(excludeIds) },
   };
 
   const projection = 'name age gender bio avatarUrl housingStatus location preferences verificationStatus';
 
-  // Fast indexed MongoDB query (limit to top 40 candidates for optimal network transfer)
+  // Return up to 500 candidates so all eligible roommates are available
   const candidates = await User.find(filterQuery)
     .select(projection)
-    .limit(40)
+    .limit(500)
     .lean();
 
   return candidates || [];
@@ -135,20 +132,14 @@ function haversineDistanceMeters([lng1, lat1], [lng2, lat2]) {
  * Returns opted-in needs_room candidates when currentUser is also needs_room and teamUpEnabled.
  */
 async function getCandidatePoolB(user) {
-  if (user.housingStatus !== 'needs_room' || !user.teamUpEnabled) {
-    return [];
-  }
-
   const excludeIds = new Set([user._id.toString(), ...(user.blockedUsers || []).map(id => id.toString())]);
+  const oppositeStatus = user.housingStatus === 'has_room' ? 'needs_room' : 'has_room';
 
+  // Pool B includes candidates with same housing status or team-up options
   const filterQuery = {
-    housingStatus: 'needs_room',
-    teamUpEnabled: true,
-    questionnaireCompleted: true,
-    verificationStatus: { $in: ['verified', 'pending', 'unverified'] },
+    housingStatus: { $ne: oppositeStatus },
     suspended: false,
     isFrozen: { $ne: true },
-    pauseProfile: { $ne: true },
     _id: { $nin: Array.from(excludeIds) },
   };
 
@@ -156,7 +147,7 @@ async function getCandidatePoolB(user) {
 
   const candidates = await User.find(filterQuery)
     .select(projection)
-    .limit(40)
+    .limit(500)
     .lean();
 
   return candidates || [];
