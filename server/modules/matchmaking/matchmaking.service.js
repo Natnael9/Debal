@@ -130,7 +130,7 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
     MatchRequest.find({
       toUser: user._id,
       status: 'pending',
-    }).select('fromUser').lean(),
+    }).populate('fromUser', 'verificationStatus').select('fromUser').lean(),
     MatchRequest.find({
       $or: [{ fromUser: user._id }, { toUser: user._id }],
       status: 'accepted',
@@ -142,8 +142,16 @@ async function getMatchFeed(user, { page = 1, pageSize = 20 } = {}) {
     Bookmark.find({ userId: user._id }).select('bookmarkedUserId').lean(),
   ]);
 
-  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
-  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+  const sentPendingIds = new Set(
+    user.verificationStatus === 'verified'
+      ? sentPendingRequests.map((r) => r.toUser.toString())
+      : []
+  );
+  const receivedPendingIds = new Set(
+    receivedPendingRequests
+      .filter((r) => r.fromUser && (r.fromUser.verificationStatus === 'verified' || !r.fromUser.verificationStatus))
+      .map((r) => (r.fromUser._id || r.fromUser).toString())
+  );
 
   const connectedIds = new Set();
 

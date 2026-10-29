@@ -57,7 +57,7 @@ async function listBookmarks(userId) {
     MatchRequest.find({
       toUser: userId,
       status: 'pending',
-    }).select('fromUser').lean(),
+    }).populate('fromUser', 'verificationStatus').select('fromUser').lean(),
     MatchRequest.find({
       $or: [{ fromUser: userId }, { toUser: userId }],
       status: 'accepted',
@@ -68,8 +68,19 @@ async function listBookmarks(userId) {
     }).select('userA userB').lean(),
   ]);
 
-  const sentPendingIds = new Set(sentPendingRequests.map((r) => r.toUser.toString()));
-  const receivedPendingIds = new Set(receivedPendingRequests.map((r) => r.fromUser.toString()));
+  const requestingUser = await User.findById(userId).select('verificationStatus').lean();
+  const isReqUserVerified = requestingUser?.verificationStatus === 'verified';
+
+  const sentPendingIds = new Set(
+    isReqUserVerified
+      ? sentPendingRequests.map((r) => r.toUser.toString())
+      : []
+  );
+  const receivedPendingIds = new Set(
+    receivedPendingRequests
+      .filter((r) => r.fromUser && (r.fromUser.verificationStatus === 'verified' || !r.fromUser.verificationStatus))
+      .map((r) => (r.fromUser._id || r.fromUser).toString())
+  );
 
   const connectedIds = new Set();
   for (const r of acceptedRequests) {
