@@ -7,10 +7,8 @@ import QuestionnaireWizard from "../pages/QuestionnaireWizard";
 function QuestionnaireRoutes() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<QuestionnaireWizard />}
-      />
+      <Route index element={<QuestionnaireWizard />} />
+      <Route path="*" element={<QuestionnaireWizard />} />
     </Routes>
   );
 }

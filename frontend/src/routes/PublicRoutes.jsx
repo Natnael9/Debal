@@ -12,7 +12,13 @@ import OAuthCallback from "../components/auth/OAuthCallback";
 
 function RedirectIfAuthenticated({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2274A5] border-t-transparent" />
+      </div>
+    );
+  }
   if (user) {
     if (!user.questionnaireCompleted) {
       return <Navigate to="/questionnaire" replace />;

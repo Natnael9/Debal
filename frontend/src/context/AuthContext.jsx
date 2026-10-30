@@ -88,6 +88,14 @@ export function AuthProvider({ children }) {
         const data = await apiGet("/users/me");
         if (!cancelled) {
           const u = data?.data?.user;
+          // Automatically clear legacy mock user session for Robel Alemayehu if present in browser storage
+          if (u?.email === "robelalemayehu838@gmail.com") {
+            clearToken();
+            setUser(null);
+            disconnectSocket();
+            setLoading(false);
+            return;
+          }
           setUser(u);
           if (u) connectSocket(token);
         }

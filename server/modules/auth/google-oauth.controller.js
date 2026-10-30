@@ -12,10 +12,16 @@ export async function googleRedirectHandler(request, reply) {
 
   if (isMock) {
     const user = await findOrCreateGoogleUser({
-      googleId: 'google_mock_user_123',
-      email: 'robelalemayehu838@gmail.com',
-      name: 'Robel Alemayehu',
+      googleId: 'google_test_user_demo',
+      email: 'testuser@debal.com',
+      name: 'Test User',
     });
+    // Ensure test user has questionnaireCompleted so local mock tests land on dashboard
+    if (!user.questionnaireCompleted) {
+      user.questionnaireCompleted = true;
+      user.housingStatus = user.housingStatus || 'needs_room';
+      await user.save();
+    }
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);
     setRefreshTokenCookie(reply, refreshToken);

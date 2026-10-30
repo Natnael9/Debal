@@ -13,9 +13,21 @@ import { apiPost, apiPatch } from "../services/api";
 
 function QuestionnaireWizardInner() {
   const navigate = useNavigate();
-  const { user, setUser } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2274A5] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const {
     steps,
