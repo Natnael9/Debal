@@ -113,7 +113,7 @@ function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div className="flex w-full items-center justify-between px-4 py-3 sm:px-6 md:px-8 lg:px-10 xl:px-12">
 
         {/* ================================
             MOBILE HAMBURGER BUTTON (LEFT on mobile)

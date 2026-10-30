@@ -169,6 +169,13 @@ body {
   }
 }
 
+/* Responsive Fluid Card Grid for all displays (from mobile to 4K TV) */
+.card-grid-fluid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1.5rem;
+}
+
 html:not(.dark) body {
   background-color: var(--bg-app) !important;
   color: var(--text-primary);

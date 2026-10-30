@@ -315,7 +315,7 @@ const MatchFeed = () => {
       />
 
       {/* Main Content Layout */}
-      <div className="mx-auto max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6">
         {/* Account Frozen Notification Banner */}
         {(user?.isFrozen || user?.isPaused) && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-100 shadow-xs">
@@ -403,7 +403,7 @@ const MatchFeed = () => {
                 </button>
               </div>
             ) : filteredAndSortedResults.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-4 min-[2200px]:grid-cols-5 min-[2800px]:grid-cols-6">
+              <div className="card-grid-fluid">
                 {filteredAndSortedResults.map((match) => (
                   <MatchCard
                     key={match._id || match.id}

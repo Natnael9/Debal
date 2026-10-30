@@ -184,7 +184,7 @@ const BookmarksPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] mx-auto">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         
         {/* Page Header */}
         <div className="mb-8 border-b border-gray-200 pb-5">
@@ -210,11 +210,11 @@ const BookmarksPage = () => {
 
         {/* 1. LOADING STATE */}
         {isLoading ? (
-          <MatchGridSkeleton count={6} />
+          <MatchGridSkeleton count={8} />
         ) : bookmarks.length > 0 ? (
           
           /* BOOKMARKS GRID */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-4 min-[2200px]:grid-cols-5 min-[2800px]:grid-cols-6 gap-6">
+          <div className="card-grid-fluid">
             {bookmarks.map((match) => (
               <MatchCard
                 key={match._id}

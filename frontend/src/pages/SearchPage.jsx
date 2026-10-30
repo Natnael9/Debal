@@ -5,7 +5,7 @@ import CustomDropdown from '../components/common/CustomDropdown';
 export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, isDrawerOpen, setIsDrawerOpen }) => {
   return (
     <div className="border-b border-gray-100 bg-white shadow-2xs">
-      <div className="mx-auto max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] px-4 py-5 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-5">
         
         {/* Header Title */}
         <div className="mb-4">
@@ -21,7 +21,7 @@ export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, i
         <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           
           {/* Location Input */}
-          <div className="relative min-w-0 w-full sm:w-auto sm:min-w-[240px] flex-1 sm:max-w-md">
+          <div className="relative min-w-0 w-full sm:w-auto sm:min-w-[280px] flex-1 sm:max-w-xl xl:max-w-2xl">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

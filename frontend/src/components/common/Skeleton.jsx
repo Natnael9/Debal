@@ -53,9 +53,9 @@ export function MatchCardSkeleton() {
   );
 }
 
-export function MatchGridSkeleton({ count = 6 }) {
+export function MatchGridSkeleton({ count = 8 }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-4 min-[2200px]:grid-cols-5 min-[2800px]:grid-cols-6">
+    <div className="card-grid-fluid">
       {Array.from({ length: count }).map((_, i) => (
         <MatchCardSkeleton key={i} />
       ))}
@@ -66,7 +66,7 @@ export function MatchGridSkeleton({ count = 6 }) {
 export function ChatLayoutSkeleton() {
   return (
     <div className="w-full min-h-[calc(100vh-4rem)] bg-slate-50/80 dark:bg-[#0b1017] p-3 sm:p-6 lg:p-8">
-      <div className="mx-auto flex h-[calc(100vh-6.5rem)] max-w-[1400px] 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] gap-4 overflow-hidden">
+      <div className="flex h-[calc(100vh-6.5rem)] w-full gap-4 overflow-hidden px-2 sm:px-4 md:px-6 lg:px-8">
         {/* Chat List Sidebar Skeleton */}
         <div className="hidden h-full w-[280px] shrink-0 flex-col rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:flex">
           <div className="mb-4 flex items-center justify-between px-1">
