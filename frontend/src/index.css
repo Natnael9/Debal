@@ -169,7 +169,7 @@ body {
   }
 }
 
-/* Responsive Card Grid: 1 col on mobile, 2 on tablets, 3 on small laptops, 4 on standard PCs, max 5 on big screens/TVs */
+/* Responsive Card Grid: 1 col on mobile, 2 on tablets, 3 per row on PCs, max 4 on big screens/TVs */
 .card-grid-fluid {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -189,15 +189,9 @@ body {
   }
 }
 
-@media (min-width: 1280px) {
-  .card-grid-fluid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 @media (min-width: 1600px) {
   .card-grid-fluid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
