@@ -24,7 +24,7 @@ function MessageBubbleComponent({ message, isOwn, partnerAvatarText = "P" }) {
           className={`px-3.5 py-2 text-xs leading-relaxed shadow-2xs ${
             isOwn
               ? "rounded-2xl rounded-br-xs bg-[#2274A5] text-white"
-              : "rounded-2xl rounded-bl-xs border border-gray-100 bg-white text-gray-800"
+              : "rounded-2xl rounded-bl-xs border border-gray-200/80 bg-gray-100 dark:bg-[#242f3d] dark:border-[#2f3e50] text-gray-800 dark:text-gray-100"
           }`}
         >
           {content}

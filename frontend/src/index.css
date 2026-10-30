@@ -16,11 +16,11 @@
   --color-brand-ring: rgba(34, 116, 165, 0.15);
 
   /* Surfaces & Backgrounds */
-  --bg-app: #f8fafc;
+  --bg-app: #eef2f6;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
-  --bg-subtle: #f1f5f9;
-  --bg-subtle-hover: #e2e8f0;
+  --bg-subtle: #e2e8f0;
+  --bg-subtle-hover: #cbd5e1;
   --bg-banner: linear-gradient(to right, #0B3954, #1A5B7A, #2274A5);
   --bg-overlay: rgba(0, 0, 0, 0.5);
 
@@ -33,14 +33,14 @@
   --text-on-brand: #ffffff;
 
   /* Borders & Dividers */
-  --border-default: #e2e8f0;
-  --border-subtle: #f1f5f9;
+  --border-default: #d8e2ec;
+  --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;
 
   /* Form Inputs */
-  --input-bg: #ffffff;
-  --input-bg-subtle: rgba(248, 250, 252, 0.7);
-  --input-border: #e2e8f0;
+  --input-bg: #f1f5f9;
+  --input-bg-subtle: #e8edf3;
+  --input-border: #cbd5e1;
   --input-text: #0f172a;
   --input-placeholder: #94a3b8;
 
@@ -130,6 +130,79 @@ html.dark,
   --color-primary-700: var(--color-brand-active);
   --color-primary-800: var(--color-brand-deep);
   --color-primary-900: #15364d;
+}
+
+/* ==========================================================================
+   Light Mode Contrast & Surface Hierarchy
+   ========================================================================== */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+html:not(.dark) body {
+  background-color: var(--bg-app) !important;
+  color: var(--text-primary);
+}
+
+/* Page containers & outer backdrops in Light Mode */
+html:not(.dark) .bg-slate-50,
+html:not(.dark) .bg-slate-50\/50,
+html:not(.dark) .bg-slate-50\/60,
+html:not(.dark) .bg-slate-50\/70,
+html:not(.dark) .bg-slate-50\/80,
+html:not(.dark) .bg-slate-50\/90,
+html:not(.dark) .bg-gray-50,
+html:not(.dark) .bg-gray-50\/50,
+html:not(.dark) .bg-gray-50\/60,
+html:not(.dark) .bg-gray-50\/70,
+html:not(.dark) .bg-gray-50\/80,
+html:not(.dark) .bg-gray-50\/90 {
+  background-color: var(--bg-app) !important;
+}
+
+/* Clean, tactile border definition in Light Mode */
+html:not(.dark) .border-gray-100,
+html:not(.dark) .border-slate-100 {
+  border-color: #dbe2eb !important;
+}
+
+html:not(.dark) .border-gray-200,
+html:not(.dark) .border-slate-200 {
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html:not(.dark) .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #dbe2eb !important;
+}
+
+/* Foreground Secondary Elements in Light Mode (Chips, Badges, Secondary Pills) */
+html:not(.dark) .bg-gray-100,
+html:not(.dark) .bg-slate-100 {
+  background-color: #e2e8f0 !important;
+  color: #1e293b;
+}
+
+html:not(.dark) .hover\:bg-gray-50:hover,
+html:not(.dark) .hover\:bg-gray-100:hover,
+html:not(.dark) .hover\:bg-slate-50:hover {
+  background-color: #dbe2eb !important;
+}
+
+/* Form inputs & textareas in Light Mode */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]),
+html:not(.dark) textarea {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):focus,
+html:not(.dark) textarea:focus {
+  background-color: #ffffff !important;
+  border-color: var(--color-brand) !important;
 }
 
 /* ==========================================================================
