@@ -66,7 +66,7 @@ const LandingPage = () => {
         className="relative min-h-screen bg-white overflow-hidden flex flex-col justify-center bg-cover bg-no-repeat bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-20 pb-12 md:px-16 lg:px-24 flex flex-col lg:flex-row items-center justify-between h-full">
+        <div className="relative z-10 w-full mx-auto px-6 pt-20 pb-12 md:px-12 lg:px-16 flex flex-col lg:flex-row items-center justify-between h-full">
           
           <div className="max-w-2xl w-full relative z-20">
             <FadeInSection>
@@ -172,7 +172,7 @@ const LandingPage = () => {
           2. ABOUT US 
       ========================================= */}
       <section className="py-24 bg-slate-50 px-6 md:px-16 lg:px-24">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           
           <FadeInSection>
             <div className="space-y-6">
