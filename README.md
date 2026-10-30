@@ -108,11 +108,15 @@ Access the application at `http://localhost:5173`.
 
 **Classroom:** 5
 
-| Name | CTC ID |
-|------|---------|
-| Natnael Ashenafi | CTC-897-26 |
-| Natnael Sebhat | CTC-1708-26 |
-| Nardos Haile | CTC-7685-26 |
-| Robel Alemayehu | CTC-1067-26 |
-| Natnael Abrha | CTC-2834-26 |
-| Midaso Edasa | CTC-4752-26 |
+| Name | CTC ID | Role |
+|------|---------|------|
+| Natnael Ashenafi | CTC-897-26 | Team Lead, Backend (Former Frontend), Integration, Deployment |
+| Natnael Sebhat | CTC-1708-26 | Backend (Former Frontend), Integration |
+| Robel Alemayehu | CTC-1067-26 | Backend, Integration *(No longer in the group)* |
+| Nardos Haile | CTC-7685-26 | Backend *(No longer in the group)* |
+| Natnael Abrha | CTC-2834-26 | Frontend |
+| Midaso Edasa | CTC-4752-26 | Frontend |
+
+- **Integration:** Natnael Ashenafi, Natnael Sebhat, Robel Alemayehu
+- **Deployment:** Natnael Ashenafi
+- **Note:** Robel Alemayehu and Nardos Haile are no longer in the group.
