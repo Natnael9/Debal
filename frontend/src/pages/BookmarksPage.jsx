@@ -184,7 +184,7 @@ const BookmarksPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10">
         
         {/* Page Header */}
         <div className="mb-8 border-b border-gray-200 pb-5">
