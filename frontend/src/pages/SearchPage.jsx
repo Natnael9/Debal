@@ -5,7 +5,7 @@ import CustomDropdown from '../components/common/CustomDropdown';
 export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, isDrawerOpen, setIsDrawerOpen }) => {
   return (
     <div className="border-b border-gray-100 bg-white shadow-2xs">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] px-4 py-5 sm:px-6 lg:px-8">
         
         {/* Header Title */}
         <div className="mb-4">
@@ -20,24 +20,8 @@ export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, i
         {/* Clean Search Form */}
         <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           
-          {/* Toggle More Filters Button */}
-          <button 
-            type="button"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold transition active:scale-95 ${
-              isDrawerOpen 
-                ? 'border-blue-200 bg-blue-50 text-blue-900 shadow-2xs' 
-                : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:border-gray-300 hover:bg-white'
-            }`}
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-            <span>{isDrawerOpen ? 'Hide Filters' : 'More Filters'}</span>
-          </button>
-
           {/* Location Input */}
-          <div className="relative min-w-[220px] flex-grow sm:max-w-md">
+          <div className="relative min-w-0 w-full sm:w-auto sm:min-w-[240px] flex-1 sm:max-w-md">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -53,13 +37,31 @@ export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, i
             />
           </div>
 
-          {/* Submit Search Button */}
-          <button 
-            type="submit"
-            className="rounded-xl bg-blue-900 px-6 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-blue-800 active:scale-95 flex items-center gap-1.5"
-          >
-            <span>Search</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Toggle More Filters Button */}
+            <button 
+              type="button"
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition active:scale-95 ${
+                isDrawerOpen 
+                  ? 'border-blue-200 bg-blue-50 text-blue-900 shadow-2xs' 
+                  : 'border-gray-200 bg-gray-50/70 text-gray-700 hover:border-gray-300 hover:bg-white'
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              <span>{isDrawerOpen ? 'Hide Filters' : 'More Filters'}</span>
+            </button>
+
+            {/* Submit Search Button */}
+            <button 
+              type="submit"
+              className="rounded-xl bg-blue-900 px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-blue-800 active:scale-95 flex items-center gap-1.5"
+            >
+              <span>Search</span>
+            </button>
+          </div>
           
         </form>
 
@@ -71,7 +73,7 @@ export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, i
 // 2. THE SIDE PANEL FOR ALL ADVANCED FILTERS (RELATIVE CONTAINER WITHOUT CLIPPING)
 export const SideFilterBar = memo(({ filters, handleFilterChange, onClearAll }) => {
   return (
-    <div className="w-64 shrink-0 rounded-3xl border border-gray-100 bg-white p-5 shadow-xs relative">
+    <div className="w-full lg:w-64 shrink-0 rounded-3xl border border-gray-100 bg-white p-5 shadow-xs relative">
       
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 pb-3">

@@ -154,7 +154,7 @@ function CandidateProfilePage() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl 2xl:max-w-6xl min-[1920px]:max-w-[1400px]">
         {/* Main Card Frame */}
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12">

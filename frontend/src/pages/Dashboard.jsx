@@ -315,7 +315,7 @@ const MatchFeed = () => {
       />
 
       {/* Main Content Layout */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] px-4 py-6 sm:px-6 lg:px-8">
         {/* Account Frozen Notification Banner */}
         {(user?.isFrozen || user?.isPaused) && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-100 shadow-xs">
@@ -343,23 +343,23 @@ const MatchFeed = () => {
 
         {/* Results Header Bar */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 shadow-2xs">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-900">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-900 shrink-0">
               {filteredAndSortedResults.length}
             </span>
-            <p className="text-xs font-bold text-gray-800">
+            <p className="text-xs font-bold text-gray-800 truncate">
               Matches Found
               {filters.location && <span className="font-normal text-gray-500"> in "{filters.location}"</span>}
             </p>
           </div>
 
           {/* Polished Custom Sort By Dropdown */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Sort:</span>
             <CustomDropdown
               value={sortBy}
               onChange={setSortBy}
-              className="w-48"
+              className="w-40 sm:w-48"
               options={[
                 { value: "score", label: "Best Match (Score)" },
                 { value: "budget_low", label: "Budget: Low to High" },
@@ -371,10 +371,10 @@ const MatchFeed = () => {
         </div>
 
         {/* Flex layout with drawer */}
-        <div className="flex items-start gap-6">
+        <div className="flex flex-col lg:flex-row items-start gap-6">
           {/* Side Drawer Filter */}
           {isDrawerOpen && (
-            <div className="animate-in fade-in slide-in-from-left-4 duration-200">
+            <div className="w-full lg:w-64 shrink-0 animate-in fade-in slide-in-from-left-4 duration-200">
               <SideFilterBar
                 filters={filters}
                 handleFilterChange={handleFilterChange}
@@ -384,7 +384,7 @@ const MatchFeed = () => {
           )}
 
           {/* Match Feed Cards Grid */}
-          <main className="min-w-0 flex-1">
+          <main className="min-w-0 flex-1 w-full">
             {isLoading ? (
               <MatchGridSkeleton count={6} />
             ) : error ? (
@@ -403,7 +403,7 @@ const MatchFeed = () => {
                 </button>
               </div>
             ) : filteredAndSortedResults.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-4 min-[2200px]:grid-cols-5 min-[2800px]:grid-cols-6">
                 {filteredAndSortedResults.map((match) => (
                   <MatchCard
                     key={match._id || match.id}

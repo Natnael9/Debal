@@ -300,7 +300,7 @@ function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50/70 pt-6 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[1800px] space-y-6">
 
         {/* ── HERO HEADER CARD ──────────────────────────────────────────────── */}
         <div className="overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100">

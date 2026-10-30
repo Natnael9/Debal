@@ -12,10 +12,10 @@ function AppLayout({ children }) {
   const hideFooter = isAuthPage || isMessagesPage;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col w-full overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 w-full min-w-0">
         {children}
       </main>
 

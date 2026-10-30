@@ -791,7 +791,7 @@ function ChatLayout() {
       )}
 
       {/* MAIN FRAME */}
-      <div className="mx-auto flex h-[calc(100vh-6.5rem)] max-w-[1400px] gap-4 overflow-hidden">
+      <div className="mx-auto flex h-[calc(100vh-6.5rem)] max-w-[1400px] 2xl:max-w-screen-2xl min-[1920px]:max-w-[1840px] min-[2560px]:max-w-[2400px] min-[3200px]:max-w-[3200px] gap-4 overflow-hidden">
 
         {/* 1. CHAT LIST */}
         <div

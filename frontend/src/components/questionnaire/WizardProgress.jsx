@@ -28,7 +28,7 @@ function WizardProgress({ steps, stepIndex, canAccessStep, onStepClick }) {
               >
                 {isComplete ? "✓" : i + 1}
               </span>
-              <span className={isActive ? "text-blue-900" : "text-gray-500"}>
+              <span className={`text-[10px] sm:text-xs truncate max-w-[50px] sm:max-w-none text-center ${isActive ? "text-blue-900 font-bold" : "text-gray-500"}`}>
                 {STEP_LABELS[key]}
               </span>
             </button>
