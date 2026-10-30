@@ -8,7 +8,7 @@ function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       {/* Main Footer */}
-      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-12">
+      <div className="mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-12">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* Brand */}

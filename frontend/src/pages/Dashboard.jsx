@@ -315,7 +315,7 @@ const MatchFeed = () => {
       />
 
       {/* Main Content Layout */}
-      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6">
+      <div className="mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6">
         {/* Account Frozen Notification Banner */}
         {(user?.isFrozen || user?.isPaused) && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-100 shadow-xs">

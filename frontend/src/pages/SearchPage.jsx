@@ -5,7 +5,7 @@ import CustomDropdown from '../components/common/CustomDropdown';
 export const TopFilterBar = memo(({ filters, handleFilterChange, handleSearch, isDrawerOpen, setIsDrawerOpen }) => {
   return (
     <div className="border-b border-gray-100 bg-white shadow-2xs">
-      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-5">
+      <div className="mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-5">
         
         {/* Header Title */}
         <div className="mb-4">

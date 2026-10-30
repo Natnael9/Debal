@@ -120,3 +120,4 @@ Access the application at `http://localhost:5173`.
 - **Integration:** Natnael Ashenafi, Natnael Sebhat, Robel Alemayehu
 - **Deployment:** Natnael Ashenafi
 - **Note:** Robel Alemayehu and Nardos Haile are no longer in the group.
+ 

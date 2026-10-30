@@ -53,7 +53,7 @@ export function MatchCardSkeleton() {
   );
 }
 
-export function MatchGridSkeleton({ count = 8 }) {
+export function MatchGridSkeleton({ count = 10 }) {
   return (
     <div className="card-grid-fluid">
       {Array.from({ length: count }).map((_, i) => (
