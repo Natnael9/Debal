@@ -1,7 +1,7 @@
 function AuthCard({ title, description, children }) {
   return (
-    <div className="flex min-h-[calc(100vh-65px)] items-center justify-center bg-slate-50/70 px-3 py-4">
-      <div className="w-full max-w-[340px] rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+    <div className="flex min-h-[calc(100vh-65px)] items-center justify-center bg-slate-50/70 px-4 py-8">
+      <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg rounded-2xl sm:rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 lg:p-10 shadow-sm">
         
         {/* Header */}
         <div className="text-center">

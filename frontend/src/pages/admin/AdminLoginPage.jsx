@@ -36,7 +36,7 @@ const AdminLoginPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#071E2D] px-4 py-8">
-      <div className="w-full max-w-[350px] rounded-3xl border border-slate-800 bg-[#0B2538] p-6 shadow-2xl">
+      <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg rounded-3xl border border-slate-800 bg-[#0B2538] p-6 sm:p-8 lg:p-10 shadow-2xl">
         
         {/* Header */}
         <div className="text-center">

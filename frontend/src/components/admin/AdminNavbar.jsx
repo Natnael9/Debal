@@ -39,7 +39,7 @@ const AdminNavbar = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#071E2D]/95 backdrop-blur-md text-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10">
         <div className="flex h-15 items-center justify-between gap-4">
 
           {/* BRAND LOGO & BADGE */}
