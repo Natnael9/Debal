@@ -229,7 +229,7 @@ function ProfilePage() {
   };
 
   const handleVerifyClick = () => setVerificationStep("ID_FORM");
-
+  
   // FIX 1: Bulletproof Cancel Function (refetches profile to clear false "pending" states)
   const handleCancelVerification = async () => {
     setVerificationStep(null);
@@ -243,7 +243,7 @@ function ProfilePage() {
       console.error("Failed to refresh profile on cancel:", err);
     }
   };
-
+  
   const handleIDSubmit = (data, updatedUser) => {
     const freshUser = updatedUser || { verificationStatus: "verified" };
     setUser((prev) => ({
@@ -257,7 +257,7 @@ function ProfilePage() {
     }));
     setVerificationStep("STATUS_SCREEN");
   };
-
+  
   const handleOTPSuccess = (status = "verified", updatedUser = null) => {
     const freshUser = updatedUser || { verificationStatus: "verified" };
     setUser((prev) => ({
@@ -271,7 +271,7 @@ function ProfilePage() {
     }));
     setVerificationStep("STATUS_SCREEN");
   };
-
+  
   const handleFinishVerification = async () => {
     try {
       const user = await getMyProfile();
@@ -299,35 +299,23 @@ function ProfilePage() {
   }
 
   return (
-    // DESIGN: soft tinted page background instead of flat gray
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-gray-50 to-emerald-50/40 pt-6 pb-20 px-4 sm:px-6 lg:px-8">
-      {/* DESIGN: tighter max width so hero + cards line up as one centered column */}
-      <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50/70 pt-6 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] min-[1920px]:max-w-[1800px] min-[2560px]:max-w-[2200px] mx-auto space-y-6">
 
         {/* ── HERO HEADER CARD ──────────────────────────────────────────────── */}
-        <div className="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200/60 ring-1 ring-black/5 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100">
+          {/* Header Cover Banner */}
+          <div className="h-32 sm:h-40 bg-gradient-to-r from-[#0B3954] via-[#1A5B7A] to-[#2274A5] relative p-6 flex items-end justify-end">
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
 
-          {/* Header Cover Banner: layered gradient + glow blobs + dot texture */}
-          <div className="h-40 sm:h-52 bg-gradient-to-br from-[#0F2027] via-[#1E7F74] to-[#71B280] relative p-5 flex items-start justify-end overflow-hidden">
-            {/* glow blobs */}
-            <div className="pointer-events-none absolute -top-16 -left-10 h-56 w-56 rounded-full bg-emerald-300/30 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 right-10 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
-            {/* dot texture */}
-            <div
-              className="pointer-events-none absolute inset-0 opacity-20"
-              style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px)", backgroundSize: "18px 18px" }}
-            />
-            {/* fade into the card below */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
-
-            {/* Edit Profile CTA in Banner (glass style) */}
+            {/* Edit Profile CTA in Banner */}
             {!isEditing && (
               <button
                 type="button"
                 onClick={handleStartEditing}
-                className="relative z-10 inline-flex items-center gap-2 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur-md border border-white/30 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all active:scale-95 cursor-pointer"
+                className="relative z-10 inline-flex items-center gap-2 rounded-xl bg-white/95 hover:bg-white px-4 py-2 text-xs sm:text-sm font-bold text-[#2274A5] hover:text-[#0B3954] dark:text-[#3a8ecc] dark:hover:text-[#64b5f6] shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[#2274A5] dark:text-[#3a8ecc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
                 Edit Full Profile
@@ -336,16 +324,16 @@ function ProfilePage() {
           </div>
 
           {/* Profile Header Details & Photo Overlap */}
-          <div className="px-6 pb-8 pt-0 relative">
-            <div className="flex flex-col items-center text-center gap-4 -mt-16 sm:-mt-20 mb-2">
-
-              {/* Photo & Overlap Avatar: gradient ring + soft glow */}
-              <div className="relative group self-center">
-                <div className="absolute -inset-1.5 rounded-[2rem] bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 opacity-80 blur-sm group-hover:opacity-100 transition-opacity" />
-                <div
+          <div className="px-6 pb-6 pt-0 relative">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20 mb-4">
+              
+              {/* Photo & Overlap Avatar */}
+              <div className="relative group self-start sm:self-auto">
+                <div 
                   onClick={() => profile.photoUrl && setIsPhotoLightboxOpen(true)}
-                  className={`relative flex h-32 w-32 sm:h-40 sm:w-40 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border-4 border-white bg-gradient-to-br from-emerald-50 to-teal-100 text-4xl font-extrabold text-[#0B3954] shadow-2xl ${profile.photoUrl ? "cursor-pointer group/avatar" : ""
-                    }`}
+                  className={`relative flex h-28 w-28 sm:h-36 sm:w-36 shrink-0 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-gradient-to-br from-blue-50 to-indigo-100 text-3xl font-extrabold text-[#0B3954] shadow-lg ${
+                    profile.photoUrl ? "cursor-pointer group/avatar" : ""
+                  }`}
                   title={profile.photoUrl ? "Click to view full photo" : ""}
                 >
                   {profile.photoUrl ? (
@@ -390,7 +378,7 @@ function ProfilePage() {
                     fileInputRef.current?.click();
                   }}
                   disabled={isUploadingPhoto}
-                  className="absolute -bottom-1 -right-1 z-10 p-2.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg transition-transform hover:scale-110 active:scale-90 border-[3px] border-white cursor-pointer"
+                  className="absolute bottom-1 right-1 z-10 p-2 rounded-2xl bg-[#0B3954] hover:bg-[#2274A5] text-white shadow-md transition-transform active:scale-90 border-2 border-white cursor-pointer"
                   title="Change profile photo"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -401,53 +389,52 @@ function ProfilePage() {
               </div>
 
               {/* Name, Status & Tags */}
-              <div className="flex-1 w-full">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900">
+              <div className="flex-1 sm:ml-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                     {profile.name}
                   </h1>
                   {profile.age && (
-                    <span className="text-xl font-medium text-gray-400">
+                    <span className="text-lg font-medium text-gray-500">
                       , {profile.age}
                     </span>
                   )}
-                </div>
 
-                {/* Badges on their own row so the name stays clean */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   {/* Active Profile Indicator */}
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     Active Profile
                   </span>
 
                   {/* Verification Badge */}
                   {profile.verificationStatus === "verified" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700 ring-1 ring-sky-200">
-                      <svg className="w-3.5 h-3.5 text-sky-600" fill="currentColor" viewBox="0 0 20 20">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                      <svg className="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">
                       Unverified
                     </span>
                   )}
-
-                  <span className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-                    {profile.housingStatus === "has_room" ? "Has a Room Available" : "Seeking a Room"}
-                  </span>
                 </div>
 
-                {/* Subtitle location */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-500">
-                  <span className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Subtitle location & Housing status */}
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     {profile.location.preferred}
+                  </span>
+
+                  <span className="h-1 w-1 rounded-full bg-gray-300" />
+
+                  <span className="font-medium text-[#0B3954] dark:text-[#2274A5]">
+                    {profile.housingStatus === "has_room" ? "Has a Room Available" : "Seeking a Room"}
                   </span>
                 </div>
               </div>
@@ -465,26 +452,8 @@ function ProfilePage() {
               </div>
             )}
 
-            {/* Quick stats strip (display only, uses existing profile fields) */}
-            <div className="mt-6 grid grid-cols-3 divide-x divide-gray-100 rounded-2xl bg-gray-50/80 ring-1 ring-gray-100 py-4">
-              <div className="px-2 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Budget</p>
-                <p className="mt-1 text-sm font-extrabold text-gray-900">
-                  {profile.budget.max ? `${profile.budget.max.toLocaleString()} ETB` : "Not set"}
-                </p>
-              </div>
-              <div className="px-2 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Radius</p>
-                <p className="mt-1 text-sm font-extrabold text-gray-900">{profile.location.maxDistance} km</p>
-              </div>
-              <div className="px-2 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sleep</p>
-                <p className="mt-1 text-sm font-extrabold text-gray-900">{profile.lifestyle.sleepSchedule}</p>
-              </div>
-            </div>
-
             {/* Profile Completion Meter */}
-            <div className="mt-5 pt-5 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100">
               <ProfileCompletionMeter percentage={profile.profileCompletion} />
             </div>
           </div>
@@ -493,7 +462,7 @@ function ProfilePage() {
         {/* ── MAIN CONTENT (EDIT FULL VS EDIT BIO VS READ MODE) ─────────────── */}
         {isEditing ? (
           <div className="space-y-6">
-            <div className="rounded-[2rem] bg-white p-6 sm:p-8 shadow-xl shadow-slate-200/60 ring-1 ring-black/5">
+            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
               <EditProfileForm
                 profile={editProfile}
                 onChange={setEditProfile}
@@ -504,27 +473,24 @@ function ProfilePage() {
             </div>
           </div>
         ) : (
-          /* ── SINGLE-COLUMN VERTICAL LAYOUT ─────────────────────────────── */
-          <div className="grid grid-cols-1 gap-6 w-full">
+          /* ── 2-COLUMN DASHBOARD GRID ───────────────────────────────────── */
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* ── LEFT COLUMN WRAPPER ("contents" so cards flow into one column) ── */}
-            <div className="contents">
-
+            {/* ── LEFT COLUMN (1/3 Width): Identity & Preferences Summary ── */}
+            <div className="space-y-6">
+              
               {/* Identity & Verification Card */}
-              <div className="order-1 relative overflow-hidden rounded-[1.75rem] bg-white p-6 shadow-lg shadow-slate-200/50 ring-1 ring-black/5 space-y-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-                {/* colored top accent */}
-                <div className={`absolute inset-x-0 top-0 h-1 ${profile.verificationStatus === 'verified' ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-amber-400 to-orange-400'}`} />
-
-                <div className="flex items-center justify-between pt-1">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                     Identity Trust & Verification
                   </h3>
-                  <span className={`h-2.5 w-2.5 rounded-full ${profile.verificationStatus === 'verified' ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
+                  <span className={`h-2.5 w-2.5 rounded-full ${profile.verificationStatus === 'verified' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
                 </div>
 
-                <div className={`p-4 rounded-2xl border ${profile.verificationStatus === 'verified' ? 'bg-emerald-50/60 border-emerald-100' : 'bg-amber-50/60 border-amber-100'}`}>
+                <div className={`p-4 rounded-2xl border ${profile.verificationStatus === 'verified' ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'}`}>
                   <div className="flex items-start gap-3">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${profile.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <div className={`p-2 rounded-xl shrink-0 ${profile.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
@@ -546,7 +512,7 @@ function ProfilePage() {
                 {profile.verificationStatus === "unverified" && (
                   <button
                     onClick={handleVerifyClick}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-4 py-3 text-xs font-bold text-white shadow-md shadow-emerald-500/30 transition active:scale-98 cursor-pointer mt-4"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer mt-4"
                   >
                     Verify My Identity Now
                   </button>
@@ -555,7 +521,7 @@ function ProfilePage() {
                 {profile.verificationStatus === "pending" && (
                   <button
                     onClick={handleVerifyClick}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 px-4 py-3 text-xs font-bold text-white shadow-md shadow-amber-500/30 transition active:scale-98 cursor-pointer mt-4"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-98 cursor-pointer mt-4"
                   >
                     Resume Verification
                   </button>
@@ -563,66 +529,34 @@ function ProfilePage() {
               </div>
 
               {/* Quick Housing & Budget Summary Card */}
-              <div className="order-3 rounded-[1.75rem] bg-white p-6 shadow-lg shadow-slate-200/50 ring-1 ring-black/5 space-y-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-teal-500" />
-                  <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
-                    Housing & Budget
-                  </h3>
-                </div>
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Housing & Budget
+                </h3>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50 ring-1 ring-gray-100 transition hover:bg-emerald-50/50">
-                    <span className="flex items-center gap-3 text-xs font-semibold text-gray-600">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                      </span>
-                      Monthly Budget
-                    </span>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <span className="text-xs font-semibold text-gray-600">Monthly Budget</span>
                     <span className="text-xs font-bold text-[#0B3954]">
                       {profile.budget.min > 0 ? `${profile.budget.min.toLocaleString()} - ` : ''}
                       {profile.budget.max ? `${profile.budget.max.toLocaleString()} ETB/mo` : 'Not set'}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50 ring-1 ring-gray-100 transition hover:bg-emerald-50/50">
-                    <span className="flex items-center gap-3 text-xs font-semibold text-gray-600">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </span>
-                      Preferred Location
-                    </span>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <span className="text-xs font-semibold text-gray-600">Preferred Location</span>
                     <span className="text-xs font-bold text-gray-900">{profile.location.preferred}</span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50 ring-1 ring-gray-100 transition hover:bg-emerald-50/50">
-                    <span className="flex items-center gap-3 text-xs font-semibold text-gray-600">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                      </span>
-                      Max Distance Radius
-                    </span>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <span className="text-xs font-semibold text-gray-600">Max Distance Radius</span>
                     <span className="text-xs font-bold text-gray-900">{profile.location.maxDistance} km</span>
                   </div>
 
                   {profile.housingStatus === "needs_room" && (
-                    <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-teal-50/60 ring-1 ring-teal-100">
-                      <span className="flex items-center gap-3 text-xs font-semibold text-[#0B3954]">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                        </span>
-                        Team-Up Preference
-                      </span>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${profile.teamUpEnabled ? 'bg-teal-100 text-teal-800' : 'bg-gray-200 text-gray-600'}`}>
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 border border-blue-100">
+                      <span className="text-xs font-semibold text-[#0B3954]">Team-Up Preference</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${profile.teamUpEnabled ? 'bg-blue-100 text-[#0B3954]' : 'bg-gray-200 text-gray-600'}`}>
                         {profile.teamUpEnabled ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
@@ -632,24 +566,24 @@ function ProfilePage() {
 
             </div>
 
-            {/* ── RIGHT COLUMN WRAPPER ("contents" so cards flow into one column) ── */}
-            <div className="contents">
+            {/* ── RIGHT COLUMN (2/3 Width): Bio & Detailed Preferences ────── */}
+            <div className="lg:col-span-2 space-y-6">
 
               {/* Bio & About Me Card (Focused Bio Edit vs View) */}
-              <div className="order-2 rounded-[1.75rem] bg-white p-6 sm:p-8 shadow-lg shadow-slate-200/50 ring-1 ring-black/5 space-y-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-teal-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                    <span className="h-2 w-2 rounded-full bg-[#2274A5]" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                       About Me & Bio
                     </h3>
                   </div>
-
+                  
                   {!isEditingBio && (
                     <button
                       type="button"
                       onClick={handleStartEditingBio}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 hover:bg-teal-100 px-3 py-1.5 text-xs font-bold text-teal-700 transition cursor-pointer"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#2274A5] hover:text-[#0B3954] dark:text-[#3a8ecc] dark:hover:text-[#64b5f6] transition cursor-pointer"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -673,7 +607,7 @@ function ProfilePage() {
                         value={bioText}
                         onChange={(e) => setBioText(e.target.value)}
                         placeholder="Share a bit about yourself, your hobbies, work/study routine, and what you look for in a roommate..."
-                        className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 p-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 transition-all"
+                        className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 p-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#2274A5] focus:bg-white focus:ring-2 focus:ring-[#2274A5]/10 transition-all"
                       />
                       <div className="flex justify-end items-center mt-1 text-[11px] text-gray-400 px-1">
                         <span>{bioText.length}/500</span>
@@ -693,7 +627,7 @@ function ProfilePage() {
                         type="button"
                         onClick={handleSaveBioOnly}
                         disabled={isSavingBio}
-                        className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-emerald-500/25 transition disabled:opacity-60 cursor-pointer"
+                        className="rounded-xl bg-[#2274A5] hover:bg-[#1b5e87] px-5 py-2 text-xs font-semibold text-white shadow-sm transition disabled:opacity-60 cursor-pointer"
                       >
                         {isSavingBio ? "Saving Bio..." : "Save Bio"}
                       </button>
@@ -701,7 +635,7 @@ function ProfilePage() {
                   </div>
                 ) : (
                   /* ── READ BIO VIEW ─────────────────────────────────────── */
-                  <div className="relative rounded-2xl border border-teal-50 dark:border-blue-900/30 bg-gradient-to-br from-teal-50/50 to-emerald-50/30 dark:from-blue-950/20 dark:to-indigo-950/20 p-5 pl-6 border-l-4 border-l-teal-400">
+                  <div className="rounded-2xl border border-blue-50 dark:border-blue-900/30 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 dark:from-blue-950/20 dark:to-indigo-950/20 p-5">
                     <p className="text-sm leading-relaxed text-black dark:text-white whitespace-pre-line font-medium">
                       {profile.bio ? (
                         profile.bio
@@ -716,7 +650,7 @@ function ProfilePage() {
               </div>
 
               {/* Lifestyle Attributes Card */}
-              <div className="order-4 rounded-[1.75rem] bg-white p-6 sm:p-8 shadow-lg shadow-slate-200/50 ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm">
                 <LifestyleAttributes lifestyle={profile.lifestyle} />
               </div>
 
@@ -732,23 +666,23 @@ function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="w-full max-w-md animate-in zoom-in-95 duration-150">
             {verificationStep === "ID_FORM" && (
-              <IDSubmitForm
+              <IDSubmitForm 
                 onCancel={handleCancelVerification}
-                onSubmit={handleIDSubmit}
+                onSubmit={handleIDSubmit} 
               />
             )}
 
             {verificationStep === "OTP_FORM" && (
-              <OTPConfirmForm
+              <OTPConfirmForm 
                 onCancel={handleCancelVerification}
-                onSuccess={handleOTPSuccess}
+                onSuccess={handleOTPSuccess} 
               />
             )}
 
             {verificationStep === "STATUS_SCREEN" && (
-              <VerificationStatusScreen
+              <VerificationStatusScreen 
                 status="verified"
-                onClose={handleFinishVerification}
+                onClose={handleFinishVerification} 
               />
             )}
           </div>
