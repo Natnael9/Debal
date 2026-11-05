@@ -1,6 +1,7 @@
 # Debal
 
-> **Live Application:** [https://debal-orcin.vercel.app/app/dashboard](https://debal-orcin.vercel.app/app/dashboard)
+> **Live Application:** [https://debal-orcin.vercel.app/app/dashboard](https://debal-orcin.vercel.app/app/dashboard)  
+> **Video Demo:** [https://drive.google.com/file/d/1BwHvpW31LYcVpbqEZ0BtdeCgc03ZTVm3/view?usp=sharing](https://drive.google.com/file/d/1BwHvpW31LYcVpbqEZ0BtdeCgc03ZTVm3/view?usp=sharing)
 
 ## Overview
 
@@ -116,6 +117,7 @@ Access the application at `http://localhost:5173`.
 | Nardos Haile | CTC-7685-26 | Backend *(No longer in the group)* |
 | Natnael Abrha | CTC-2834-26 | Frontend |
 | Midaso Edasa | CTC-4752-26 | Frontend |
+| Desta Hailemariam | CTC-1641-26 | Frontend |
 
 - **Integration:** Natnael Ashenafi, Natnael Sebhat, Robel Alemayehu
 - **Deployment:** Natnael Ashenafi
